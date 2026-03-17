@@ -1,15 +1,18 @@
 # Vancouver Competitive LoL Project (VCLoL)
 
-A full-stack competitive gaming hub for Vancouver / Lower Mainland League of Legends players.
+A community-focused competitive gaming hub for Vancouver / Lower Mainland League of Legends players.
 
 ## Stack
 
-- **Framework:** Next.js 15 (App Router, Server Components, Server Actions)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS v4
+- **Frontend:** React + Vite (SPA)
+- **Routing:** Wouter
+- **UI:** Shadcn UI + Tailwind CSS v4
+- **Animations:** Framer Motion
+- **Backend:** Express.js (REST API)
 - **Database:** PostgreSQL via Drizzle ORM
-- **Auth:** iron-session (scrypt password hashing)
+- **Auth:** Express session (scrypt password hashing)
 - **Package Manager:** pnpm (monorepo)
+- **Fonts:** Outfit (display) + Inter (body)
 
 ## Public Pages
 
@@ -59,23 +62,30 @@ The app runs on the port specified by the `PORT` environment variable.
 ## Project Structure
 
 ```
-artifacts/vclol/
-  app/
-    (public)/         # Public-facing pages (Nav + Footer layout)
-    admin/
-      login/          # Login page (no auth wrapper)
-      (protected)/    # Admin pages (auth-checked + sidebar layout)
-    api/              # API routes (logout endpoint)
-  components/
-    Nav.tsx           # Public navigation (client component)
-    Footer.tsx        # Public footer
-    admin/
-      AdminSidebar.tsx
-  lib/
-    session.ts        # iron-session config, requireAdmin, verifyPassword
-    utils.ts          # cn, formatDate, slugify, formatDateTime
-lib/db/               # Shared Drizzle DB + schema
+artifacts/
+  vclol/          # React + Vite frontend (SPA)
+    src/
+      pages/
+        public/   # Home, Events, Results, VODs, About, Contact, Interest
+        admin/    # Dashboard, CRUD pages, Login
+      components/
+        layout/   # PublicLayout, AdminLayout, Nav, Footer
+        ui/       # Shadcn components
+  api-server/     # Express.js REST API
+    src/
+      routes/     # API route handlers
+lib/
+  db/             # Drizzle ORM schema + client
+  api-spec/       # OpenAPI spec + generated React Query hooks
+  api-zod/        # Generated Zod schemas from OpenAPI
 ```
+
+## Riot Assets
+
+Champion splash arts are loaded directly from the official Riot Data Dragon CDN:
+`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{Name}_0.jpg`
+
+No AI-generated images are used anywhere in the project.
 
 ## Extending the Project
 
@@ -84,4 +94,4 @@ lib/db/               # Shared Drizzle DB + schema
 - **Add a VOD:** Admin → VOD Archive → New VOD
 - **View interest submissions:** Admin → Interests
 - **View registrations:** Admin → Registrations
-- **Change admin password:** Update `passwordHash` in `admin_users` table using the `hashPassword` function in `scripts/src/seed.ts`
+- **Change admin password:** Update `passwordHash` in `admin_users` table via the seed script
