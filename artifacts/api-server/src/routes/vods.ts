@@ -50,6 +50,11 @@ router.get("/", async (req, res) => {
   const roleTag = req.query.roleTag as string | undefined;
   const search = req.query.search as string | undefined;
   const champion = req.query.champion as string | undefined;
+  const opponentChampion = req.query.opponentChampion as string | undefined;
+  const position = req.query.position as string | undefined;
+  const patch = req.query.patch as string | undefined;
+  const eloMin = req.query.eloMin ? parseInt(req.query.eloMin as string) : null;
+  const eloMax = req.query.eloMax ? parseInt(req.query.eloMax as string) : null;
   const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null;
 
   let rows = await db
@@ -79,7 +84,12 @@ router.get("/", async (req, res) => {
   if (eventId) rows = rows.filter((r) => r.eventId === eventId);
   if (format) rows = rows.filter((r) => r.format === format);
   if (roleTag) rows = rows.filter((r) => r.roleTag === roleTag);
-  if (champion) rows = rows.filter((r) => r.champion === champion);
+  if (champion) rows = rows.filter((r) => r.champion?.toLowerCase() === champion.toLowerCase());
+  if (opponentChampion) rows = rows.filter((r) => r.opponentChampion?.toLowerCase() === opponentChampion.toLowerCase());
+  if (position) rows = rows.filter((r) => r.position?.toLowerCase() === position.toLowerCase());
+  if (patch) rows = rows.filter((r) => r.patch === patch);
+  if (eloMin !== null) rows = rows.filter((r) => r.playerEloAtTime !== null && r.playerEloAtTime >= eloMin);
+  if (eloMax !== null) rows = rows.filter((r) => r.playerEloAtTime !== null && r.playerEloAtTime <= eloMax);
   if (playerId) rows = rows.filter((r) => r.playerId === playerId);
   if (search) {
     const s = search.toLowerCase();

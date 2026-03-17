@@ -98,7 +98,8 @@ router.put("/:id", requireAdmin, async (req, res) => {
   res.json(formatSeason(row));
 });
 
-router.put("/:id/activate", requireAdmin, async (req, res) => {
+// Activate a season — deactivates all others (does not reset ELO; use /complete for that)
+router.post("/:id/activate", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -109,32 +110,12 @@ router.put("/:id/activate", requireAdmin, async (req, res) => {
 
   if (!target) { res.status(404).json({ error: "Season not found" }); return; }
 
-  // Deactivate any currently active season and run soft ELO reset if transitioning
-  const [activeSeason] = await db
-    .select()
-    .from(seasonsTable)
+  // Move all currently-active seasons that aren't this one to 'completed'
+  await db
+    .update(seasonsTable)
+    .set({ status: "completed", updatedAt: new Date() })
     .where(eq(seasonsTable.status, "active"));
 
-  if (activeSeason && activeSeason.id !== id) {
-    // End the current active season
-    await db
-      .update(seasonsTable)
-      .set({ status: "ended", updatedAt: new Date() })
-      .where(eq(seasonsTable.id, activeSeason.id));
-
-    // Apply soft ELO reset to all active players using target season's factor
-    const factor = parseFloat(String(target.eloResetFactor)) || 0.5;
-    const players = await db.select().from(playersTable);
-    for (const player of players) {
-      const newElo = softResetElo(player.currentElo, factor);
-      await db
-        .update(playersTable)
-        .set({ currentElo: newElo, updatedAt: new Date() })
-        .where(eq(playersTable.id, player.id));
-    }
-  }
-
-  // Activate target season
   const [activated] = await db
     .update(seasonsTable)
     .set({ status: "active", updatedAt: new Date() })
@@ -144,9 +125,63 @@ router.put("/:id/activate", requireAdmin, async (req, res) => {
   res.json(formatSeason(activated!));
 });
 
+// Complete a season — sets status to 'completed' and applies ELO soft reset to all active players
+router.post("/:id/complete", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [target] = await db
+    .select()
+    .from(seasonsTable)
+    .where(eq(seasonsTable.id, id));
+
+  if (!target) { res.status(404).json({ error: "Season not found" }); return; }
+  if (target.status !== "active") {
+    res.status(400).json({ error: "Only active seasons can be completed" });
+    return;
+  }
+
+  const factor = parseFloat(String(target.eloResetFactor)) || 0.5;
+
+  // Use a transaction: mark season completed then apply ELO soft reset to all active players
+  await db.transaction(async (tx) => {
+    await tx
+      .update(seasonsTable)
+      .set({ status: "completed", updatedAt: new Date() })
+      .where(eq(seasonsTable.id, id));
+
+    const activePlayers = await tx
+      .select()
+      .from(playersTable)
+      .where(eq(playersTable.isActive, true));
+
+    for (const player of activePlayers) {
+      const newElo = softResetElo(player.currentElo, factor);
+      await tx
+        .update(playersTable)
+        .set({ currentElo: newElo, updatedAt: new Date() })
+        .where(eq(playersTable.id, player.id));
+    }
+  });
+
+  const [updated] = await db
+    .select()
+    .from(seasonsTable)
+    .where(eq(seasonsTable.id, id));
+
+  res.json(formatSeason(updated!));
+});
+
 router.delete("/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [target] = await db.select().from(seasonsTable).where(eq(seasonsTable.id, id));
+  if (target?.status === "active") {
+    res.status(400).json({ error: "Cannot delete an active season" });
+    return;
+  }
+
   await db.delete(seasonsTable).where(eq(seasonsTable.id, id));
   res.json({ success: true });
 });

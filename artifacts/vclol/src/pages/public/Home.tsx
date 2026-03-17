@@ -262,7 +262,7 @@ export default function Home() {
           <p className="text-muted-foreground text-sm leading-relaxed mb-8">
             Get notified about upcoming events, find teammates, discuss strategies, and connect with local Vancouver / Lower Mainland players on Discord.
           </p>
-          <a href="https://discord.gg/placeholder" target="_blank" rel="noopener noreferrer">
+          <a href={import.meta.env.VITE_DISCORD_URL ?? "#"} target="_blank" rel="noopener noreferrer">
             <Button size="lg" className="font-semibold">
               <MessageCircle className="mr-2 w-4 h-4" /> Join Discord Server
             </Button>

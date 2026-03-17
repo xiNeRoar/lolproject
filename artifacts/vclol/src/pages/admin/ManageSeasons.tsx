@@ -5,20 +5,22 @@ import {
   useUpdateSeason,
   useDeleteSeason,
   useActivateSeason,
+  useCompleteSeason,
+  type Season,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Play } from "lucide-react";
+import { Plus, Edit, Trash2, Play, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 
 function statusBadge(status: string) {
   if (status === "active") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>;
-  if (status === "ended") return <Badge variant="secondary">Ended</Badge>;
-  return <Badge variant="outline">Upcoming</Badge>;
+  if (status === "completed") return <Badge variant="outline" className="text-muted-foreground">Completed</Badge>;
+  return <Badge variant="secondary">Upcoming</Badge>;
 }
 
 export default function ManageSeasons() {
@@ -31,8 +33,15 @@ export default function ManageSeasons() {
   const updateMut = useUpdateSeason();
   const deleteMut = useDeleteSeason();
   const activateMut = useActivateSeason();
+  const completeMut = useCompleteSeason();
 
   const { register, handleSubmit, reset } = useForm();
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
+  };
 
   const openNew = () => {
     reset({ name: "", startDate: "", endDate: "", eloResetFactor: "0.50" });
@@ -40,59 +49,52 @@ export default function ManageSeasons() {
     setIsOpen(true);
   };
 
-  const openEdit = (season: any) => {
+  const openEdit = (season: Season) => {
     reset({ ...season });
     setEditingId(season.id);
     setIsOpen(true);
   };
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: Record<string, unknown>) => {
     const payload = {
-      name: data.name,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      eloResetFactor: data.eloResetFactor || "0.50",
-      status: data.status || undefined,
+      name: data.name as string,
+      startDate: data.startDate as string,
+      endDate: data.endDate as string,
+      eloResetFactor: (data.eloResetFactor as string) || "0.50",
+      status: (data.status as string) || undefined,
     };
 
     if (editingId) {
       updateMut.mutate({ id: editingId, data: payload }, {
-        onSuccess: () => {
-          setIsOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-        },
+        onSuccess: () => { setIsOpen(false); invalidate(); },
       });
     } else {
       createMut.mutate({ data: payload }, {
-        onSuccess: () => {
-          setIsOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-        },
+        onSuccess: () => { setIsOpen(false); invalidate(); },
       });
     }
   };
 
   const handleActivate = (id: number, name: string) => {
-    if (
-      confirm(
-        `Activate "${name}"? This will end any currently active season and apply an ELO soft reset to all players.`
-      )
-    ) {
-      activateMut.mutate({ id }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
-        },
-      });
+    if (confirm(`Activate "${name}"?\n\nThis will end any currently active season.`)) {
+      activateMut.mutate({ id }, { onSuccess: invalidate });
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleComplete = (id: number, name: string) => {
+    if (
+      confirm(
+        `Complete "${name}"?\n\nWARNING: This will apply an ELO soft reset to all active players. This action cannot be undone.`
+      )
+    ) {
+      completeMut.mutate({ id }, { onSuccess: invalidate });
+    }
+  };
+
+  const handleDelete = (id: number, status: string) => {
+    if (status === "active") { alert("Cannot delete an active season."); return; }
     if (confirm("Delete this season?")) {
-      deleteMut.mutate({ id }, {
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/seasons"] }),
-      });
+      deleteMut.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/seasons"] }) });
     }
   };
 
@@ -119,9 +121,7 @@ export default function ManageSeasons() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
-                  Loading...
-                </td>
+                <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">Loading...</td>
               </tr>
             ) : seasons?.length === 0 ? (
               <tr>
@@ -138,24 +138,44 @@ export default function ManageSeasons() {
                   </td>
                   <td className="px-6 py-4 font-mono">{season.eloResetFactor}</td>
                   <td className="px-6 py-4">{statusBadge(season.status)}</td>
-                  <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
-                    {season.status !== "active" && season.status !== "ended" && (
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      {/* Activate — shown for upcoming/completed seasons */}
+                      {season.status !== "active" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Activate Season"
+                          onClick={() => handleActivate(season.id, season.name)}
+                          disabled={activateMut.isPending}
+                        >
+                          <Play className="w-4 h-4 text-green-400" />
+                        </Button>
+                      )}
+                      {/* Complete — only for active seasons */}
+                      {season.status === "active" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Complete Season (resets ELO)"
+                          onClick={() => handleComplete(season.id, season.name)}
+                          disabled={completeMut.isPending}
+                        >
+                          <CheckCircle className="w-4 h-4 text-yellow-400" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(season)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        title="Activate Season"
-                        onClick={() => handleActivate(season.id, season.name)}
-                        disabled={activateMut.isPending}
+                        onClick={() => handleDelete(season.id, season.status)}
+                        disabled={season.status === "active"}
                       >
-                        <Play className="w-4 h-4 text-green-400" />
+                        <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(season)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(season.id)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -181,9 +201,7 @@ export default function ManageSeasons() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">
-              ELO Reset Factor (0.00–1.00)
-            </label>
+            <label className="text-xs text-muted-foreground mb-1 block">ELO Reset Factor (0.00–1.00)</label>
             <Input
               type="number"
               step="0.01"
@@ -197,12 +215,7 @@ export default function ManageSeasons() {
             </p>
           </div>
           <div className="flex justify-end pt-4">
-            <Button
-              type="submit"
-              disabled={createMut.isPending || updateMut.isPending}
-            >
-              Save
-            </Button>
+            <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>Save</Button>
           </div>
         </form>
       </Dialog>
