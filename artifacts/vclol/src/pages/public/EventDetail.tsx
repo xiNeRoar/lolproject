@@ -1,6 +1,7 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetEvent, useCreateRegistration } from "@workspace/api-client-react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,8 @@ export default function EventDetail() {
               </h2>
               <div className="space-y-3">
                 {event.matches.map(m => (
-                  <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card/40 border border-border/40 rounded-lg">
+                  <Link key={m.id} href={`/matches/${m.id}`} className="block">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card/40 border border-border/40 rounded-lg hover:border-primary/40 hover:bg-card/60 transition-colors cursor-pointer">
                     <div>
                        <span className="text-xs text-muted-foreground block mb-1">{m.matchTitle}</span>
                        <div className="font-semibold text-lg flex items-center gap-3">
@@ -108,6 +110,7 @@ export default function EventDetail() {
                        {m.score && <div className="font-display font-bold text-xl">{m.score}</div>}
                     </div>
                   </div>
+                  </Link>
                 ))}
               </div>
             </section>

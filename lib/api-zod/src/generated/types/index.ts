@@ -30,6 +30,7 @@ export * from "./listMatchesParams";
 export * from "./listRegistrationsParams";
 export * from "./listVodsParams";
 export * from "./match";
+export * from "./matchDetail";
 export * from "./player";
 export * from "./playerProfile";
 export * from "./season";

@@ -40,6 +40,7 @@ import type {
   ListRegistrationsParams,
   ListVodsParams,
   Match,
+  MatchDetail,
   Player,
   PlayerProfile,
   Season,
@@ -1549,6 +1550,91 @@ export const useCreateMatch = <
 > => {
   return useMutation(getCreateMatchMutationOptions(options));
 };
+
+/**
+ * @summary Get a single match with player and event detail
+ */
+export const getGetMatchUrl = (id: number) => {
+  return `/api/matches/${id}`;
+};
+
+export const getMatch = async (
+  id: number,
+  options?: RequestInit,
+): Promise<MatchDetail> => {
+  return customFetch<MatchDetail>(getGetMatchUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMatchQueryKey = (id: number) => {
+  return [`/api/matches/${id}`] as const;
+};
+
+export const getGetMatchQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMatch>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMatchQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMatch>>> = ({
+    signal,
+  }) => getMatch(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getMatch>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetMatchQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMatch>>
+>;
+export type GetMatchQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single match with player and event detail
+ */
+
+export function useGetMatch<
+  TData = Awaited<ReturnType<typeof getMatch>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMatchQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update a match (admin)

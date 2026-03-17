@@ -158,9 +158,15 @@ export default function VodDetail() {
                     <Link key={related.id} href={`/vods/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{related.title}</div>
-                        <div className="text-xs text-muted-foreground flex gap-2">
-                          {related.champion && <span>{related.champion}</span>}
-                          {related.position && <span>• {related.position}</span>}
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          {related.champion && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                              {related.champion}{related.opponentChampion ? ` vs ${related.opponentChampion}` : ""}
+                            </span>
+                          )}
+                          {related.playerEloAtTime != null && (
+                            <span className="text-xs text-muted-foreground">ELO {related.playerEloAtTime}</span>
+                          )}
                         </div>
                       </div>
                       <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />

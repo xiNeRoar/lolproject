@@ -10,12 +10,12 @@ import About from "@/pages/public/About";
 import Interest from "@/pages/public/Interest";
 import Events from "@/pages/public/Events";
 import EventDetail from "@/pages/public/EventDetail";
-import Results from "@/pages/public/Results";
 import Vods from "@/pages/public/Vods";
 import VodDetail from "@/pages/public/VodDetail";
 import Ladder from "@/pages/public/Ladder";
 import PlayerProfile from "@/pages/public/PlayerProfile";
 import Contact from "@/pages/public/Contact";
+import MatchDetail from "@/pages/public/MatchDetail";
 
 // Admin Pages
 import Login from "@/pages/admin/Login";
@@ -38,12 +38,12 @@ function Router() {
       <Route path="/interest" component={Interest} />
       <Route path="/events" component={Events} />
       <Route path="/events/:slug" component={EventDetail} />
-      <Route path="/results" component={Results} />
       <Route path="/vods" component={Vods} />
       <Route path="/vods/:id" component={VodDetail} />
       <Route path="/ladder" component={Ladder} />
       <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
+      <Route path="/matches/:id" component={MatchDetail} />
       
       <Route path="/admin/login" component={Login} />
       <Route path="/admin" component={Dashboard} />

@@ -390,6 +390,25 @@ paths:
                 $ref: "#/components/schemas/Match"
 
   /matches/{id}:
+    get:
+      operationId: getMatch
+      tags: [matches]
+      summary: Get a single match with player and event detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "404":
+          description: Not found
     put:
       operationId: updateMatch
       tags: [matches]
@@ -1262,6 +1281,21 @@ components:
         - isPlayoff
         - createdAt
         - updatedAt
+
+    MatchDetail:
+      allOf:
+        - $ref: "#/components/schemas/Match"
+        - type: object
+          properties:
+            eventSlug:
+              type: string
+              nullable: true
+            playerARiotId:
+              type: string
+              nullable: true
+            playerBRiotId:
+              type: string
+              nullable: true
 
     CreateMatchRequest:
       type: object

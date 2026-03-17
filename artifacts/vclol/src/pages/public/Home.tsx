@@ -214,12 +214,8 @@ export default function Home() {
             {recentVods && recentVods.length > 0 ? (
               <div className="space-y-3">
                 {recentVods.map((vod, i) => (
-                  <motion.a
-                    key={vod.id}
-                    href={vod.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block group"
+                  <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
@@ -242,7 +238,8 @@ export default function Home() {
                         <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0 ml-3" />
                       </CardContent>
                     </Card>
-                  </motion.a>
+                  </motion.div>
+                  </Link>
                 ))}
               </div>
             ) : (

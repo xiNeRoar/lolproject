@@ -218,6 +218,44 @@ router.post("/", requireAdmin, async (req, res) => {
   res.status(201).json(formatMatch(row, event?.title ?? null));
 });
 
+router.get("/:id", async (req, res) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [row] = await db
+    .select({
+      match: matchesTable,
+      eventTitle: eventsTable.title,
+      eventSlug: eventsTable.slug,
+    })
+    .from(matchesTable)
+    .leftJoin(eventsTable, eq(matchesTable.eventId, eventsTable.id))
+    .where(eq(matchesTable.id, id));
+
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+
+  const { match, eventTitle, eventSlug } = row;
+
+  let playerARiotId: string | null = null;
+  let playerBRiotId: string | null = null;
+
+  if (match.playerAId) {
+    const [pA] = await db.select({ riotId: playersTable.riotId }).from(playersTable).where(eq(playersTable.id, match.playerAId));
+    playerARiotId = pA?.riotId ?? null;
+  }
+  if (match.playerBId) {
+    const [pB] = await db.select({ riotId: playersTable.riotId }).from(playersTable).where(eq(playersTable.id, match.playerBId));
+    playerBRiotId = pB?.riotId ?? null;
+  }
+
+  res.json({
+    ...formatMatch(match, eventTitle ?? null),
+    eventSlug: eventSlug ?? null,
+    playerARiotId,
+    playerBRiotId,
+  });
+});
+
 router.put("/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }

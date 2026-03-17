@@ -176,6 +176,12 @@ export interface CreateRegistrationRequest {
   notes?: string | null;
 }
 
+export type MatchDetail = Match & {
+  eventSlug?: string | null;
+  playerARiotId?: string | null;
+  playerBRiotId?: string | null;
+};
+
 export interface CreateMatchRequest {
   eventId?: number | null;
   matchTitle: string;

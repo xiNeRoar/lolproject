@@ -9,12 +9,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/events", label: "Events" },
     { href: "/ladder", label: "Ladder" },
-    { href: "/results", label: "Results" },
     { href: "/vods", label: "VODs" },
+    { href: "/events", label: "Events" },
     { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
   ];
 
   return (
@@ -110,9 +108,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </p>
           </div>
           <div className="flex items-center space-x-4">
-             <Link href="/admin" className="text-muted-foreground/40 hover:text-primary transition-colors">
-               <Shield className="w-4 h-4" />
-             </Link>
+            <Link href="/contact" className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+              Contact
+            </Link>
+            <Link href="/admin" className="text-muted-foreground/40 hover:text-primary transition-colors">
+              <Shield className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </footer>

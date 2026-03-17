@@ -340,6 +340,44 @@ export const CreateMatchBody = zod.object({
 });
 
 /**
+ * @summary Get a single match with player and event detail
+ */
+export const GetMatchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetMatchResponse = zod
+  .object({
+    id: zod.number(),
+    eventId: zod.number().nullish(),
+    eventTitle: zod.string().nullish(),
+    matchTitle: zod.string(),
+    sideAName: zod.string(),
+    sideBName: zod.string(),
+    winnerName: zod.string(),
+    score: zod.string().nullish(),
+    format: zod.string().nullish(),
+    vodUrl: zod.string().nullish(),
+    playerAId: zod.number().nullish(),
+    playerBId: zod.number().nullish(),
+    playerAEloBefore: zod.number().nullish(),
+    playerAEloAfter: zod.number().nullish(),
+    playerBEloBefore: zod.number().nullish(),
+    playerBEloAfter: zod.number().nullish(),
+    seasonId: zod.number().nullish(),
+    isPlayoff: zod.boolean(),
+    createdAt: zod.string(),
+    updatedAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      eventSlug: zod.string().nullish(),
+      playerARiotId: zod.string().nullish(),
+      playerBRiotId: zod.string().nullish(),
+    }),
+  );
+
+/**
  * @summary Update a match (admin)
  */
 export const UpdateMatchParams = zod.object({

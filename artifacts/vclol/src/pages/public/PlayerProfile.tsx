@@ -171,7 +171,7 @@ export default function PlayerProfile() {
                     const eloBefore = isA ? match.playerAEloBefore : match.playerBEloBefore;
                     const eloAfter = isA ? match.playerAEloAfter : match.playerBEloAfter;
                     return (
-                      <div key={match.id} className="px-6 py-3 flex items-center gap-3">
+                      <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
                         <span
                           className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${
                             won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
@@ -194,7 +194,7 @@ export default function PlayerProfile() {
                           <div className="text-sm font-display font-bold">{match.score || "-"}</div>
                           <div>{eloDelta(eloBefore, eloAfter)}</div>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

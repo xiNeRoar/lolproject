@@ -1,7 +1,7 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import { useGetAdminStats } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, ClipboardList, Swords, Video } from "lucide-react";
+import { Users, Calendar, ClipboardList, Swords, Video, UserCheck, Trophy } from "lucide-react";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useGetAdminStats();
@@ -14,6 +14,8 @@ export default function Dashboard() {
     { label: "Event Registrations", value: stats?.registrations || 0, icon: ClipboardList, color: "text-green-500" },
     { label: "Matches Recorded", value: stats?.matches || 0, icon: Swords, color: "text-orange-500" },
     { label: "VODs Archived", value: stats?.vods || 0, icon: Video, color: "text-red-500" },
+    { label: "Registered Players", value: stats?.players || 0, icon: UserCheck, color: "text-cyan-500" },
+    { label: "Seasons", value: stats?.seasons || 0, icon: Trophy, color: "text-yellow-500" },
   ];
 
   return (
