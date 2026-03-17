@@ -10,6 +10,13 @@ import playersRouter from "./players";
 import seasonsRouter from "./seasons";
 import ladderRouter from "./ladder";
 import vodTimestampsRouter from "./vodTimestamps";
+import ladderSettingsRouter from "./ladderSettings";
+import adminScheduleRouter from "./adminSchedule";
+import challengesRouter from "./challenges";
+import eloHistoryRouter from "./eloHistory";
+import seasonChampionsRouter from "./seasonChampions";
+import playerBadgesRouter from "./playerBadges";
+import matchmakingQueueRouter from "./matchmakingQueue";
 
 const router: IRouter = Router();
 
@@ -24,5 +31,12 @@ router.use("/vods", vodsRouter);
 router.use("/players", playersRouter);
 router.use("/seasons", seasonsRouter);
 router.use("/ladder", ladderRouter);
+router.use("/ladder-settings", ladderSettingsRouter);
+router.use("/admin-schedule", adminScheduleRouter);
+router.use("/challenges", challengesRouter);
+router.use("/elo-history", eloHistoryRouter);
+router.use("/season-champions", seasonChampionsRouter);
+router.use("/player-badges", playerBadgesRouter);
+router.use("/matchmaking-queue", matchmakingQueueRouter);
 
 export default router;

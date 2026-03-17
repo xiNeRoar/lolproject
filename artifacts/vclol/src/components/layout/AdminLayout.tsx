@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Calendar, ClipboardList, Swords, Video, LogOut, Trophy, UserCheck } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, ClipboardList, Swords, Video, LogOut, Trophy, UserCheck, Zap, Settings } from "lucide-react";
 import { useAdminMe, useAdminLogout } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/events", label: "Events", icon: Calendar },
     { href: "/admin/registrations", label: "Registrations", icon: ClipboardList },
     { href: "/admin/matches", label: "Matches", icon: Swords },
+    { href: "/admin/challenges", label: "Challenges", icon: Zap },
     { href: "/admin/vods", label: "VOD Archive", icon: Video },
+    { href: "/admin/ladder-settings", label: "Ladder Settings", icon: Settings },
   ];
 
   return (

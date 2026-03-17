@@ -23,6 +23,11 @@ export const matchesTable = pgTable("matches", {
   playerBEloAfter: integer("player_b_elo_after"),
   seasonId: integer("season_id").references(() => seasonsTable.id, { onDelete: "set null" }),
   isPlayoff: boolean("is_playoff").notNull().default(false),
+  round: integer("round"),
+  bracketSlot: integer("bracket_slot"),
+  nextMatchId: integer("next_match_id"),
+  isLosersBracket: boolean("is_losers_bracket").default(false),
+  groupId: integer("group_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -8,6 +8,9 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/public/Home";
 import About from "@/pages/public/About";
 import Interest from "@/pages/public/Interest";
+import Register from "@/pages/public/Register";
+import PlayerLogin from "@/pages/public/PlayerLogin";
+import PlayerDashboard from "@/pages/public/PlayerDashboard";
 import Events from "@/pages/public/Events";
 import EventDetail from "@/pages/public/EventDetail";
 import Vods from "@/pages/public/Vods";
@@ -27,6 +30,8 @@ import ManageMatches from "@/pages/admin/ManageMatches";
 import ManageVods from "@/pages/admin/ManageVods";
 import ManagePlayers from "@/pages/admin/ManagePlayers";
 import ManageSeasons from "@/pages/admin/ManageSeasons";
+import ManageChallenges from "@/pages/admin/ManageChallenges";
+import ManageLadderSettings from "@/pages/admin/ManageLadderSettings";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +40,10 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
-      <Route path="/interest" component={Interest} />
+      <Route path="/interest">{() => { window.location.replace("/register"); return null; }}</Route>
+      <Route path="/register" component={Register} />
+      <Route path="/login" component={PlayerLogin} />
+      <Route path="/dashboard" component={PlayerDashboard} />
       <Route path="/events" component={Events} />
       <Route path="/events/:slug" component={EventDetail} />
       <Route path="/vods" component={Vods} />
@@ -54,6 +62,8 @@ function Router() {
       <Route path="/admin/vods" component={ManageVods} />
       <Route path="/admin/players" component={ManagePlayers} />
       <Route path="/admin/seasons" component={ManageSeasons} />
+      <Route path="/admin/challenges" component={ManageChallenges} />
+      <Route path="/admin/ladder-settings" component={ManageLadderSettings} />
       
       <Route component={NotFound} />
     </Switch>

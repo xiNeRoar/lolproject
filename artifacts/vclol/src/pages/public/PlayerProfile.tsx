@@ -1,9 +1,18 @@
+import { useState } from "react";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer } from "@workspace/api-client-react";
+import { useGetPlayer, useGetEloHistory, useGetPlayerBadges } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Trophy, ExternalLink, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { ChallengeModal } from "@/components/ChallengeModal";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
+
+// TODO: replace with real session
+const myPlayerId = Number(localStorage.getItem("vclol_player_id"));
 
 function eloBadgeColor(elo: number) {
   if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
@@ -30,6 +39,10 @@ function eloDelta(before: number | null | undefined, after: number | null | unde
 export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
   const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
+  const [challengeOpen, setChallengeOpen] = useState(false);
+  const isLoggedIn = !!localStorage.getItem("vclol_player_id");
+  const { data: eloHistory } = useGetEloHistory(player?.id ?? 0, { query: { enabled: !!player?.id } });
+  const { data: badges } = useGetPlayerBadges(player?.id ?? 0, { query: { enabled: !!player?.id } });
 
   if (isLoading) {
     return (
@@ -84,19 +97,26 @@ export default function PlayerProfile() {
                 </div>
                 <p className="text-muted-foreground text-sm">{player.discordUsername}</p>
               </div>
-              <div className="flex gap-6">
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                    <TrendingUp className="w-3 h-3" /> ELO
+              <div className="flex flex-col items-end gap-3">
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
+                      <TrendingUp className="w-3 h-3" /> ELO
+                    </div>
+                    <div className="text-2xl font-display font-bold text-primary">{player.currentElo}</div>
                   </div>
-                  <div className="text-2xl font-display font-bold text-primary">{player.currentElo}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                    <Trophy className="w-3 h-3" /> Peak
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
+                      <Trophy className="w-3 h-3" /> Peak
+                    </div>
+                    <div className="text-2xl font-display font-bold text-yellow-400">{player.peakElo}</div>
                   </div>
-                  <div className="text-2xl font-display font-bold text-yellow-400">{player.peakElo}</div>
                 </div>
+                {isLoggedIn && player.id !== myPlayerId && (
+                  <Button size="sm" onClick={() => setChallengeOpen(true)}>
+                    Challenge
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -117,6 +137,82 @@ export default function PlayerProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Badges */}
+        {badges && badges.length > 0 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg font-display">
+                <Medal className="w-5 h-5 text-yellow-400" />
+                Badges
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                {badges.map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"
+                  >
+                    <Star className="w-4 h-4 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium capitalize">{badge.badgeType.replace(/_/g, " ")}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(badge.earnedAt).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ELO History Chart */}
+        {eloHistory && eloHistory.length > 1 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg font-display">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                ELO History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart
+                  data={[...eloHistory].reverse().map((h, i) => ({
+                    game: i + 1,
+                    elo: h.elo,
+                    delta: h.delta,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis
+                    dataKey="game"
+                    tick={{ fontSize: 11, fill: "#888" }}
+                    label={{ value: "Match", position: "insideBottom", offset: -2, fontSize: 11, fill: "#888" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#888" }}
+                    domain={["auto", "auto"]}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 12 }}
+                    formatter={(value: number, name: string) => [value, name === "elo" ? "ELO" : "Delta"]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="elo"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "#3b82f6" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Champion Pool — grouped from player VODs */}
         {player.vods?.some((v) => v.champion) && (
@@ -237,6 +333,14 @@ export default function PlayerProfile() {
           </Card>
         </div>
       </div>
+
+      {challengeOpen && (
+        <ChallengeModal
+          targetPlayer={player ? { id: player.id, riotId: player.riotId } : null}
+          challengerId={myPlayerId}
+          onClose={() => setChallengeOpen(false)}
+        />
+      )}
     </PublicLayout>
   );
 }

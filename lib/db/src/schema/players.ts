@@ -11,6 +11,9 @@ export const playersTable = pgTable("players", {
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
+  discordId: text("discord_id"),
+  email: text("email"),
+  notificationPreference: text("notification_preference").notNull().default("web"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

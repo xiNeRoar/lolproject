@@ -887,6 +887,310 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /ladder-settings:
+    get:
+      operationId: getLadderSettings
+      tags: [ladderSettings]
+      summary: Get ladder settings
+      responses:
+        "200":
+          description: Ladder settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderSettings"
+    put:
+      operationId: updateLadderSettings
+      tags: [ladderSettings]
+      summary: Update ladder settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LadderSettings"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderSettings"
+
+  /admin-schedule:
+    get:
+      operationId: getAdminSchedule
+      tags: [adminSchedule]
+      summary: Get admin schedule settings
+      responses:
+        "200":
+          description: Admin schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScheduleSettings"
+    put:
+      operationId: updateAdminSchedule
+      tags: [adminSchedule]
+      summary: Update admin schedule settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminScheduleSettings"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScheduleSettings"
+
+  /challenges:
+    get:
+      operationId: listChallenges
+      tags: [challenges]
+      summary: List all challenges (admin)
+      responses:
+        "200":
+          description: Challenges list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Challenge"
+    post:
+      operationId: createChallenge
+      tags: [challenges]
+      summary: Create a new challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChallengeRequest"
+      responses:
+        "201":
+          description: Challenge created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Challenge"
+
+  /challenges/player/{playerId}:
+    get:
+      operationId: getChallengesForPlayer
+      tags: [challenges]
+      summary: Get challenges for a player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player challenges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Challenge"
+
+  /challenges/{id}/accept:
+    put:
+      operationId: acceptChallenge
+      tags: [challenges]
+      summary: Accept a challenge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Challenge accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Challenge"
+
+  /challenges/{id}/decline:
+    put:
+      operationId: declineChallenge
+      tags: [challenges]
+      summary: Decline a challenge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Challenge declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Challenge"
+
+  /challenges/{id}/game-ready:
+    put:
+      operationId: setChallengeGameReady
+      tags: [challenges]
+      summary: Set game ID for challenge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gameId:
+                  type: string
+              required:
+                - gameId
+      responses:
+        "200":
+          description: Game ID set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Challenge"
+
+  /challenges/{id}:
+    delete:
+      operationId: deleteChallenge
+      tags: [challenges]
+      summary: Delete a challenge (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /elo-history/{playerId}:
+    get:
+      operationId: getEloHistory
+      tags: [eloHistory]
+      summary: Get ELO history for a player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ELO history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EloHistoryEntry"
+
+  /season-champions:
+    get:
+      operationId: listSeasonChampions
+      tags: [seasonChampions]
+      summary: List all season champions
+      responses:
+        "200":
+          description: Season champions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeasonChampion"
+
+  /season-champions/{seasonId}:
+    get:
+      operationId: getSeasonChampion
+      tags: [seasonChampions]
+      summary: Get champion for a specific season
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season champion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonChampion"
+        "404":
+          description: Not found
+
+  /player-badges/{playerId}:
+    get:
+      operationId: getPlayerBadges
+      tags: [playerBadges]
+      summary: Get badges for a player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerBadge"
+
+  /matchmaking-queue/join:
+    post:
+      operationId: joinMatchmakingQueue
+      tags: [matchmakingQueue]
+      summary: Join matchmaking queue (stub)
+      responses:
+        "200":
+          description: Queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchmakingQueueResponse"
+
+  /matchmaking-queue/leave:
+    delete:
+      operationId: leaveMatchmakingQueue
+      tags: [matchmakingQueue]
+      summary: Leave matchmaking queue (stub)
+      responses:
+        "200":
+          description: Left queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -1268,6 +1572,21 @@ components:
           nullable: true
         isPlayoff:
           type: boolean
+        round:
+          type: integer
+          nullable: true
+        bracketSlot:
+          type: integer
+          nullable: true
+        nextMatchId:
+          type: integer
+          nullable: true
+        isLosersBracket:
+          type: boolean
+          nullable: true
+        groupId:
+          type: integer
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -1737,3 +2056,184 @@ components:
         - relatedVods
         - createdAt
         - updatedAt
+
+    LadderSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        kFactor:
+          type: integer
+        minMatchesForDisplay:
+          type: integer
+        maxChallengesPerWeek:
+          type: integer
+        maxChallengesSameOpponentPerWeek:
+          type: integer
+        challengeExpiryHours:
+          type: integer
+        updatedAt:
+          type: string
+      required:
+        - id
+        - kFactor
+        - minMatchesForDisplay
+        - maxChallengesPerWeek
+        - maxChallengesSameOpponentPerWeek
+        - challengeExpiryHours
+        - updatedAt
+
+    AdminScheduleSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        availableDays:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        maxConcurrentMatches:
+          type: integer
+        updatedAt:
+          type: string
+      required:
+        - id
+        - availableDays
+        - startTime
+        - endTime
+        - maxConcurrentMatches
+        - updatedAt
+
+    Challenge:
+      type: object
+      properties:
+        id:
+          type: integer
+        challengerId:
+          type: integer
+        challengedId:
+          type: integer
+        challengerRiotId:
+          type: string
+          nullable: true
+        challengedRiotId:
+          type: string
+          nullable: true
+        status:
+          type: string
+        scheduledTime:
+          type: string
+          nullable: true
+        seasonId:
+          type: integer
+          nullable: true
+        matchId:
+          type: integer
+          nullable: true
+        gameId:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - challengerId
+        - challengedId
+        - status
+        - expiresAt
+        - createdAt
+        - updatedAt
+
+    CreateChallengeRequest:
+      type: object
+      properties:
+        challengedId:
+          type: integer
+        scheduledTime:
+          type: string
+      required:
+        - challengedId
+        - scheduledTime
+
+    EloHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        elo:
+          type: integer
+        delta:
+          type: integer
+        matchId:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - playerId
+        - elo
+        - delta
+        - reason
+        - createdAt
+
+    SeasonChampion:
+      type: object
+      properties:
+        id:
+          type: integer
+        seasonId:
+          type: integer
+        playerId:
+          type: integer
+        playerRiotId:
+          type: string
+          nullable: true
+        finalElo:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - seasonId
+        - playerId
+        - finalElo
+        - createdAt
+
+    PlayerBadge:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        badgeType:
+          type: string
+        earnedAt:
+          type: string
+        seasonId:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - playerId
+        - badgeType
+        - earnedAt
+
+    MatchmakingQueueResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message

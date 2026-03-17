@@ -93,7 +93,16 @@ export default function ManageEvents() {
             <Input type="date" {...register("eventDate", {required: true})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <Input placeholder="Format (e.g. 5v5)" {...register("format", {required: true})} />
+             <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...register("format", { required: true })}>
+               <option value="">Select Format</option>
+               <option value="Single Elimination">Single Elimination</option>
+               <option value="Double Elimination">Double Elimination</option>
+               <option value="Round Robin">Round Robin</option>
+               <option value="Swiss">Swiss</option>
+               <option value="Group Stage + Knockout">Group Stage + Knockout</option>
+               <option value="In-house">In-house</option>
+               <option value="1v1 Ladder">1v1 Ladder</option>
+             </select>
              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...register("registrationStatus")}>
                <option value="open">Open</option>
                <option value="upcoming">Upcoming</option>

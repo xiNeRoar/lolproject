@@ -49,10 +49,23 @@ artifacts/vclol/                   # React/Vite frontend
         ManageRegistrations.tsx    # /admin/registrations
         ManageMatches.tsx          # /admin/matches
         ManageVods.tsx             # /admin/vods
+        ManageChallenges.tsx       # /admin/challenges
+        ManageLadderSettings.tsx   # /admin/ladder-settings
+      public/
+        Register.tsx               # /register — player signup
+        PlayerLogin.tsx            # /login — Discord login stub
+        PlayerDashboard.tsx        # /dashboard — player stats + notification prefs
     components/
       layout/
-        PublicLayout.tsx            # Nav (Home, Events, Results, Ladder, VODs, About, Contact) + Footer
-        AdminLayout.tsx            # Admin sidebar (Players, Seasons, Interests, Events, Registrations, Matches, VOD Archive)
+        PublicLayout.tsx            # Nav (Home, Ladder, VODs, Events, About) + Footer
+        AdminLayout.tsx            # Admin sidebar (Players, Seasons, Interests, Events, Registrations, Matches, Challenges, VODs, Ladder Settings)
+      brackets/
+        SingleEliminationBracket.tsx  # Pure HTML/CSS bracket rendering
+        DoubleEliminationBracket.tsx
+        SwissBracket.tsx
+        MatchList.tsx
+        GroupStageGrid.tsx
+      ChallengeModal.tsx             # Shared modal for issuing ladder challenges
       ui/                          # Shadcn UI primitives
 
 artifacts/api-server/              # Express 5 API
@@ -89,7 +102,8 @@ lib/
 
 ## Public Routes (nav order)
 
-Home → Events → Results → Ladder → VODs → About → Contact  (+  "Join Interest List" CTA button)
+Home → Ladder → VODs → Events → About  (+  Login | Join Interest List CTA)
+Player-facing: `/register`, `/login`, `/dashboard`
 
 ## ELO System
 
@@ -111,7 +125,9 @@ Home → Events → Results → Ladder → VODs → About → Contact  (+  "Join
 
 ## Database Tables
 
-`admin_users`, `interest_submissions`, `events`, `event_registrations`, `matches`, `vod_entries`, `players`, `seasons`, `vod_timestamps`
+Core: `admin_users`, `interest_submissions`, `events`, `event_registrations`, `matches`, `vod_entries`, `players`, `seasons`, `vod_timestamps`
+
+Batch 2: `ladder_settings`, `admin_schedule_settings`, `challenges`, `elo_history`, `season_champions`, `player_badges`, `matchmaking_queue`
 
 ## Key Commands
 

@@ -20,7 +20,10 @@ import type {
   AdminLoginRequest,
   AdminLoginResponse,
   AdminMeResponse,
+  AdminScheduleSettings,
   AdminStats,
+  Challenge,
+  CreateChallengeRequest,
   CreateEventRequest,
   CreateInterestRequest,
   CreateMatchRequest,
@@ -29,6 +32,7 @@ import type {
   CreateSeasonRequest,
   CreateVodRequest,
   CreateVodTimestampRequest,
+  EloHistoryEntry,
   ErrorResponse,
   Event,
   EventDetail,
@@ -36,14 +40,19 @@ import type {
   HealthStatus,
   InterestSubmission,
   LadderResponse,
+  LadderSettings,
   ListMatchesParams,
   ListRegistrationsParams,
   ListVodsParams,
   Match,
   MatchDetail,
+  MatchmakingQueueResponse,
   Player,
+  PlayerBadge,
   PlayerProfile,
   Season,
+  SeasonChampion,
+  SetChallengeGameReadyBody,
   SuccessResponse,
   VodDetail,
   VodEntry,
@@ -3470,4 +3479,1417 @@ export const useDeleteVodTimestamp = <
   TContext
 > => {
   return useMutation(getDeleteVodTimestampMutationOptions(options));
+};
+
+/**
+ * @summary Get ladder settings
+ */
+export const getGetLadderSettingsUrl = () => {
+  return `/api/ladder-settings`;
+};
+
+export const getLadderSettings = async (
+  options?: RequestInit,
+): Promise<LadderSettings> => {
+  return customFetch<LadderSettings>(getGetLadderSettingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLadderSettingsQueryKey = () => {
+  return [`/api/ladder-settings`] as const;
+};
+
+export const getGetLadderSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLadderSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLadderSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLadderSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getLadderSettings>>
+  > = ({ signal }) => getLadderSettings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLadderSettings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLadderSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLadderSettings>>
+>;
+export type GetLadderSettingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get ladder settings
+ */
+
+export function useGetLadderSettings<
+  TData = Awaited<ReturnType<typeof getLadderSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLadderSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLadderSettingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update ladder settings (admin)
+ */
+export const getUpdateLadderSettingsUrl = () => {
+  return `/api/ladder-settings`;
+};
+
+export const updateLadderSettings = async (
+  ladderSettings: LadderSettings,
+  options?: RequestInit,
+): Promise<LadderSettings> => {
+  return customFetch<LadderSettings>(getUpdateLadderSettingsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(ladderSettings),
+  });
+};
+
+export const getUpdateLadderSettingsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLadderSettings>>,
+    TError,
+    { data: BodyType<LadderSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateLadderSettings>>,
+  TError,
+  { data: BodyType<LadderSettings> },
+  TContext
+> => {
+  const mutationKey = ["updateLadderSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateLadderSettings>>,
+    { data: BodyType<LadderSettings> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateLadderSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateLadderSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateLadderSettings>>
+>;
+export type UpdateLadderSettingsMutationBody = BodyType<LadderSettings>;
+export type UpdateLadderSettingsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update ladder settings (admin)
+ */
+export const useUpdateLadderSettings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLadderSettings>>,
+    TError,
+    { data: BodyType<LadderSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateLadderSettings>>,
+  TError,
+  { data: BodyType<LadderSettings> },
+  TContext
+> => {
+  return useMutation(getUpdateLadderSettingsMutationOptions(options));
+};
+
+/**
+ * @summary Get admin schedule settings
+ */
+export const getGetAdminScheduleUrl = () => {
+  return `/api/admin-schedule`;
+};
+
+export const getAdminSchedule = async (
+  options?: RequestInit,
+): Promise<AdminScheduleSettings> => {
+  return customFetch<AdminScheduleSettings>(getGetAdminScheduleUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminScheduleQueryKey = () => {
+  return [`/api/admin-schedule`] as const;
+};
+
+export const getGetAdminScheduleQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminSchedule>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminSchedule>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminScheduleQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminSchedule>>
+  > = ({ signal }) => getAdminSchedule({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminSchedule>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminScheduleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminSchedule>>
+>;
+export type GetAdminScheduleQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get admin schedule settings
+ */
+
+export function useGetAdminSchedule<
+  TData = Awaited<ReturnType<typeof getAdminSchedule>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminSchedule>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminScheduleQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update admin schedule settings (admin)
+ */
+export const getUpdateAdminScheduleUrl = () => {
+  return `/api/admin-schedule`;
+};
+
+export const updateAdminSchedule = async (
+  adminScheduleSettings: AdminScheduleSettings,
+  options?: RequestInit,
+): Promise<AdminScheduleSettings> => {
+  return customFetch<AdminScheduleSettings>(getUpdateAdminScheduleUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminScheduleSettings),
+  });
+};
+
+export const getUpdateAdminScheduleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminSchedule>>,
+    TError,
+    { data: BodyType<AdminScheduleSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminSchedule>>,
+  TError,
+  { data: BodyType<AdminScheduleSettings> },
+  TContext
+> => {
+  const mutationKey = ["updateAdminSchedule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminSchedule>>,
+    { data: BodyType<AdminScheduleSettings> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateAdminSchedule(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminScheduleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminSchedule>>
+>;
+export type UpdateAdminScheduleMutationBody = BodyType<AdminScheduleSettings>;
+export type UpdateAdminScheduleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update admin schedule settings (admin)
+ */
+export const useUpdateAdminSchedule = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminSchedule>>,
+    TError,
+    { data: BodyType<AdminScheduleSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminSchedule>>,
+  TError,
+  { data: BodyType<AdminScheduleSettings> },
+  TContext
+> => {
+  return useMutation(getUpdateAdminScheduleMutationOptions(options));
+};
+
+/**
+ * @summary List all challenges (admin)
+ */
+export const getListChallengesUrl = () => {
+  return `/api/challenges`;
+};
+
+export const listChallenges = async (
+  options?: RequestInit,
+): Promise<Challenge[]> => {
+  return customFetch<Challenge[]>(getListChallengesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListChallengesQueryKey = () => {
+  return [`/api/challenges`] as const;
+};
+
+export const getListChallengesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listChallenges>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listChallenges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListChallengesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listChallenges>>> = ({
+    signal,
+  }) => listChallenges({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listChallenges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListChallengesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listChallenges>>
+>;
+export type ListChallengesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all challenges (admin)
+ */
+
+export function useListChallenges<
+  TData = Awaited<ReturnType<typeof listChallenges>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listChallenges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListChallengesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new challenge
+ */
+export const getCreateChallengeUrl = () => {
+  return `/api/challenges`;
+};
+
+export const createChallenge = async (
+  createChallengeRequest: CreateChallengeRequest,
+  options?: RequestInit,
+): Promise<Challenge> => {
+  return customFetch<Challenge>(getCreateChallengeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createChallengeRequest),
+  });
+};
+
+export const getCreateChallengeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createChallenge>>,
+    TError,
+    { data: BodyType<CreateChallengeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createChallenge>>,
+  TError,
+  { data: BodyType<CreateChallengeRequest> },
+  TContext
+> => {
+  const mutationKey = ["createChallenge"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createChallenge>>,
+    { data: BodyType<CreateChallengeRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createChallenge(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateChallengeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createChallenge>>
+>;
+export type CreateChallengeMutationBody = BodyType<CreateChallengeRequest>;
+export type CreateChallengeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new challenge
+ */
+export const useCreateChallenge = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createChallenge>>,
+    TError,
+    { data: BodyType<CreateChallengeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createChallenge>>,
+  TError,
+  { data: BodyType<CreateChallengeRequest> },
+  TContext
+> => {
+  return useMutation(getCreateChallengeMutationOptions(options));
+};
+
+/**
+ * @summary Get challenges for a player
+ */
+export const getGetChallengesForPlayerUrl = (playerId: number) => {
+  return `/api/challenges/player/${playerId}`;
+};
+
+export const getChallengesForPlayer = async (
+  playerId: number,
+  options?: RequestInit,
+): Promise<Challenge[]> => {
+  return customFetch<Challenge[]>(getGetChallengesForPlayerUrl(playerId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChallengesForPlayerQueryKey = (playerId: number) => {
+  return [`/api/challenges/player/${playerId}`] as const;
+};
+
+export const getGetChallengesForPlayerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChallengesForPlayer>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChallengesForPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChallengesForPlayerQueryKey(playerId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChallengesForPlayer>>
+  > = ({ signal }) =>
+    getChallengesForPlayer(playerId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!playerId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChallengesForPlayer>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChallengesForPlayerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChallengesForPlayer>>
+>;
+export type GetChallengesForPlayerQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get challenges for a player
+ */
+
+export function useGetChallengesForPlayer<
+  TData = Awaited<ReturnType<typeof getChallengesForPlayer>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChallengesForPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChallengesForPlayerQueryOptions(playerId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Accept a challenge
+ */
+export const getAcceptChallengeUrl = (id: number) => {
+  return `/api/challenges/${id}/accept`;
+};
+
+export const acceptChallenge = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Challenge> => {
+  return customFetch<Challenge>(getAcceptChallengeUrl(id), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export const getAcceptChallengeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["acceptChallenge"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptChallenge>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return acceptChallenge(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptChallengeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptChallenge>>
+>;
+
+export type AcceptChallengeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Accept a challenge
+ */
+export const useAcceptChallenge = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAcceptChallengeMutationOptions(options));
+};
+
+/**
+ * @summary Decline a challenge
+ */
+export const getDeclineChallengeUrl = (id: number) => {
+  return `/api/challenges/${id}/decline`;
+};
+
+export const declineChallenge = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Challenge> => {
+  return customFetch<Challenge>(getDeclineChallengeUrl(id), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export const getDeclineChallengeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof declineChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["declineChallenge"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof declineChallenge>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return declineChallenge(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeclineChallengeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof declineChallenge>>
+>;
+
+export type DeclineChallengeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Decline a challenge
+ */
+export const useDeclineChallenge = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof declineChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof declineChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeclineChallengeMutationOptions(options));
+};
+
+/**
+ * @summary Set game ID for challenge
+ */
+export const getSetChallengeGameReadyUrl = (id: number) => {
+  return `/api/challenges/${id}/game-ready`;
+};
+
+export const setChallengeGameReady = async (
+  id: number,
+  setChallengeGameReadyBody: SetChallengeGameReadyBody,
+  options?: RequestInit,
+): Promise<Challenge> => {
+  return customFetch<Challenge>(getSetChallengeGameReadyUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setChallengeGameReadyBody),
+  });
+};
+
+export const getSetChallengeGameReadyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setChallengeGameReady>>,
+    TError,
+    { id: number; data: BodyType<SetChallengeGameReadyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setChallengeGameReady>>,
+  TError,
+  { id: number; data: BodyType<SetChallengeGameReadyBody> },
+  TContext
+> => {
+  const mutationKey = ["setChallengeGameReady"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setChallengeGameReady>>,
+    { id: number; data: BodyType<SetChallengeGameReadyBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return setChallengeGameReady(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetChallengeGameReadyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setChallengeGameReady>>
+>;
+export type SetChallengeGameReadyMutationBody =
+  BodyType<SetChallengeGameReadyBody>;
+export type SetChallengeGameReadyMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set game ID for challenge
+ */
+export const useSetChallengeGameReady = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setChallengeGameReady>>,
+    TError,
+    { id: number; data: BodyType<SetChallengeGameReadyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setChallengeGameReady>>,
+  TError,
+  { id: number; data: BodyType<SetChallengeGameReadyBody> },
+  TContext
+> => {
+  return useMutation(getSetChallengeGameReadyMutationOptions(options));
+};
+
+/**
+ * @summary Delete a challenge (admin)
+ */
+export const getDeleteChallengeUrl = (id: number) => {
+  return `/api/challenges/${id}`;
+};
+
+export const deleteChallenge = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteChallengeUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteChallengeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteChallenge"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteChallenge>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteChallenge(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteChallengeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteChallenge>>
+>;
+
+export type DeleteChallengeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a challenge (admin)
+ */
+export const useDeleteChallenge = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChallenge>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteChallenge>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteChallengeMutationOptions(options));
+};
+
+/**
+ * @summary Get ELO history for a player
+ */
+export const getGetEloHistoryUrl = (playerId: number) => {
+  return `/api/elo-history/${playerId}`;
+};
+
+export const getEloHistory = async (
+  playerId: number,
+  options?: RequestInit,
+): Promise<EloHistoryEntry[]> => {
+  return customFetch<EloHistoryEntry[]>(getGetEloHistoryUrl(playerId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetEloHistoryQueryKey = (playerId: number) => {
+  return [`/api/elo-history/${playerId}`] as const;
+};
+
+export const getGetEloHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getEloHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getEloHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetEloHistoryQueryKey(playerId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getEloHistory>>> = ({
+    signal,
+  }) => getEloHistory(playerId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!playerId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getEloHistory>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetEloHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getEloHistory>>
+>;
+export type GetEloHistoryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get ELO history for a player
+ */
+
+export function useGetEloHistory<
+  TData = Awaited<ReturnType<typeof getEloHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getEloHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetEloHistoryQueryOptions(playerId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all season champions
+ */
+export const getListSeasonChampionsUrl = () => {
+  return `/api/season-champions`;
+};
+
+export const listSeasonChampions = async (
+  options?: RequestInit,
+): Promise<SeasonChampion[]> => {
+  return customFetch<SeasonChampion[]>(getListSeasonChampionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSeasonChampionsQueryKey = () => {
+  return [`/api/season-champions`] as const;
+};
+
+export const getListSeasonChampionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSeasonChampions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasonChampions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSeasonChampionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listSeasonChampions>>
+  > = ({ signal }) => listSeasonChampions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasonChampions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSeasonChampionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSeasonChampions>>
+>;
+export type ListSeasonChampionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all season champions
+ */
+
+export function useListSeasonChampions<
+  TData = Awaited<ReturnType<typeof listSeasonChampions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasonChampions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSeasonChampionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get champion for a specific season
+ */
+export const getGetSeasonChampionUrl = (seasonId: number) => {
+  return `/api/season-champions/${seasonId}`;
+};
+
+export const getSeasonChampion = async (
+  seasonId: number,
+  options?: RequestInit,
+): Promise<SeasonChampion> => {
+  return customFetch<SeasonChampion>(getGetSeasonChampionUrl(seasonId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSeasonChampionQueryKey = (seasonId: number) => {
+  return [`/api/season-champions/${seasonId}`] as const;
+};
+
+export const getGetSeasonChampionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSeasonChampion>>,
+  TError = ErrorType<void>,
+>(
+  seasonId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSeasonChampion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSeasonChampionQueryKey(seasonId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSeasonChampion>>
+  > = ({ signal }) =>
+    getSeasonChampion(seasonId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!seasonId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSeasonChampion>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSeasonChampionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSeasonChampion>>
+>;
+export type GetSeasonChampionQueryError = ErrorType<void>;
+
+/**
+ * @summary Get champion for a specific season
+ */
+
+export function useGetSeasonChampion<
+  TData = Awaited<ReturnType<typeof getSeasonChampion>>,
+  TError = ErrorType<void>,
+>(
+  seasonId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSeasonChampion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSeasonChampionQueryOptions(seasonId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get badges for a player
+ */
+export const getGetPlayerBadgesUrl = (playerId: number) => {
+  return `/api/player-badges/${playerId}`;
+};
+
+export const getPlayerBadges = async (
+  playerId: number,
+  options?: RequestInit,
+): Promise<PlayerBadge[]> => {
+  return customFetch<PlayerBadge[]>(getGetPlayerBadgesUrl(playerId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerBadgesQueryKey = (playerId: number) => {
+  return [`/api/player-badges/${playerId}`] as const;
+};
+
+export const getGetPlayerBadgesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerBadges>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerBadges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPlayerBadgesQueryKey(playerId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerBadges>>> = ({
+    signal,
+  }) => getPlayerBadges(playerId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!playerId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerBadges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerBadgesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerBadges>>
+>;
+export type GetPlayerBadgesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get badges for a player
+ */
+
+export function useGetPlayerBadges<
+  TData = Awaited<ReturnType<typeof getPlayerBadges>>,
+  TError = ErrorType<unknown>,
+>(
+  playerId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerBadges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerBadgesQueryOptions(playerId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Join matchmaking queue (stub)
+ */
+export const getJoinMatchmakingQueueUrl = () => {
+  return `/api/matchmaking-queue/join`;
+};
+
+export const joinMatchmakingQueue = async (
+  options?: RequestInit,
+): Promise<MatchmakingQueueResponse> => {
+  return customFetch<MatchmakingQueueResponse>(getJoinMatchmakingQueueUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getJoinMatchmakingQueueMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinMatchmakingQueue>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof joinMatchmakingQueue>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["joinMatchmakingQueue"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof joinMatchmakingQueue>>,
+    void
+  > = () => {
+    return joinMatchmakingQueue(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type JoinMatchmakingQueueMutationResult = NonNullable<
+  Awaited<ReturnType<typeof joinMatchmakingQueue>>
+>;
+
+export type JoinMatchmakingQueueMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Join matchmaking queue (stub)
+ */
+export const useJoinMatchmakingQueue = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinMatchmakingQueue>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof joinMatchmakingQueue>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getJoinMatchmakingQueueMutationOptions(options));
+};
+
+/**
+ * @summary Leave matchmaking queue (stub)
+ */
+export const getLeaveMatchmakingQueueUrl = () => {
+  return `/api/matchmaking-queue/leave`;
+};
+
+export const leaveMatchmakingQueue = async (
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getLeaveMatchmakingQueueUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getLeaveMatchmakingQueueMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof leaveMatchmakingQueue>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof leaveMatchmakingQueue>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["leaveMatchmakingQueue"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof leaveMatchmakingQueue>>,
+    void
+  > = () => {
+    return leaveMatchmakingQueue(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LeaveMatchmakingQueueMutationResult = NonNullable<
+  Awaited<ReturnType<typeof leaveMatchmakingQueue>>
+>;
+
+export type LeaveMatchmakingQueueMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Leave matchmaking queue (stub)
+ */
+export const useLeaveMatchmakingQueue = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof leaveMatchmakingQueue>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof leaveMatchmakingQueue>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getLeaveMatchmakingQueueMutationOptions(options));
 };

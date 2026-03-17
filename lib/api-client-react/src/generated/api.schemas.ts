@@ -101,6 +101,11 @@ export interface Match {
   playerBEloAfter?: number | null;
   seasonId?: number | null;
   isPlayoff: boolean;
+  round?: number | null;
+  bracketSlot?: number | null;
+  nextMatchId?: number | null;
+  isLosersBracket?: boolean | null;
+  groupId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -322,6 +327,77 @@ export interface VodDetail {
   updatedAt: string;
 }
 
+export interface LadderSettings {
+  id: number;
+  kFactor: number;
+  minMatchesForDisplay: number;
+  maxChallengesPerWeek: number;
+  maxChallengesSameOpponentPerWeek: number;
+  challengeExpiryHours: number;
+  updatedAt: string;
+}
+
+export interface AdminScheduleSettings {
+  id: number;
+  availableDays: string;
+  startTime: string;
+  endTime: string;
+  maxConcurrentMatches: number;
+  updatedAt: string;
+}
+
+export interface Challenge {
+  id: number;
+  challengerId: number;
+  challengedId: number;
+  challengerRiotId?: string | null;
+  challengedRiotId?: string | null;
+  status: string;
+  scheduledTime?: string | null;
+  seasonId?: number | null;
+  matchId?: number | null;
+  gameId?: string | null;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateChallengeRequest {
+  challengedId: number;
+  scheduledTime: string;
+}
+
+export interface EloHistoryEntry {
+  id: number;
+  playerId: number;
+  elo: number;
+  delta: number;
+  matchId?: number | null;
+  reason: string;
+  createdAt: string;
+}
+
+export interface SeasonChampion {
+  id: number;
+  seasonId: number;
+  playerId: number;
+  playerRiotId?: string | null;
+  finalElo: number;
+  createdAt: string;
+}
+
+export interface PlayerBadge {
+  id: number;
+  playerId: number;
+  badgeType: string;
+  earnedAt: string;
+  seasonId?: number | null;
+}
+
+export interface MatchmakingQueueResponse {
+  message: string;
+}
+
 export type ListRegistrationsParams = {
   eventId?: number;
 };
@@ -343,4 +419,8 @@ export type ListVodsParams = {
   patch?: string;
   eloMin?: number;
   eloMax?: number;
+};
+
+export type SetChallengeGameReadyBody = {
+  gameId: string;
 };

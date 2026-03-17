@@ -43,9 +43,19 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
             </nav>
 
-            {/* CTA & Admin */}
+            {/* CTA & Auth */}
             <div className="hidden md:flex items-center space-x-4">
-              <Link href="/interest" className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
+              {/* TODO Claude: replace localStorage check with real session */}
+              {localStorage.getItem("vclol_player_id") ? (
+                <Link href="/dashboard" className="text-sm font-medium text-primary hover:text-primary/80">
+                  My Dashboard
+                </Link>
+              ) : (
+                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                  Login
+                </Link>
+              )}
+              <Link href="/register" className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
                 Join Interest List
               </Link>
             </div>

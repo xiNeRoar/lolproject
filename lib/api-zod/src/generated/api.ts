@@ -170,6 +170,11 @@ export const GetEventResponse = zod.object({
       playerBEloAfter: zod.number().nullish(),
       seasonId: zod.number().nullish(),
       isPlayoff: zod.boolean(),
+      round: zod.number().nullish(),
+      bracketSlot: zod.number().nullish(),
+      nextMatchId: zod.number().nullish(),
+      isLosersBracket: zod.boolean().nullish(),
+      groupId: zod.number().nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -316,6 +321,11 @@ export const ListMatchesResponseItem = zod.object({
   playerBEloAfter: zod.number().nullish(),
   seasonId: zod.number().nullish(),
   isPlayoff: zod.boolean(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  nextMatchId: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+  groupId: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -366,6 +376,11 @@ export const GetMatchResponse = zod
     playerBEloAfter: zod.number().nullish(),
     seasonId: zod.number().nullish(),
     isPlayoff: zod.boolean(),
+    round: zod.number().nullish(),
+    bracketSlot: zod.number().nullish(),
+    nextMatchId: zod.number().nullish(),
+    isLosersBracket: zod.boolean().nullish(),
+    groupId: zod.number().nullish(),
     createdAt: zod.string(),
     updatedAt: zod.string(),
   })
@@ -418,6 +433,11 @@ export const UpdateMatchResponse = zod.object({
   playerBEloAfter: zod.number().nullish(),
   seasonId: zod.number().nullish(),
   isPlayoff: zod.boolean(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  nextMatchId: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+  groupId: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -668,6 +688,11 @@ export const GetPlayerResponse = zod.object({
       playerBEloAfter: zod.number().nullish(),
       seasonId: zod.number().nullish(),
       isPlayoff: zod.boolean(),
+      round: zod.number().nullish(),
+      bracketSlot: zod.number().nullish(),
+      nextMatchId: zod.number().nullish(),
+      isLosersBracket: zod.boolean().nullish(),
+      groupId: zod.number().nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -899,5 +924,291 @@ export const DeleteVodTimestampParams = zod.object({
 });
 
 export const DeleteVodTimestampResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get ladder settings
+ */
+export const GetLadderSettingsResponse = zod.object({
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  maxChallengesPerWeek: zod.number(),
+  maxChallengesSameOpponentPerWeek: zod.number(),
+  challengeExpiryHours: zod.number(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update ladder settings (admin)
+ */
+export const UpdateLadderSettingsBody = zod.object({
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  maxChallengesPerWeek: zod.number(),
+  maxChallengesSameOpponentPerWeek: zod.number(),
+  challengeExpiryHours: zod.number(),
+  updatedAt: zod.string(),
+});
+
+export const UpdateLadderSettingsResponse = zod.object({
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  maxChallengesPerWeek: zod.number(),
+  maxChallengesSameOpponentPerWeek: zod.number(),
+  challengeExpiryHours: zod.number(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Get admin schedule settings
+ */
+export const GetAdminScheduleResponse = zod.object({
+  id: zod.number(),
+  availableDays: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  maxConcurrentMatches: zod.number(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update admin schedule settings (admin)
+ */
+export const UpdateAdminScheduleBody = zod.object({
+  id: zod.number(),
+  availableDays: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  maxConcurrentMatches: zod.number(),
+  updatedAt: zod.string(),
+});
+
+export const UpdateAdminScheduleResponse = zod.object({
+  id: zod.number(),
+  availableDays: zod.string(),
+  startTime: zod.string(),
+  endTime: zod.string(),
+  maxConcurrentMatches: zod.number(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary List all challenges (admin)
+ */
+export const ListChallengesResponseItem = zod.object({
+  id: zod.number(),
+  challengerId: zod.number(),
+  challengedId: zod.number(),
+  challengerRiotId: zod.string().nullish(),
+  challengedRiotId: zod.string().nullish(),
+  status: zod.string(),
+  scheduledTime: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  expiresAt: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListChallengesResponse = zod.array(ListChallengesResponseItem);
+
+/**
+ * @summary Create a new challenge
+ */
+export const CreateChallengeBody = zod.object({
+  challengedId: zod.number(),
+  scheduledTime: zod.string(),
+});
+
+/**
+ * @summary Get challenges for a player
+ */
+export const GetChallengesForPlayerParams = zod.object({
+  playerId: zod.coerce.number(),
+});
+
+export const GetChallengesForPlayerResponseItem = zod.object({
+  id: zod.number(),
+  challengerId: zod.number(),
+  challengedId: zod.number(),
+  challengerRiotId: zod.string().nullish(),
+  challengedRiotId: zod.string().nullish(),
+  status: zod.string(),
+  scheduledTime: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  expiresAt: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetChallengesForPlayerResponse = zod.array(
+  GetChallengesForPlayerResponseItem,
+);
+
+/**
+ * @summary Accept a challenge
+ */
+export const AcceptChallengeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AcceptChallengeResponse = zod.object({
+  id: zod.number(),
+  challengerId: zod.number(),
+  challengedId: zod.number(),
+  challengerRiotId: zod.string().nullish(),
+  challengedRiotId: zod.string().nullish(),
+  status: zod.string(),
+  scheduledTime: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  expiresAt: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Decline a challenge
+ */
+export const DeclineChallengeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeclineChallengeResponse = zod.object({
+  id: zod.number(),
+  challengerId: zod.number(),
+  challengedId: zod.number(),
+  challengerRiotId: zod.string().nullish(),
+  challengedRiotId: zod.string().nullish(),
+  status: zod.string(),
+  scheduledTime: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  expiresAt: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Set game ID for challenge
+ */
+export const SetChallengeGameReadyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SetChallengeGameReadyBody = zod.object({
+  gameId: zod.string(),
+});
+
+export const SetChallengeGameReadyResponse = zod.object({
+  id: zod.number(),
+  challengerId: zod.number(),
+  challengedId: zod.number(),
+  challengerRiotId: zod.string().nullish(),
+  challengedRiotId: zod.string().nullish(),
+  status: zod.string(),
+  scheduledTime: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  expiresAt: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a challenge (admin)
+ */
+export const DeleteChallengeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteChallengeResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get ELO history for a player
+ */
+export const GetEloHistoryParams = zod.object({
+  playerId: zod.coerce.number(),
+});
+
+export const GetEloHistoryResponseItem = zod.object({
+  id: zod.number(),
+  playerId: zod.number(),
+  elo: zod.number(),
+  delta: zod.number(),
+  matchId: zod.number().nullish(),
+  reason: zod.string(),
+  createdAt: zod.string(),
+});
+export const GetEloHistoryResponse = zod.array(GetEloHistoryResponseItem);
+
+/**
+ * @summary List all season champions
+ */
+export const ListSeasonChampionsResponseItem = zod.object({
+  id: zod.number(),
+  seasonId: zod.number(),
+  playerId: zod.number(),
+  playerRiotId: zod.string().nullish(),
+  finalElo: zod.number(),
+  createdAt: zod.string(),
+});
+export const ListSeasonChampionsResponse = zod.array(
+  ListSeasonChampionsResponseItem,
+);
+
+/**
+ * @summary Get champion for a specific season
+ */
+export const GetSeasonChampionParams = zod.object({
+  seasonId: zod.coerce.number(),
+});
+
+export const GetSeasonChampionResponse = zod.object({
+  id: zod.number(),
+  seasonId: zod.number(),
+  playerId: zod.number(),
+  playerRiotId: zod.string().nullish(),
+  finalElo: zod.number(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get badges for a player
+ */
+export const GetPlayerBadgesParams = zod.object({
+  playerId: zod.coerce.number(),
+});
+
+export const GetPlayerBadgesResponseItem = zod.object({
+  id: zod.number(),
+  playerId: zod.number(),
+  badgeType: zod.string(),
+  earnedAt: zod.string(),
+  seasonId: zod.number().nullish(),
+});
+export const GetPlayerBadgesResponse = zod.array(GetPlayerBadgesResponseItem);
+
+/**
+ * @summary Join matchmaking queue (stub)
+ */
+export const JoinMatchmakingQueueResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Leave matchmaking queue (stub)
+ */
+export const LeaveMatchmakingQueueResponse = zod.object({
   success: zod.boolean(),
 });

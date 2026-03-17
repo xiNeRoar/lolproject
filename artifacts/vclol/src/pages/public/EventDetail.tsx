@@ -1,6 +1,12 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetEvent, useCreateRegistration } from "@workspace/api-client-react";
+import type { Match } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
+import { MatchList } from "@/components/brackets/MatchList";
+import { SingleEliminationBracket } from "@/components/brackets/SingleEliminationBracket";
+import { DoubleEliminationBracket } from "@/components/brackets/DoubleEliminationBracket";
+import { RoundRobinTable } from "@/components/brackets/RoundRobinTable";
+import { SwissRoundsTable } from "@/components/brackets/SwissRoundsTable";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +19,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
 import { Trophy, Video, Calendar, AlertCircle } from "lucide-react";
+
+function EventMatches({ format, matches }: { format: string | null | undefined; matches: Match[] }) {
+  if (format === "Single Elimination") return <SingleEliminationBracket matches={matches} />;
+  if (format === "Double Elimination") return <DoubleEliminationBracket matches={matches} />;
+  if (format === "Round Robin") return <RoundRobinTable matches={matches} />;
+  if (format === "Swiss") return <SwissRoundsTable matches={matches} />;
+  return <MatchList matches={matches} />;
+}
 
 const regSchema = z.object({
   riotId: z.string().min(1, "Required"),
@@ -89,32 +103,12 @@ export default function EventDetail() {
           )}
 
           {/* Related Matches */}
-          {event.matches && event.matches.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-primary" /> Match Results
-              </h2>
-              <div className="space-y-3">
-                {event.matches.map(m => (
-                  <Link key={m.id} href={`/matches/${m.id}`} className="block">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card/40 border border-border/40 rounded-lg hover:border-primary/40 hover:bg-card/60 transition-colors cursor-pointer">
-                    <div>
-                       <span className="text-xs text-muted-foreground block mb-1">{m.matchTitle}</span>
-                       <div className="font-semibold text-lg flex items-center gap-3">
-                         <span className={m.winnerName === m.sideAName ? 'text-primary' : ''}>{m.sideAName}</span>
-                         <span className="text-muted-foreground text-sm">vs</span>
-                         <span className={m.winnerName === m.sideBName ? 'text-primary' : ''}>{m.sideBName}</span>
-                       </div>
-                    </div>
-                    <div className="mt-2 sm:mt-0 text-right">
-                       {m.score && <div className="font-display font-bold text-xl">{m.score}</div>}
-                    </div>
-                  </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+          <section>
+            <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary" /> Match Results
+            </h2>
+            <EventMatches format={event.format} matches={event.matches ?? []} />
+          </section>
 
           {/* Related VODs */}
           {event.vods && event.vods.length > 0 && (

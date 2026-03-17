@@ -25,6 +25,11 @@ export interface Match {
   playerBEloAfter?: number | null;
   seasonId?: number | null;
   isPlayoff: boolean;
+  round?: number | null;
+  bracketSlot?: number | null;
+  nextMatchId?: number | null;
+  isLosersBracket?: boolean | null;
+  groupId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
