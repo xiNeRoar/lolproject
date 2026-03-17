@@ -62,7 +62,7 @@ export default function Ladder() {
         ) : (
           <div className="space-y-3">
             {data.entries.map((entry) => (
-              <Link key={entry.id} href={`/players/${entry.id}`}>
+              <Link key={entry.id} href={`/players/${encodeURIComponent(entry.riotId)}`}>
                 <Card className="bg-card/40 border-border/40 hover:bg-card/70 hover:border-primary/30 transition-all cursor-pointer">
                   <CardContent className="p-4 flex items-center gap-4">
                     {/* Rank */}

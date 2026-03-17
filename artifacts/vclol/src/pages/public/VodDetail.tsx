@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, ExternalLink, Video, ChevronLeft } from "lucide-react";
 import { Link, useParams } from "wouter";
 
-function formatSeconds(s: number) {
+function formatSeconds(s: number): string {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
@@ -13,18 +13,11 @@ function formatSeconds(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function youtubeEmbedUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  return null;
-}
-
-function youtubeTimestampUrl(url: string | null | undefined, seconds: number): string {
-  if (!url) return "#";
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://www.youtube.com/watch?v=${ytMatch[1]}&t=${seconds}s`;
-  return url;
+function buildTimestampUrl(videoUrl: string | null | undefined, seconds: number): string {
+  if (!videoUrl) return "#";
+  // Append YouTube-compatible timestamp; use &t= if query string already exists
+  const separator = videoUrl.includes("?") ? "&" : "?";
+  return `${videoUrl}${separator}t=${seconds}`;
 }
 
 export default function VodDetail() {
@@ -55,16 +48,12 @@ export default function VodDetail() {
     );
   }
 
-  const embedUrl = youtubeEmbedUrl(vod.videoUrl);
-
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <Link href="/vods">
-          <a className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-            <ChevronLeft className="w-4 h-4" /> Back to VODs
-          </a>
+        <Link href="/vods" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Back to VODs
         </Link>
 
         {/* Title */}
@@ -84,8 +73,11 @@ export default function VodDetail() {
           {vod.playerRiotId && (
             <p className="text-sm text-muted-foreground mt-2">
               Player:{" "}
-              <Link href={`/players/${vod.playerId}`}>
-                <a className="text-primary hover:underline">{vod.playerRiotId}</a>
+              <Link
+                href={`/players/${encodeURIComponent(vod.playerRiotId)}`}
+                className="text-primary hover:underline"
+              >
+                {vod.playerRiotId}
               </Link>
               {vod.playerEloAtTime != null && (
                 <span className="text-xs ml-2">({vod.playerEloAtTime} ELO at time)</span>
@@ -97,29 +89,17 @@ export default function VodDetail() {
           )}
         </div>
 
-        {/* Video embed */}
-        {embedUrl ? (
-          <div className="relative w-full aspect-video mb-6 bg-black rounded-lg overflow-hidden">
-            <iframe
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={vod.title}
-            />
-          </div>
-        ) : (
-          <div className="mb-6">
-            <a
-              href={vod.videoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 text-primary hover:underline"
-            >
-              <ExternalLink className="w-4 h-4" /> Watch VOD
-            </a>
-          </div>
-        )}
+        {/* Watch button — external link only, no iframe embedding */}
+        <div className="mb-6">
+          <a
+            href={vod.videoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Video className="w-5 h-5" /> Watch VOD
+          </a>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Timestamps */}
@@ -139,7 +119,7 @@ export default function VodDetail() {
                   {vod.timestamps.map((ts) => (
                     <a
                       key={ts.id}
-                      href={youtubeTimestampUrl(vod.videoUrl, ts.seconds)}
+                      href={buildTimestampUrl(vod.videoUrl, ts.seconds)}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors"
@@ -175,17 +155,15 @@ export default function VodDetail() {
               ) : (
                 <div className="divide-y divide-border/30">
                   {vod.relatedVods.map((related) => (
-                    <Link key={related.id} href={`/vods/${related.id}`}>
-                      <div className="px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{related.title}</div>
-                          <div className="text-xs text-muted-foreground flex gap-2">
-                            {related.champion && <span>{related.champion}</span>}
-                            {related.position && <span>• {related.position}</span>}
-                          </div>
+                    <Link key={related.id} href={`/vods/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{related.title}</div>
+                        <div className="text-xs text-muted-foreground flex gap-2">
+                          {related.champion && <span>{related.champion}</span>}
+                          {related.position && <span>• {related.position}</span>}
                         </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
                       </div>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
                     </Link>
                   ))}
                 </div>

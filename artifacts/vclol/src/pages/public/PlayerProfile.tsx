@@ -28,8 +28,8 @@ function eloDelta(before: number | null | undefined, after: number | null | unde
 }
 
 export default function PlayerProfile() {
-  const { id } = useParams<{ id: string }>();
-  const { data: player, isLoading, isError } = useGetPlayer(id ?? "");
+  const { riotId } = useParams<{ riotId: string }>();
+  const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
 
   if (isLoading) {
     return (
@@ -117,6 +117,40 @@ export default function PlayerProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Champion Pool — grouped from player VODs */}
+        {player.vods?.some((v) => v.champion) && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Champion Pool</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(
+                  player.vods
+                    .filter((v) => v.champion)
+                    .reduce<Record<string, number>>((acc, v) => {
+                      const champ = v.champion as string;
+                      acc[champ] = (acc[champ] ?? 0) + 1;
+                      return acc;
+                    }, {})
+                )
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([champion, count]) => (
+                    <div
+                      key={champion}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+                    >
+                      <span className="text-sm font-medium text-primary">{champion}</span>
+                      <span className="text-xs text-muted-foreground bg-muted rounded-full w-5 h-5 flex items-center justify-center">
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Matches */}

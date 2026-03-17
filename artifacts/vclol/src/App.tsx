@@ -42,7 +42,7 @@ function Router() {
       <Route path="/vods" component={Vods} />
       <Route path="/vods/:id" component={VodDetail} />
       <Route path="/ladder" component={Ladder} />
-      <Route path="/players/:id" component={PlayerProfile} />
+      <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
       
       <Route path="/admin/login" component={Login} />

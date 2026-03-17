@@ -10,8 +10,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/events", label: "Events" },
-    { href: "/results", label: "Results" },
     { href: "/ladder", label: "Ladder" },
+    { href: "/results", label: "Results" },
     { href: "/vods", label: "VODs" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { playersTable, matchesTable, vodEntriesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
@@ -69,7 +69,8 @@ function formatVod(v: typeof vodEntriesTable.$inferSelect) {
   };
 }
 
-router.get("/", async (_req, res) => {
+// GET / — admin: list all players ordered by currentElo desc
+router.get("/", requireAdmin, async (_req, res) => {
   const rows = await db
     .select()
     .from(playersTable)
@@ -77,6 +78,7 @@ router.get("/", async (_req, res) => {
   res.json(rows.map(formatPlayer));
 });
 
+// POST / — admin: create player, reject duplicate riotId with 409
 router.post("/", requireAdmin, async (req, res) => {
   const { riotId, discordUsername, currentElo, isActive } = req.body as {
     riotId?: string;
@@ -87,6 +89,13 @@ router.post("/", requireAdmin, async (req, res) => {
 
   if (!riotId || !discordUsername) {
     res.status(400).json({ error: "riotId and discordUsername are required" });
+    return;
+  }
+
+  // Reject duplicate riotId — each player must have a unique Riot ID
+  const [existing] = await db.select().from(playersTable).where(eq(playersTable.riotId, riotId));
+  if (existing) {
+    res.status(409).json({ error: "A player with this Riot ID already exists" });
     return;
   }
 
@@ -108,52 +117,52 @@ router.post("/", requireAdmin, async (req, res) => {
   res.status(201).json(formatPlayer(row!));
 });
 
-router.get("/:id", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+// GET /:riotId — public: fetch player profile by Riot ID, include recent matches + VODs
+router.get("/:riotId", async (req, res) => {
+  const riotId = req.params.riotId as string;
 
   const [player] = await db
     .select()
     .from(playersTable)
-    .where(eq(playersTable.id, id));
+    .where(eq(playersTable.riotId, riotId));
 
   if (!player) { res.status(404).json({ error: "Player not found" }); return; }
 
-  const recentMatches = await db
+  // Fetch all matches involving this player, combine and take the 10 most recent
+  const matchesAsA = await db
     .select()
     .from(matchesTable)
-    .where(
-      eq(matchesTable.playerAId, id)
-    )
+    .where(eq(matchesTable.playerAId, player.id))
     .orderBy(desc(matchesTable.createdAt))
     .limit(10);
 
-  const playerBMatches = await db
+  const matchesAsB = await db
     .select()
     .from(matchesTable)
-    .where(eq(matchesTable.playerBId, id))
+    .where(eq(matchesTable.playerBId, player.id))
     .orderBy(desc(matchesTable.createdAt))
     .limit(10);
 
-  const allMatches = [...recentMatches, ...playerBMatches]
+  const recentMatches = [...matchesAsA, ...matchesAsB]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 10);
 
   const vods = await db
     .select()
     .from(vodEntriesTable)
-    .where(eq(vodEntriesTable.playerId, id))
+    .where(eq(vodEntriesTable.playerId, player.id))
     .orderBy(desc(vodEntriesTable.createdAt))
     .limit(20);
 
   res.json({
     ...formatPlayer(player),
-    recentMatches: allMatches.map(formatMatch),
+    recentMatches: recentMatches.map(formatMatch),
     vods: vods.map(formatVod),
   });
 });
 
-router.put("/:id", requireAdmin, async (req, res) => {
+// PUT /:id/edit — admin: update player
+router.put("/:id/edit", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -186,7 +195,8 @@ router.put("/:id", requireAdmin, async (req, res) => {
   res.json(formatPlayer(row));
 });
 
-router.delete("/:id", requireAdmin, async (req, res) => {
+// DELETE /:id/delete — admin: delete player
+router.delete("/:id/delete", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(playersTable).where(eq(playersTable.id, id));
