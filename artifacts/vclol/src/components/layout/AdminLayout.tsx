@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Calendar, ClipboardList, Swords, Video, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, ClipboardList, Swords, Video, LogOut, Trophy, Layers } from "lucide-react";
 import { useAdminMe, useAdminLogout } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/players", label: "Players", icon: Trophy },
+    { href: "/admin/seasons", label: "Seasons", icon: Layers },
     { href: "/admin/interests", label: "Interests", icon: Users },
     { href: "/admin/events", label: "Events", icon: Calendar },
     { href: "/admin/registrations", label: "Registrations", icon: ClipboardList },

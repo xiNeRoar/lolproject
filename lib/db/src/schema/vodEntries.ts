@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
+import { playersTable } from "./players";
 
 export const vodEntriesTable = pgTable("vod_entries", {
   id: serial("id").primaryKey(),
@@ -12,6 +13,13 @@ export const vodEntriesTable = pgTable("vod_entries", {
   roleTag: text("role_tag"),
   notes: text("notes"),
   videoUrl: text("video_url").notNull(),
+  playerId: integer("player_id").references(() => playersTable.id, { onDelete: "set null" }),
+  champion: text("champion"),
+  opponentChampion: text("opponent_champion"),
+  // position is nullable now; will be required for 5v5 use cases in future
+  position: text("position"),
+  patch: text("patch"),
+  playerEloAtTime: integer("player_elo_at_time"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

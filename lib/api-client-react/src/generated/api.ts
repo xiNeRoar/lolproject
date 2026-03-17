@@ -24,20 +24,29 @@ import type {
   CreateEventRequest,
   CreateInterestRequest,
   CreateMatchRequest,
+  CreatePlayerRequest,
   CreateRegistrationRequest,
+  CreateSeasonRequest,
   CreateVodRequest,
+  CreateVodTimestampRequest,
   ErrorResponse,
   Event,
   EventDetail,
   EventRegistration,
   HealthStatus,
   InterestSubmission,
+  LadderResponse,
   ListMatchesParams,
   ListRegistrationsParams,
   ListVodsParams,
   Match,
+  Player,
+  PlayerProfile,
+  Season,
   SuccessResponse,
+  VodDetail,
   VodEntry,
+  VodTimestamp,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1893,6 +1902,81 @@ export const useCreateVod = <
 };
 
 /**
+ * @summary Get a single VOD with timestamps and related VODs
+ */
+export const getGetVodUrl = (id: number) => {
+  return `/api/vods/${id}`;
+};
+
+export const getVod = async (
+  id: number,
+  options?: RequestInit,
+): Promise<VodDetail> => {
+  return customFetch<VodDetail>(getGetVodUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetVodQueryKey = (id: number) => {
+  return [`/api/vods/${id}`] as const;
+};
+
+export const getGetVodQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVod>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getVod>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetVodQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getVod>>> = ({
+    signal,
+  }) => getVod(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getVod>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetVodQueryResult = NonNullable<Awaited<ReturnType<typeof getVod>>>;
+export type GetVodQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a single VOD with timestamps and related VODs
+ */
+
+export function useGetVod<
+  TData = Awaited<ReturnType<typeof getVod>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getVod>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetVodQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Update a VOD entry (admin)
  */
 export const getUpdateVodUrl = (id: number) => {
@@ -2061,4 +2145,1243 @@ export const useDeleteVod = <
   TContext
 > => {
   return useMutation(getDeleteVodMutationOptions(options));
+};
+
+/**
+ * @summary List all players (admin)
+ */
+export const getListPlayersUrl = () => {
+  return `/api/players`;
+};
+
+export const listPlayers = async (options?: RequestInit): Promise<Player[]> => {
+  return customFetch<Player[]>(getListPlayersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPlayersQueryKey = () => {
+  return [`/api/players`] as const;
+};
+
+export const getListPlayersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPlayers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPlayersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlayers>>> = ({
+    signal,
+  }) => listPlayers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPlayersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPlayers>>
+>;
+export type ListPlayersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all players (admin)
+ */
+
+export function useListPlayers<
+  TData = Awaited<ReturnType<typeof listPlayers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlayersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a player (admin)
+ */
+export const getCreatePlayerUrl = () => {
+  return `/api/players`;
+};
+
+export const createPlayer = async (
+  createPlayerRequest: CreatePlayerRequest,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getCreatePlayerUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createPlayerRequest),
+  });
+};
+
+export const getCreatePlayerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlayer>>,
+    TError,
+    { data: BodyType<CreatePlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPlayer>>,
+  TError,
+  { data: BodyType<CreatePlayerRequest> },
+  TContext
+> => {
+  const mutationKey = ["createPlayer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPlayer>>,
+    { data: BodyType<CreatePlayerRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPlayer(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPlayer>>
+>;
+export type CreatePlayerMutationBody = BodyType<CreatePlayerRequest>;
+export type CreatePlayerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a player (admin)
+ */
+export const useCreatePlayer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlayer>>,
+    TError,
+    { data: BodyType<CreatePlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPlayer>>,
+  TError,
+  { data: BodyType<CreatePlayerRequest> },
+  TContext
+> => {
+  return useMutation(getCreatePlayerMutationOptions(options));
+};
+
+/**
+ * @summary Get player profile by Riot ID (public)
+ */
+export const getGetPlayerUrl = (riotId: string) => {
+  return `/api/players/${riotId}`;
+};
+
+export const getPlayer = async (
+  riotId: string,
+  options?: RequestInit,
+): Promise<PlayerProfile> => {
+  return customFetch<PlayerProfile>(getGetPlayerUrl(riotId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerQueryKey = (riotId: string) => {
+  return [`/api/players/${riotId}`] as const;
+};
+
+export const getGetPlayerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  riotId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerQueryKey(riotId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayer>>> = ({
+    signal,
+  }) => getPlayer(riotId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!riotId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getPlayer>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetPlayerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayer>>
+>;
+export type GetPlayerQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get player profile by Riot ID (public)
+ */
+
+export function useGetPlayer<
+  TData = Awaited<ReturnType<typeof getPlayer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  riotId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerQueryOptions(riotId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update player (admin)
+ */
+export const getUpdatePlayerUrl = (id: number) => {
+  return `/api/players/${id}/edit`;
+};
+
+export const updatePlayer = async (
+  id: number,
+  createPlayerRequest: CreatePlayerRequest,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getUpdatePlayerUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createPlayerRequest),
+  });
+};
+
+export const getUpdatePlayerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayer>>,
+    TError,
+    { id: number; data: BodyType<CreatePlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePlayer>>,
+  TError,
+  { id: number; data: BodyType<CreatePlayerRequest> },
+  TContext
+> => {
+  const mutationKey = ["updatePlayer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePlayer>>,
+    { id: number; data: BodyType<CreatePlayerRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePlayer(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePlayer>>
+>;
+export type UpdatePlayerMutationBody = BodyType<CreatePlayerRequest>;
+export type UpdatePlayerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update player (admin)
+ */
+export const useUpdatePlayer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayer>>,
+    TError,
+    { id: number; data: BodyType<CreatePlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePlayer>>,
+  TError,
+  { id: number; data: BodyType<CreatePlayerRequest> },
+  TContext
+> => {
+  return useMutation(getUpdatePlayerMutationOptions(options));
+};
+
+/**
+ * @summary Delete player (admin)
+ */
+export const getDeletePlayerUrl = (id: number) => {
+  return `/api/players/${id}/delete`;
+};
+
+export const deletePlayer = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeletePlayerUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePlayerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayer>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePlayer>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deletePlayer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePlayer>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deletePlayer(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePlayer>>
+>;
+
+export type DeletePlayerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete player (admin)
+ */
+export const useDeletePlayer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayer>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePlayer>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeletePlayerMutationOptions(options));
+};
+
+/**
+ * @summary List all seasons
+ */
+export const getListSeasonsUrl = () => {
+  return `/api/seasons`;
+};
+
+export const listSeasons = async (options?: RequestInit): Promise<Season[]> => {
+  return customFetch<Season[]>(getListSeasonsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSeasonsQueryKey = () => {
+  return [`/api/seasons`] as const;
+};
+
+export const getListSeasonsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSeasons>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSeasonsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSeasons>>> = ({
+    signal,
+  }) => listSeasons({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSeasonsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSeasons>>
+>;
+export type ListSeasonsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all seasons
+ */
+
+export function useListSeasons<
+  TData = Awaited<ReturnType<typeof listSeasons>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSeasonsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a season (admin)
+ */
+export const getCreateSeasonUrl = () => {
+  return `/api/seasons`;
+};
+
+export const createSeason = async (
+  createSeasonRequest: CreateSeasonRequest,
+  options?: RequestInit,
+): Promise<Season> => {
+  return customFetch<Season>(getCreateSeasonUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSeasonRequest),
+  });
+};
+
+export const getCreateSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSeason>>,
+    TError,
+    { data: BodyType<CreateSeasonRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSeason>>,
+  TError,
+  { data: BodyType<CreateSeasonRequest> },
+  TContext
+> => {
+  const mutationKey = ["createSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSeason>>,
+    { data: BodyType<CreateSeasonRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSeason(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSeason>>
+>;
+export type CreateSeasonMutationBody = BodyType<CreateSeasonRequest>;
+export type CreateSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a season (admin)
+ */
+export const useCreateSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSeason>>,
+    TError,
+    { data: BodyType<CreateSeasonRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSeason>>,
+  TError,
+  { data: BodyType<CreateSeasonRequest> },
+  TContext
+> => {
+  return useMutation(getCreateSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Update season (admin)
+ */
+export const getUpdateSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}`;
+};
+
+export const updateSeason = async (
+  id: number,
+  createSeasonRequest: CreateSeasonRequest,
+  options?: RequestInit,
+): Promise<Season> => {
+  return customFetch<Season>(getUpdateSeasonUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSeasonRequest),
+  });
+};
+
+export const getUpdateSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSeason>>,
+    TError,
+    { id: number; data: BodyType<CreateSeasonRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSeason>>,
+  TError,
+  { id: number; data: BodyType<CreateSeasonRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSeason>>,
+    { id: number; data: BodyType<CreateSeasonRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSeason(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSeason>>
+>;
+export type UpdateSeasonMutationBody = BodyType<CreateSeasonRequest>;
+export type UpdateSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update season (admin)
+ */
+export const useUpdateSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSeason>>,
+    TError,
+    { id: number; data: BodyType<CreateSeasonRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSeason>>,
+  TError,
+  { id: number; data: BodyType<CreateSeasonRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Delete season (admin)
+ */
+export const getDeleteSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}`;
+};
+
+export const deleteSeason = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteSeasonUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSeason(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSeason>>
+>;
+
+export type DeleteSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete season (admin)
+ */
+export const useDeleteSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Set season as active (deactivates all others) (admin)
+ */
+export const getActivateSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}/activate`;
+};
+
+export const activateSeason = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Season> => {
+  return customFetch<Season>(getActivateSeasonUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getActivateSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof activateSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["activateSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof activateSeason>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return activateSeason(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActivateSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof activateSeason>>
+>;
+
+export type ActivateSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set season as active (deactivates all others) (admin)
+ */
+export const useActivateSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof activateSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getActivateSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Complete season and apply ELO soft reset to all players (admin)
+ */
+export const getCompleteSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}/complete`;
+};
+
+export const completeSeason = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getCompleteSeasonUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCompleteSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof completeSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof completeSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["completeSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof completeSeason>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return completeSeason(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompleteSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof completeSeason>>
+>;
+
+export type CompleteSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Complete season and apply ELO soft reset to all players (admin)
+ */
+export const useCompleteSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof completeSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof completeSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getCompleteSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Get public ELO ladder for current active season
+ */
+export const getGetLadderUrl = () => {
+  return `/api/ladder`;
+};
+
+export const getLadder = async (
+  options?: RequestInit,
+): Promise<LadderResponse> => {
+  return customFetch<LadderResponse>(getGetLadderUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLadderQueryKey = () => {
+  return [`/api/ladder`] as const;
+};
+
+export const getGetLadderQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLadder>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getLadder>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLadderQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getLadder>>> = ({
+    signal,
+  }) => getLadder({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLadder>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLadderQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLadder>>
+>;
+export type GetLadderQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get public ELO ladder for current active season
+ */
+
+export function useGetLadder<
+  TData = Awaited<ReturnType<typeof getLadder>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getLadder>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLadderQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all timestamps for a VOD
+ */
+export const getListVodTimestampsUrl = (id: number) => {
+  return `/api/vods/${id}/timestamps`;
+};
+
+export const listVodTimestamps = async (
+  id: number,
+  options?: RequestInit,
+): Promise<VodTimestamp[]> => {
+  return customFetch<VodTimestamp[]>(getListVodTimestampsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListVodTimestampsQueryKey = (id: number) => {
+  return [`/api/vods/${id}/timestamps`] as const;
+};
+
+export const getListVodTimestampsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVodTimestamps>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVodTimestamps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListVodTimestampsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listVodTimestamps>>
+  > = ({ signal }) => listVodTimestamps(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listVodTimestamps>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListVodTimestampsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVodTimestamps>>
+>;
+export type ListVodTimestampsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all timestamps for a VOD
+ */
+
+export function useListVodTimestamps<
+  TData = Awaited<ReturnType<typeof listVodTimestamps>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVodTimestamps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListVodTimestampsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a timestamp to a VOD (admin)
+ */
+export const getCreateVodTimestampUrl = (id: number) => {
+  return `/api/vods/${id}/timestamps`;
+};
+
+export const createVodTimestamp = async (
+  id: number,
+  createVodTimestampRequest: CreateVodTimestampRequest,
+  options?: RequestInit,
+): Promise<VodTimestamp> => {
+  return customFetch<VodTimestamp>(getCreateVodTimestampUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createVodTimestampRequest),
+  });
+};
+
+export const getCreateVodTimestampMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVodTimestamp>>,
+    TError,
+    { id: number; data: BodyType<CreateVodTimestampRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVodTimestamp>>,
+  TError,
+  { id: number; data: BodyType<CreateVodTimestampRequest> },
+  TContext
+> => {
+  const mutationKey = ["createVodTimestamp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVodTimestamp>>,
+    { id: number; data: BodyType<CreateVodTimestampRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createVodTimestamp(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVodTimestampMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVodTimestamp>>
+>;
+export type CreateVodTimestampMutationBody =
+  BodyType<CreateVodTimestampRequest>;
+export type CreateVodTimestampMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a timestamp to a VOD (admin)
+ */
+export const useCreateVodTimestamp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVodTimestamp>>,
+    TError,
+    { id: number; data: BodyType<CreateVodTimestampRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVodTimestamp>>,
+  TError,
+  { id: number; data: BodyType<CreateVodTimestampRequest> },
+  TContext
+> => {
+  return useMutation(getCreateVodTimestampMutationOptions(options));
+};
+
+/**
+ * @summary Delete a VOD timestamp (admin)
+ */
+export const getDeleteVodTimestampUrl = (id: number) => {
+  return `/api/vods/timestamps/${id}`;
+};
+
+export const deleteVodTimestamp = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteVodTimestampUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVodTimestampMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVodTimestamp>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVodTimestamp>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteVodTimestamp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVodTimestamp>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteVodTimestamp(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVodTimestampMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVodTimestamp>>
+>;
+
+export type DeleteVodTimestampMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a VOD timestamp (admin)
+ */
+export const useDeleteVodTimestamp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVodTimestamp>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVodTimestamp>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteVodTimestampMutationOptions(options));
 };

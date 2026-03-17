@@ -2,7 +2,7 @@
 
 ## Overview
 
-Full-stack competitive gaming hub for Vancouver / Lower Mainland League of Legends players. Supports interest collection, events, match results, and a VOD archive with a single-admin backend.
+Full-stack competitive gaming hub for Vancouver / Lower Mainland League of Legends players. Supports interest collection, events, match results, VOD archive, ELO ladder, player profiles, seasons, and VOD timestamps with a single-admin backend.
 
 ## Stack
 
@@ -10,7 +10,7 @@ Full-stack competitive gaming hub for Vancouver / Lower Mainland League of Legen
 - **Frontend**: React 18 + Vite + Wouter (routing) — `artifacts/vclol`
 - **UI**: Shadcn UI (Card, Badge, Button), Tailwind CSS, Framer Motion
 - **Fonts**: Outfit (headings, `font-display`) + Inter (body) — loaded via Google Fonts in `src/index.css`
-- **API Client**: `@workspace/api-client-react` — React Query hooks wrapping Express API
+- **API Client**: `@workspace/api-client-react` — React Query hooks wrapping Express API (Orval codegen)
 - **Backend**: Express 5 — `artifacts/api-server`
 - **Database**: PostgreSQL + Drizzle ORM (`lib/db`)
 - **Auth**: iron-session v8 + crypto (scrypt password hashing)
@@ -28,100 +28,104 @@ artifacts/vclol/                   # React/Vite frontend
   src/
     pages/
       public/                      # Public pages
-        Home.tsx                   # / — Homepage (hero + section divider + features + previews)
+        Home.tsx                   # / — Homepage
         Events.tsx                 # /events
         EventDetail.tsx            # /events/:slug
-        Results.tsx                # /results (search + event filter)
-        Vods.tsx                   # /vods (search + event + format + role filters)
+        Results.tsx                # /results
+        Vods.tsx                   # /vods
+        VodDetail.tsx              # /vods/:id — VOD with timestamps + related
+        Ladder.tsx                 # /ladder — ELO ladder
+        PlayerProfile.tsx          # /players/:id — Player profile
         About.tsx                  # /about
         Contact.tsx                # /contact
-        InterestForm.tsx           # /interest (sign-up form)
+        Interest.tsx               # /interest
       admin/                       # Admin pages (auth-protected)
         Login.tsx                  # /admin/login
-        Dashboard.tsx              # /admin — Dashboard with stats
-        AdminInterests.tsx
-        AdminEvents.tsx
-        AdminEventForm.tsx
-        AdminRegistrations.tsx
-        AdminMatches.tsx
-        AdminMatchForm.tsx
-        AdminVods.tsx
-        AdminVodForm.tsx
+        Dashboard.tsx              # /admin
+        ManagePlayers.tsx          # /admin/players
+        ManageSeasons.tsx          # /admin/seasons
+        ManageInterests.tsx        # /admin/interests
+        ManageEvents.tsx           # /admin/events
+        ManageRegistrations.tsx    # /admin/registrations
+        ManageMatches.tsx          # /admin/matches
+        ManageVods.tsx             # /admin/vods
     components/
       layout/
-        PublicLayout.tsx            # Nav + Footer wrapper
-        AdminLayout.tsx            # Admin sidebar + layout
+        PublicLayout.tsx            # Nav (Home, Events, Results, Ladder, VODs, About, Contact) + Footer
+        AdminLayout.tsx            # Admin sidebar (Players, Seasons, Interests, Events, Registrations, Matches, VOD Archive)
       ui/                          # Shadcn UI primitives
-    lib/
-      utils.ts                     # cn, formatDate, formatDateTime
-  public/
-    images/
-      hero-bg.png                  # Esports arena with blue lightning (16:9)
-      section-divider.png          # Hextech circuit divider (16:9)
-      features-bg.png              # Summoner's Rift top-down map (16:9)
-      results-header.png           # LoL trophy with blue glow (16:9)
 
 artifacts/api-server/              # Express 5 API
   src/
-    routes/                        # /admin, /interests, /events, /registrations, /matches, /vods
-    middleware/                    # auth (iron-session)
+    routes/
+      health.ts                    # GET /health
+      admin.ts                     # /admin/login, /logout, /me, /stats
+      players.ts                   # GET/POST /players, GET/PUT/DELETE /players/:id
+      seasons.ts                   # GET/POST /seasons, GET/PUT/DELETE /seasons/:id, PUT /seasons/:id/activate
+      ladder.ts                    # GET /ladder
+      matches.ts                   # GET/POST /matches, PUT/DELETE /matches/:id (ELO auto-calc)
+      vods.ts                      # GET/POST /vods, GET/PUT/DELETE /vods/:id, POST/DELETE timestamps
+      events.ts                    # GET/POST /events, etc.
+      interests.ts
+      registrations.ts
+    lib/
+      elo.ts                       # calculateElo(), softResetElo(), LADDER_MIN_MATCHES, getPlayoffSize()
+      vodRecommendations.ts        # getRelatedVods() — rule-based VOD recommendations
+      auth.ts                      # hashPassword, verifyPassword
+      session.ts                   # iron-session config
 
-lib/db/                            # Shared Drizzle DB + schema
-scripts/src/seed.ts               # Database seed script
+lib/
+  db/                              # Drizzle schema + DB client
+    src/schema/
+      players.ts                   # playersTable (riotId, currentElo, peakElo, wins, losses)
+      seasons.ts                   # seasonsTable (status, eloResetFactor)
+      vodTimestamps.ts             # vodTimestampsTable (vodId, label, seconds, type)
+      matches.ts                   # extended with playerAId/B, ELO before/after, seasonId, isPlayoff
+      vodEntries.ts                # extended with playerId, champion, opponentChampion, position, patch
+  api-spec/openapi.yaml            # OpenAPI 3.0 spec (source of truth for codegen)
+  api-client-react/                # Orval-generated React Query hooks
+  api-zod/                         # Orval-generated Zod validators (backend validation)
 ```
 
 ## Public Routes (nav order)
 
-Home → Events → Results → VODs → About → Contact  (+  "Join Interest List" CTA button)
+Home → Events → Results → Ladder → VODs → About → Contact  (+  "Join Interest List" CTA button)
 
-## Page Images
+## ELO System
 
-Each public page uses LoL-themed generated images:
-- **Home hero**: `hero-bg.png` at 55% opacity — esports arena, dramatic blue lightning
-- **Home section divider**: `section-divider.png` at 60% opacity — hextech circuit strip
-- **Home features background**: `features-bg.png` at 8% opacity — Summoner's Rift map
-- **Home featured event card**: `results-header.png` strip at 70% opacity — golden LoL trophy
-- **Events page header**: `hero-bg.png` at 45% opacity
-- **Results page header**: `results-header.png` at 70% opacity — trophy clearly visible
-
-Image paths use `${import.meta.env.BASE_URL}images/<filename>`.
+- Base ELO: 1000
+- K-Factor: 32
+- Ladder requires ≥ 4 matches to appear
+- ELO auto-calculated on `POST /matches` when both `playerAId` and `playerBId` are linked
+- Season activation applies soft ELO reset: `new_elo = 1000 + (old_elo - 1000) * factor`
+- Playoff matches tracked with `isPlayoff` flag
 
 ## Admin Features
 
-- Dashboard with counts + recent items for all 5 data categories
-- Interests: view all submissions (riot ID, discord, rank, city, format, availability, hasTeam, willingWithoutPrize, notes), delete
-- Events: create, edit, delete; fields: title, slug (auto), format, date, status, descriptions, rules, prize pool
-- Registrations: view all with linked event, delete
-- Match Results: create, edit, delete; with optional event link, side A/B, winner, score, format, VOD URL
-- VOD Archive: create, edit, delete; with optional event link, format, role tag, player names, notes
+- **Players**: create/edit/delete players, track ELO + W/L
+- **Seasons**: create/edit/delete, activate season (triggers ELO soft reset + ends previous active season)
+- **Dashboard**: counts for players, seasons, interests, events, registrations, matches, VODs
+- **Matches**: linked match records with automatic ELO computation
+- **VODs**: champion/position/patch/player metadata, timestamp management per VOD
+- **Events, Interests, Registrations**: full CRUD
 
 ## Database Tables
 
-`admin_users`, `interest_submissions`, `events`, `event_registrations`, `matches`, `vod_entries`
+`admin_users`, `interest_submissions`, `events`, `event_registrations`, `matches`, `vod_entries`, `players`, `seasons`, `vod_timestamps`
 
-## Seed Data (as of last seed)
-
-- 2 events (1v1 Open, In-House)
-- 3 matches (Quarterfinal 1, Quarterfinal 2, Grand Final)
-- 3 VODs (matching the matches)
-- 2 interest submissions
-
-## Running Locally
+## Key Commands
 
 ```bash
-pnpm install
-pnpm --filter @workspace/db run migrate
-pnpm --filter @workspace/scripts run seed
-pnpm --filter @workspace/api-server run dev
-pnpm --filter @workspace/vclol run dev
+pnpm --filter @workspace/db run push          # Push Drizzle schema to DB
+pnpm --filter @workspace/api-spec run codegen # Regenerate API client + Zod hooks
+pnpm --filter @workspace/api-server run dev   # Start Express API
+pnpm --filter @workspace/vclol run dev        # Start Vite frontend
+pnpm run typecheck:libs                       # Typecheck all lib packages
 ```
 
 ## Notes
 
-- Event registration status options: `open`, `upcoming`, `closed`, `invite-only`
-- Nav order: Home, Events, Results, VODs, About, Contact (exact)
-- Interest form includes `hasTeam` (yes/no) and `willingWithoutPrize` (yes/no) fields
-- Results page filters: search + event
-- VOD Archive filters: search + event + format + role tag
-- Admin is single-account only (seeded admin@vclol.gg / admin123)
-- BASE_URL: all image refs use `${import.meta.env.BASE_URL}images/...`
+- `lib/api-zod/src/index.ts` exports only from `./generated/api` (Zod schemas) — TypeScript interfaces from `./generated/types` are excluded to avoid duplicate-export conflicts
+- Images use `${import.meta.env.BASE_URL}images/...` prefix for Replit proxy compatibility
+- Admin is single-account only — seeded admin@vclol.gg / admin123
+- VOD recommendations use rule-based matching: same matchup → same champion → same position

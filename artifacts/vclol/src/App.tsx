@@ -12,6 +12,9 @@ import Events from "@/pages/public/Events";
 import EventDetail from "@/pages/public/EventDetail";
 import Results from "@/pages/public/Results";
 import Vods from "@/pages/public/Vods";
+import VodDetail from "@/pages/public/VodDetail";
+import Ladder from "@/pages/public/Ladder";
+import PlayerProfile from "@/pages/public/PlayerProfile";
 import Contact from "@/pages/public/Contact";
 
 // Admin Pages
@@ -22,6 +25,8 @@ import ManageEvents from "@/pages/admin/ManageEvents";
 import ManageRegistrations from "@/pages/admin/ManageRegistrations";
 import ManageMatches from "@/pages/admin/ManageMatches";
 import ManageVods from "@/pages/admin/ManageVods";
+import ManagePlayers from "@/pages/admin/ManagePlayers";
+import ManageSeasons from "@/pages/admin/ManageSeasons";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +40,9 @@ function Router() {
       <Route path="/events/:slug" component={EventDetail} />
       <Route path="/results" component={Results} />
       <Route path="/vods" component={Vods} />
+      <Route path="/vods/:id" component={VodDetail} />
+      <Route path="/ladder" component={Ladder} />
+      <Route path="/players/:id" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
       
       <Route path="/admin/login" component={Login} />
@@ -44,6 +52,8 @@ function Router() {
       <Route path="/admin/registrations" component={ManageRegistrations} />
       <Route path="/admin/matches" component={ManageMatches} />
       <Route path="/admin/vods" component={ManageVods} />
+      <Route path="/admin/players" component={ManagePlayers} />
+      <Route path="/admin/seasons" component={ManageSeasons} />
       
       <Route component={NotFound} />
     </Switch>

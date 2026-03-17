@@ -11,4 +11,10 @@ export type ListVodsParams = {
   format?: string;
   roleTag?: string;
   search?: string;
+  champion?: string;
+  opponentChampion?: string;
+  position?: string;
+  patch?: string;
+  eloMin?: number;
+  eloMax?: number;
 };

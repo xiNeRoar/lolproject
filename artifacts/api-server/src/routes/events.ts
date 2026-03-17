@@ -82,7 +82,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 router.put("/:id/edit", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id!);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const { title, slug, format, eventDate, registrationStatus, shortDescription, fullDescription, rulesSummary } = req.body;
   const [row] = await db.update(eventsTable).set({
@@ -96,7 +96,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
 });
 
 router.delete("/:id/delete", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id!);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(eventsTable).where(eq(eventsTable.id, id));
   res.json({ success: true });

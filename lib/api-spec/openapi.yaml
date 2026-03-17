@@ -21,6 +21,14 @@ tags:
     description: VOD entries
   - name: admin
     description: Admin auth
+  - name: players
+    description: Player profiles and ELO management
+  - name: seasons
+    description: Season lifecycle management
+  - name: ladder
+    description: Public ELO ladder
+  - name: vodTimestamps
+    description: VOD timestamp markers
 
 paths:
   /healthz:
@@ -449,6 +457,36 @@ paths:
           required: false
           schema:
             type: string
+        - name: champion
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: opponentChampion
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: position
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: patch
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: eloMin
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: eloMax
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: List of VODs
@@ -477,6 +515,29 @@ paths:
                 $ref: "#/components/schemas/VodEntry"
 
   /vods/{id}:
+    get:
+      operationId: getVod
+      tags: [vods]
+      summary: Get a single VOD with timestamps and related VODs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VOD detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       operationId: updateVod
       tags: [vods]
@@ -504,6 +565,295 @@ paths:
       operationId: deleteVod
       tags: [vods]
       summary: Delete a VOD entry (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [players]
+      summary: List all players (admin)
+      responses:
+        "200":
+          description: List of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+    post:
+      operationId: createPlayer
+      tags: [players]
+      summary: Create a player (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "201":
+          description: Player created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{riotId}:
+    get:
+      operationId: getPlayer
+      tags: [players]
+      summary: Get player profile by Riot ID (public)
+      parameters:
+        - name: riotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Player profile with stats and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{id}/edit:
+    put:
+      operationId: updatePlayer
+      tags: [players]
+      summary: Update player (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "200":
+          description: Player updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{id}/delete:
+    delete:
+      operationId: deletePlayer
+      tags: [players]
+      summary: Delete player (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /seasons:
+    get:
+      operationId: listSeasons
+      tags: [seasons]
+      summary: List all seasons
+      responses:
+        "200":
+          description: List of seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+    post:
+      operationId: createSeason
+      tags: [seasons]
+      summary: Create a season (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeasonRequest"
+      responses:
+        "201":
+          description: Season created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+
+  /seasons/{id}:
+    put:
+      operationId: updateSeason
+      tags: [seasons]
+      summary: Update season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeasonRequest"
+      responses:
+        "200":
+          description: Season updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+    delete:
+      operationId: deleteSeason
+      tags: [seasons]
+      summary: Delete season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /seasons/{id}/activate:
+    post:
+      operationId: activateSeason
+      tags: [seasons]
+      summary: Set season as active (deactivates all others) (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+
+  /seasons/{id}/complete:
+    post:
+      operationId: completeSeason
+      tags: [seasons]
+      summary: Complete season and apply ELO soft reset to all players (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /ladder:
+    get:
+      operationId: getLadder
+      tags: [ladder]
+      summary: Get public ELO ladder for current active season
+      responses:
+        "200":
+          description: Ladder rankings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderResponse"
+
+  /vods/{id}/timestamps:
+    get:
+      operationId: listVodTimestamps
+      tags: [vodTimestamps]
+      summary: Get all timestamps for a VOD
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of timestamps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VodTimestamp"
+    post:
+      operationId: createVodTimestamp
+      tags: [vodTimestamps]
+      summary: Add a timestamp to a VOD (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodTimestampRequest"
+      responses:
+        "201":
+          description: Timestamp created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodTimestamp"
+
+  /vods/timestamps/{id}:
+    delete:
+      operationId: deleteVodTimestamp
+      tags: [vodTimestamps]
+      summary: Delete a VOD timestamp (admin)
       parameters:
         - name: id
           in: path
@@ -589,12 +939,18 @@ components:
           type: integer
         vods:
           type: integer
+        players:
+          type: integer
+        seasons:
+          type: integer
       required:
         - interests
         - events
         - registrations
         - matches
         - vods
+        - players
+        - seasons
 
     InterestSubmission:
       type: object
@@ -870,6 +1226,29 @@ components:
         vodUrl:
           type: string
           nullable: true
+        playerAId:
+          type: integer
+          nullable: true
+        playerBId:
+          type: integer
+          nullable: true
+        playerAEloBefore:
+          type: integer
+          nullable: true
+        playerAEloAfter:
+          type: integer
+          nullable: true
+        playerBEloBefore:
+          type: integer
+          nullable: true
+        playerBEloAfter:
+          type: integer
+          nullable: true
+        seasonId:
+          type: integer
+          nullable: true
+        isPlayoff:
+          type: boolean
         createdAt:
           type: string
         updatedAt:
@@ -880,6 +1259,7 @@ components:
         - sideAName
         - sideBName
         - winnerName
+        - isPlayoff
         - createdAt
         - updatedAt
 
@@ -905,6 +1285,18 @@ components:
           nullable: true
         vodUrl:
           type: string
+          nullable: true
+        playerAId:
+          type: integer
+          nullable: true
+        playerBId:
+          type: integer
+          nullable: true
+        seasonId:
+          type: integer
+          nullable: true
+        isPlayoff:
+          type: boolean
           nullable: true
       required:
         - matchTitle
@@ -939,6 +1331,27 @@ components:
           nullable: true
         videoUrl:
           type: string
+        playerId:
+          type: integer
+          nullable: true
+        playerRiotId:
+          type: string
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -972,6 +1385,321 @@ components:
           nullable: true
         videoUrl:
           type: string
+        playerId:
+          type: integer
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
       required:
         - title
         - videoUrl
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - riotId
+        - discordUsername
+        - currentElo
+        - peakElo
+        - wins
+        - losses
+        - isActive
+        - createdAt
+        - updatedAt
+
+    CreatePlayerRequest:
+      type: object
+      properties:
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentElo:
+          type: integer
+          nullable: true
+        isActive:
+          type: boolean
+          nullable: true
+      required:
+        - riotId
+        - discordUsername
+
+    PlayerProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        isActive:
+          type: boolean
+        recentMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        vods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - riotId
+        - discordUsername
+        - currentElo
+        - peakElo
+        - wins
+        - losses
+        - isActive
+        - recentMatches
+        - vods
+        - createdAt
+        - updatedAt
+
+    Season:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        eloResetFactor:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - status
+        - startDate
+        - endDate
+        - eloResetFactor
+        - createdAt
+        - updatedAt
+
+    CreateSeasonRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+        eloResetFactor:
+          type: string
+          nullable: true
+      required:
+        - name
+        - startDate
+        - endDate
+
+    LadderEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        winRate:
+          type: number
+      required:
+        - rank
+        - id
+        - riotId
+        - discordUsername
+        - currentElo
+        - peakElo
+        - wins
+        - losses
+        - winRate
+
+    LadderResponse:
+      type: object
+      properties:
+        season:
+          $ref: "#/components/schemas/Season"
+          nullable: true
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LadderEntry"
+      required:
+        - entries
+
+    VodTimestamp:
+      type: object
+      properties:
+        id:
+          type: integer
+        vodId:
+          type: integer
+        label:
+          type: string
+        seconds:
+          type: integer
+        type:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - vodId
+        - label
+        - seconds
+        - type
+        - createdAt
+
+    CreateVodTimestampRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        seconds:
+          type: integer
+        type:
+          type: string
+          nullable: true
+      required:
+        - label
+        - seconds
+
+    VodDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        playerRiotId:
+          type: string
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
+        timestamps:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodTimestamp"
+        relatedVods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - videoUrl
+        - timestamps
+        - relatedVods
+        - createdAt
+        - updatedAt

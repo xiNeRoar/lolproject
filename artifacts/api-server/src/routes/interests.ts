@@ -63,7 +63,7 @@ router.post("/", async (req, res) => {
 });
 
 router.delete("/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id!);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(interestSubmissionsTable).where(eq(interestSubmissionsTable.id, id));
   res.json({ success: true });

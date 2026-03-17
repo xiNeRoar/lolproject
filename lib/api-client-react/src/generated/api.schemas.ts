@@ -38,6 +38,8 @@ export interface AdminStats {
   registrations: number;
   matches: number;
   vods: number;
+  players: number;
+  seasons: number;
 }
 
 export interface InterestSubmission {
@@ -91,6 +93,14 @@ export interface Match {
   score?: string | null;
   format?: string | null;
   vodUrl?: string | null;
+  playerAId?: number | null;
+  playerBId?: number | null;
+  playerAEloBefore?: number | null;
+  playerAEloAfter?: number | null;
+  playerBEloBefore?: number | null;
+  playerBEloAfter?: number | null;
+  seasonId?: number | null;
+  isPlayoff: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -105,6 +115,13 @@ export interface VodEntry {
   roleTag?: string | null;
   notes?: string | null;
   videoUrl: string;
+  playerId?: number | null;
+  playerRiotId?: string | null;
+  champion?: string | null;
+  opponentChampion?: string | null;
+  position?: string | null;
+  patch?: string | null;
+  playerEloAtTime?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -168,6 +185,10 @@ export interface CreateMatchRequest {
   score?: string | null;
   format?: string | null;
   vodUrl?: string | null;
+  playerAId?: number | null;
+  playerBId?: number | null;
+  seasonId?: number | null;
+  isPlayoff?: boolean | null;
 }
 
 export interface CreateVodRequest {
@@ -178,6 +199,121 @@ export interface CreateVodRequest {
   roleTag?: string | null;
   notes?: string | null;
   videoUrl: string;
+  playerId?: number | null;
+  champion?: string | null;
+  opponentChampion?: string | null;
+  position?: string | null;
+  patch?: string | null;
+  playerEloAtTime?: number | null;
+}
+
+export interface Player {
+  id: number;
+  riotId: string;
+  discordUsername: string;
+  currentElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePlayerRequest {
+  riotId: string;
+  discordUsername: string;
+  currentElo?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface PlayerProfile {
+  id: number;
+  riotId: string;
+  discordUsername: string;
+  currentElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  isActive: boolean;
+  recentMatches: Match[];
+  vods: VodEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Season {
+  id: number;
+  name: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  eloResetFactor: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSeasonRequest {
+  name: string;
+  status?: string | null;
+  startDate: string;
+  endDate: string;
+  eloResetFactor?: string | null;
+}
+
+export interface LadderEntry {
+  rank: number;
+  id: number;
+  riotId: string;
+  discordUsername: string;
+  currentElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+}
+
+export interface LadderResponse {
+  season?: Season | null;
+  entries: LadderEntry[];
+}
+
+export interface VodTimestamp {
+  id: number;
+  vodId: number;
+  label: string;
+  seconds: number;
+  type: string;
+  createdAt: string;
+}
+
+export interface CreateVodTimestampRequest {
+  label: string;
+  seconds: number;
+  type?: string | null;
+}
+
+export interface VodDetail {
+  id: number;
+  eventId?: number | null;
+  eventTitle?: string | null;
+  title: string;
+  format?: string | null;
+  playerNames?: string | null;
+  roleTag?: string | null;
+  notes?: string | null;
+  videoUrl: string;
+  playerId?: number | null;
+  playerRiotId?: string | null;
+  champion?: string | null;
+  opponentChampion?: string | null;
+  position?: string | null;
+  patch?: string | null;
+  playerEloAtTime?: number | null;
+  timestamps: VodTimestamp[];
+  relatedVods: VodEntry[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ListRegistrationsParams = {
@@ -195,4 +331,10 @@ export type ListVodsParams = {
   format?: string;
   roleTag?: string;
   search?: string;
+  champion?: string;
+  opponentChampion?: string;
+  position?: string;
+  patch?: string;
+  eloMin?: number;
+  eloMax?: number;
 };

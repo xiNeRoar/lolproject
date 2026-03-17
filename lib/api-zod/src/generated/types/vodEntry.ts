@@ -16,6 +16,13 @@ export interface VodEntry {
   roleTag?: string | null;
   notes?: string | null;
   videoUrl: string;
+  playerId?: number | null;
+  playerRiotId?: string | null;
+  champion?: string | null;
+  opponentChampion?: string | null;
+  position?: string | null;
+  patch?: string | null;
+  playerEloAtTime?: number | null;
   createdAt: string;
   updatedAt: string;
 }

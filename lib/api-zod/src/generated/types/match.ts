@@ -17,6 +17,14 @@ export interface Match {
   score?: string | null;
   format?: string | null;
   vodUrl?: string | null;
+  playerAId?: number | null;
+  playerBId?: number | null;
+  playerAEloBefore?: number | null;
+  playerAEloAfter?: number | null;
+  playerBEloBefore?: number | null;
+  playerBEloAfter?: number | null;
+  seasonId?: number | null;
+  isPlayoff: boolean;
   createdAt: string;
   updatedAt: string;
 }

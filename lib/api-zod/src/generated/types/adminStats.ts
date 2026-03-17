@@ -12,4 +12,6 @@ export interface AdminStats {
   registrations: number;
   matches: number;
   vods: number;
+  players: number;
+  seasons: number;
 }

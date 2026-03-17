@@ -6,6 +6,9 @@ import eventsRouter from "./events";
 import registrationsRouter from "./registrations";
 import matchesRouter from "./matches";
 import vodsRouter from "./vods";
+import playersRouter from "./players";
+import seasonsRouter from "./seasons";
+import ladderRouter from "./ladder";
 
 const router: IRouter = Router();
 
@@ -16,5 +19,8 @@ router.use("/events", eventsRouter);
 router.use("/registrations", registrationsRouter);
 router.use("/matches", matchesRouter);
 router.use("/vods", vodsRouter);
+router.use("/players", playersRouter);
+router.use("/seasons", seasonsRouter);
+router.use("/ladder", ladderRouter);
 
 export default router;

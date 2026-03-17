@@ -51,6 +51,8 @@ export const GetAdminStatsResponse = zod.object({
   registrations: zod.number(),
   matches: zod.number(),
   vods: zod.number(),
+  players: zod.number(),
+  seasons: zod.number(),
 });
 
 /**
@@ -160,6 +162,14 @@ export const GetEventResponse = zod.object({
       score: zod.string().nullish(),
       format: zod.string().nullish(),
       vodUrl: zod.string().nullish(),
+      playerAId: zod.number().nullish(),
+      playerBId: zod.number().nullish(),
+      playerAEloBefore: zod.number().nullish(),
+      playerAEloAfter: zod.number().nullish(),
+      playerBEloBefore: zod.number().nullish(),
+      playerBEloAfter: zod.number().nullish(),
+      seasonId: zod.number().nullish(),
+      isPlayoff: zod.boolean(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -175,6 +185,13 @@ export const GetEventResponse = zod.object({
       roleTag: zod.string().nullish(),
       notes: zod.string().nullish(),
       videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      playerEloAtTime: zod.number().nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     }),
@@ -291,6 +308,14 @@ export const ListMatchesResponseItem = zod.object({
   score: zod.string().nullish(),
   format: zod.string().nullish(),
   vodUrl: zod.string().nullish(),
+  playerAId: zod.number().nullish(),
+  playerBId: zod.number().nullish(),
+  playerAEloBefore: zod.number().nullish(),
+  playerAEloAfter: zod.number().nullish(),
+  playerBEloBefore: zod.number().nullish(),
+  playerBEloAfter: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -308,6 +333,10 @@ export const CreateMatchBody = zod.object({
   score: zod.string().nullish(),
   format: zod.string().nullish(),
   vodUrl: zod.string().nullish(),
+  playerAId: zod.number().nullish(),
+  playerBId: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean().nullish(),
 });
 
 /**
@@ -326,6 +355,10 @@ export const UpdateMatchBody = zod.object({
   score: zod.string().nullish(),
   format: zod.string().nullish(),
   vodUrl: zod.string().nullish(),
+  playerAId: zod.number().nullish(),
+  playerBId: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean().nullish(),
 });
 
 export const UpdateMatchResponse = zod.object({
@@ -339,6 +372,14 @@ export const UpdateMatchResponse = zod.object({
   score: zod.string().nullish(),
   format: zod.string().nullish(),
   vodUrl: zod.string().nullish(),
+  playerAId: zod.number().nullish(),
+  playerBId: zod.number().nullish(),
+  playerAEloBefore: zod.number().nullish(),
+  playerAEloAfter: zod.number().nullish(),
+  playerBEloBefore: zod.number().nullish(),
+  playerBEloAfter: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -362,6 +403,12 @@ export const ListVodsQueryParams = zod.object({
   format: zod.coerce.string().optional(),
   roleTag: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
+  champion: zod.coerce.string().optional(),
+  opponentChampion: zod.coerce.string().optional(),
+  position: zod.coerce.string().optional(),
+  patch: zod.coerce.string().optional(),
+  eloMin: zod.coerce.number().optional(),
+  eloMax: zod.coerce.number().optional(),
 });
 
 export const ListVodsResponseItem = zod.object({
@@ -374,6 +421,13 @@ export const ListVodsResponseItem = zod.object({
   roleTag: zod.string().nullish(),
   notes: zod.string().nullish(),
   videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  playerEloAtTime: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -390,6 +444,72 @@ export const CreateVodBody = zod.object({
   roleTag: zod.string().nullish(),
   notes: zod.string().nullish(),
   videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  playerEloAtTime: zod.number().nullish(),
+});
+
+/**
+ * @summary Get a single VOD with timestamps and related VODs
+ */
+export const GetVodParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetVodResponse = zod.object({
+  id: zod.number(),
+  eventId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  playerEloAtTime: zod.number().nullish(),
+  timestamps: zod.array(
+    zod.object({
+      id: zod.number(),
+      vodId: zod.number(),
+      label: zod.string(),
+      seconds: zod.number(),
+      type: zod.string(),
+      createdAt: zod.string(),
+    }),
+  ),
+  relatedVods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      playerEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
 });
 
 /**
@@ -407,6 +527,12 @@ export const UpdateVodBody = zod.object({
   roleTag: zod.string().nullish(),
   notes: zod.string().nullish(),
   videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  playerEloAtTime: zod.number().nullish(),
 });
 
 export const UpdateVodResponse = zod.object({
@@ -419,6 +545,13 @@ export const UpdateVodResponse = zod.object({
   roleTag: zod.string().nullish(),
   notes: zod.string().nullish(),
   videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  playerEloAtTime: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -431,5 +564,302 @@ export const DeleteVodParams = zod.object({
 });
 
 export const DeleteVodResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List all players (admin)
+ */
+export const ListPlayersResponseItem = zod.object({
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
+
+/**
+ * @summary Create a player (admin)
+ */
+export const CreatePlayerBody = zod.object({
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number().nullish(),
+  isActive: zod.boolean().nullish(),
+});
+
+/**
+ * @summary Get player profile by Riot ID (public)
+ */
+export const GetPlayerParams = zod.object({
+  riotId: zod.coerce.string(),
+});
+
+export const GetPlayerResponse = zod.object({
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  recentMatches: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      matchTitle: zod.string(),
+      sideAName: zod.string(),
+      sideBName: zod.string(),
+      winnerName: zod.string(),
+      score: zod.string().nullish(),
+      format: zod.string().nullish(),
+      vodUrl: zod.string().nullish(),
+      playerAId: zod.number().nullish(),
+      playerBId: zod.number().nullish(),
+      playerAEloBefore: zod.number().nullish(),
+      playerAEloAfter: zod.number().nullish(),
+      playerBEloBefore: zod.number().nullish(),
+      playerBEloAfter: zod.number().nullish(),
+      seasonId: zod.number().nullish(),
+      isPlayoff: zod.boolean(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  vods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      playerEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update player (admin)
+ */
+export const UpdatePlayerParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePlayerBody = zod.object({
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number().nullish(),
+  isActive: zod.boolean().nullish(),
+});
+
+export const UpdatePlayerResponse = zod.object({
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete player (admin)
+ */
+export const DeletePlayerParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeletePlayerResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List all seasons
+ */
+export const ListSeasonsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListSeasonsResponse = zod.array(ListSeasonsResponseItem);
+
+/**
+ * @summary Create a season (admin)
+ */
+export const CreateSeasonBody = zod.object({
+  name: zod.string(),
+  status: zod.string().nullish(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string().nullish(),
+});
+
+/**
+ * @summary Update season (admin)
+ */
+export const UpdateSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSeasonBody = zod.object({
+  name: zod.string(),
+  status: zod.string().nullish(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string().nullish(),
+});
+
+export const UpdateSeasonResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete season (admin)
+ */
+export const DeleteSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteSeasonResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Set season as active (deactivates all others) (admin)
+ */
+export const ActivateSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ActivateSeasonResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Complete season and apply ELO soft reset to all players (admin)
+ */
+export const CompleteSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CompleteSeasonResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get public ELO ladder for current active season
+ */
+export const GetLadderResponse = zod.object({
+  season: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      status: zod.string(),
+      startDate: zod.string(),
+      endDate: zod.string(),
+      eloResetFactor: zod.string(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    })
+    .nullish(),
+  entries: zod.array(
+    zod.object({
+      rank: zod.number(),
+      id: zod.number(),
+      riotId: zod.string(),
+      discordUsername: zod.string(),
+      currentElo: zod.number(),
+      peakElo: zod.number(),
+      wins: zod.number(),
+      losses: zod.number(),
+      winRate: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get all timestamps for a VOD
+ */
+export const ListVodTimestampsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListVodTimestampsResponseItem = zod.object({
+  id: zod.number(),
+  vodId: zod.number(),
+  label: zod.string(),
+  seconds: zod.number(),
+  type: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListVodTimestampsResponse = zod.array(
+  ListVodTimestampsResponseItem,
+);
+
+/**
+ * @summary Add a timestamp to a VOD (admin)
+ */
+export const CreateVodTimestampParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateVodTimestampBody = zod.object({
+  label: zod.string(),
+  seconds: zod.number(),
+  type: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a VOD timestamp (admin)
+ */
+export const DeleteVodTimestampParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteVodTimestampResponse = zod.object({
   success: zod.boolean(),
 });

@@ -15,4 +15,8 @@ export interface CreateMatchRequest {
   score?: string | null;
   format?: string | null;
   vodUrl?: string | null;
+  playerAId?: number | null;
+  playerBId?: number | null;
+  seasonId?: number | null;
+  isPlayoff?: boolean | null;
 }

@@ -5,9 +5,13 @@
  * Vancouver Competitive LoL Project API
  * OpenAPI spec version: 0.1.0
  */
+import type { VodEntry } from "./vodEntry";
+import type { VodTimestamp } from "./vodTimestamp";
 
-export interface CreateVodRequest {
+export interface VodDetail {
+  id: number;
   eventId?: number | null;
+  eventTitle?: string | null;
   title: string;
   format?: string | null;
   playerNames?: string | null;
@@ -15,9 +19,14 @@ export interface CreateVodRequest {
   notes?: string | null;
   videoUrl: string;
   playerId?: number | null;
+  playerRiotId?: string | null;
   champion?: string | null;
   opponentChampion?: string | null;
   position?: string | null;
   patch?: string | null;
   playerEloAtTime?: number | null;
+  timestamps: VodTimestamp[];
+  relatedVods: VodEntry[];
+  createdAt: string;
+  updatedAt: string;
 }

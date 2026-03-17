@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { adminUsersTable, interestSubmissionsTable, eventsTable, eventRegistrationsTable, matchesTable, vodEntriesTable } from "@workspace/db";
+import { adminUsersTable, interestSubmissionsTable, eventsTable, eventRegistrationsTable, matchesTable, vodEntriesTable, playersTable, seasonsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { hashPassword, verifyPassword } from "../lib/auth";
 import { isAdminAuthenticated } from "../lib/session";
@@ -48,6 +48,8 @@ router.get("/stats", requireAdmin, async (_req, res) => {
   const [registrations] = await db.select({ count: count() }).from(eventRegistrationsTable);
   const [matches] = await db.select({ count: count() }).from(matchesTable);
   const [vods] = await db.select({ count: count() }).from(vodEntriesTable);
+  const [players] = await db.select({ count: count() }).from(playersTable);
+  const [seasons] = await db.select({ count: count() }).from(seasonsTable);
 
   res.json({
     interests: interests?.count ?? 0,
@@ -55,6 +57,8 @@ router.get("/stats", requireAdmin, async (_req, res) => {
     registrations: registrations?.count ?? 0,
     matches: matches?.count ?? 0,
     vods: vods?.count ?? 0,
+    players: players?.count ?? 0,
+    seasons: seasons?.count ?? 0,
   });
 });
 
