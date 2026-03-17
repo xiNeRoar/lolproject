@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetMatch, useListSeasons } from "@workspace/api-client-react";
+import { useGetMatch, useListSeasons, useListVods } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: match, isLoading, isError } = useGetMatch(Number(id));
   const { data: seasons } = useListSeasons();
+  const { data: allVods } = useListVods();
 
   if (isLoading) {
     return (
@@ -136,15 +137,26 @@ export default function MatchDetail() {
               <span>{seasonName}</span>
             </div>
           )}
-          {match.vodUrl && (
-            <div className="flex items-center gap-2 pt-2">
-              <a href={match.vodUrl} target="_blank" rel="noreferrer">
-                <Button size="sm" variant="outline">
-                  <Video className="w-4 h-4 mr-2" /> Watch VOD →
-                </Button>
-              </a>
-            </div>
-          )}
+          {match.vodUrl && (() => {
+            const matchedVod = allVods?.find((v) => v.videoUrl === match.vodUrl);
+            return (
+              <div className="flex items-center gap-2 pt-2">
+                {matchedVod ? (
+                  <Link href={`/vods/${matchedVod.id}`}>
+                    <Button size="sm" variant="outline">
+                      <Video className="w-4 h-4 mr-2" /> Watch VOD →
+                    </Button>
+                  </Link>
+                ) : (
+                  <a href={match.vodUrl} target="_blank" rel="noreferrer">
+                    <Button size="sm" variant="outline">
+                      <Video className="w-4 h-4 mr-2" /> Watch VOD →
+                    </Button>
+                  </a>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </PublicLayout>
