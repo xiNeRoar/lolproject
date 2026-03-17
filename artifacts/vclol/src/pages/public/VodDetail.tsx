@@ -4,6 +4,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, ExternalLink, Video, ChevronLeft } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { useEffect, useRef } from "react";
+
+declare global {
+  interface Window {
+    YT: {
+      Player: new (
+        el: HTMLElement | string,
+        opts: {
+          videoId: string;
+          playerVars?: Record<string, number | string>;
+          events?: { onReady?: (e: { target: YTPlayer }) => void };
+        }
+      ) => YTPlayer;
+      loaded: number;
+    };
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
+interface YTPlayer {
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  playVideo(): void;
+  destroy(): void;
+}
 
 function formatSeconds(s: number): string {
   const h = Math.floor(s / 3600);
@@ -13,32 +37,81 @@ function formatSeconds(s: number): string {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function buildTimestampUrl(videoUrl: string | null | undefined, seconds: number): string {
-  if (!videoUrl) return "#";
-  const separator = videoUrl.includes("?") ? "&" : "?";
-  return `${videoUrl}${separator}t=${seconds}`;
-}
-
-function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
+function extractYouTubeId(url: string | null | undefined): string | null {
   if (!url) return null;
-  let videoId: string | null = null;
   try {
     const u = new URL(url);
-    if (u.hostname === "youtu.be") {
-      videoId = u.pathname.slice(1).split("?")[0];
-    } else if (u.hostname.includes("youtube.com")) {
-      videoId = u.searchParams.get("v");
-    }
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
+    if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
   } catch {
     return null;
   }
-  if (!videoId) return null;
-  return `https://www.youtube.com/embed/${videoId}`;
+  return null;
+}
+
+function YouTubePlayer({
+  videoId,
+  playerRef,
+}: {
+  videoId: string;
+  playerRef: React.MutableRefObject<YTPlayer | null>;
+}) {
+  const divRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let player: YTPlayer | null = null;
+
+    function initPlayer() {
+      if (!divRef.current) return;
+      player = new window.YT.Player(divRef.current, {
+        videoId,
+        playerVars: { rel: 0, modestbranding: 1 },
+        events: {
+          onReady: (e) => {
+            playerRef.current = e.target;
+          },
+        },
+      });
+    }
+
+    if (window.YT && window.YT.loaded) {
+      initPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = initPlayer;
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const script = document.createElement("script");
+        script.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      playerRef.current = null;
+      player?.destroy();
+    };
+  }, [videoId]);
+
+  return (
+    <div className="mb-6 rounded-xl overflow-hidden border border-border/40 bg-black aspect-video">
+      <div ref={divRef} className="w-full h-full" />
+    </div>
+  );
 }
 
 export default function VodDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: vod, isLoading, isError } = useGetVod(Number(id));
+  const playerRef = useRef<YTPlayer | null>(null);
+
+  const videoId = extractYouTubeId(vod?.videoUrl);
+
+  function seekTo(seconds: number) {
+    if (playerRef.current) {
+      playerRef.current.seekTo(seconds, true);
+      playerRef.current.playVideo();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   if (isLoading) {
     return (
@@ -105,32 +178,21 @@ export default function VodDetail() {
           )}
         </div>
 
-        {/* YouTube embed */}
-        {(() => {
-          const embedUrl = getYouTubeEmbedUrl(vod.videoUrl);
-          return embedUrl ? (
-            <div className="mb-6 rounded-xl overflow-hidden border border-border/40 bg-black aspect-video">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={vod.title}
-              />
-            </div>
-          ) : (
-            <div className="mb-6">
-              <a
-                href={vod.videoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Video className="w-5 h-5" /> Watch VOD
-              </a>
-            </div>
-          );
-        })()}
+        {/* YouTube embed (IFrame API) or fallback external link */}
+        {videoId ? (
+          <YouTubePlayer videoId={videoId} playerRef={playerRef} />
+        ) : (
+          <div className="mb-6">
+            <a
+              href={vod.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Video className="w-5 h-5" /> Watch VOD
+            </a>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Timestamps */}
@@ -148,12 +210,10 @@ export default function VodDetail() {
               ) : (
                 <div className="divide-y divide-border/30">
                   {vod.timestamps.map((ts) => (
-                    <a
+                    <button
                       key={ts.id}
-                      href={buildTimestampUrl(vod.videoUrl, ts.seconds)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors"
+                      onClick={() => seekTo(ts.seconds)}
+                      className="w-full flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors text-left"
                     >
                       <span className="font-mono text-xs text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
                         {formatSeconds(ts.seconds)}
@@ -164,7 +224,7 @@ export default function VodDetail() {
                           {ts.type}
                         </Badge>
                       )}
-                    </a>
+                    </button>
                   ))}
                 </div>
               )}
