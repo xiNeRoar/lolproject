@@ -18,11 +18,11 @@ A community-focused competitive gaming hub for Vancouver / Lower Mainland League
 
 | Route | Page |
 |-------|------|
-| `/` | Home — hero, feature blocks, latest event, recent VODs |
+| `/` | Home — hero, stats bar, feature blocks, upcoming events, recent VODs, Discord CTA |
 | `/about` | About the project |
 | `/interest` | General interest submission form |
-| `/events` | Event listing |
-| `/events/[slug]` | Event detail + registration form |
+| `/events` | Event listing with champion splash banners |
+| `/events/:slug` | Event detail + registration form |
 | `/results` | Match results with search, event, and format filters |
 | `/vods` | VOD archive with search, event, format, and role tag filters |
 | `/contact` | Contact information |
@@ -47,17 +47,18 @@ A community-focused competitive gaming hub for Vancouver / Lower Mainland League
 # Install dependencies
 pnpm install
 
-# Run database migrations
-pnpm --filter @workspace/db run migrate
+# Push database schema
+pnpm --filter @workspace/db run push
 
 # Seed the database
 pnpm --filter @workspace/scripts run seed
 
-# Start the development server
+# Start the frontend
 pnpm --filter @workspace/vclol run dev
-```
 
-The app runs on the port specified by the `PORT` environment variable.
+# Start the API server (separate terminal)
+pnpm --filter @workspace/api-server run dev
+```
 
 ## Project Structure
 
