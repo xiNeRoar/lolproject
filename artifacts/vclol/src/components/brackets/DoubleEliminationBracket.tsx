@@ -62,11 +62,8 @@ function BracketSide({ label, matches }: { label: string; matches: Match[] }) {
 }
 
 export function DoubleEliminationBracket({ matches }: Props) {
-  const hasSlots = matches.some((m) => m.bracketSlot !== null && m.bracketSlot !== undefined);
-  const hasRounds = matches.some((m) => m.round !== null && m.round !== undefined);
-
-  if (!hasSlots && !hasRounds) {
-    return <MatchList matches={matches} />;
+  if (matches.length === 0) {
+    return <p className="text-muted-foreground text-sm">No matches recorded yet.</p>;
   }
 
   const winners = matches.filter((m) => !m.isLosersBracket);

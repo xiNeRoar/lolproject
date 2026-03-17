@@ -1,5 +1,4 @@
 import type { Match } from "@workspace/api-client-react";
-import { MatchList } from "./MatchList";
 import { Link } from "wouter";
 
 interface Props {
@@ -11,12 +10,9 @@ export function SwissRoundsTable({ matches }: Props) {
     return <p className="text-sm text-muted-foreground text-center py-8">No matches recorded yet.</p>;
   }
 
-  const hasRounds = matches.some((m) => m.round !== null && m.round !== undefined);
-  if (!hasRounds) return <MatchList matches={matches} />;
-
   const roundsMap: Record<number, Match[]> = {};
   for (const m of matches) {
-    const round = m.round ?? 0;
+    const round = m.round ?? 1;
     if (!roundsMap[round]) roundsMap[round] = [];
     roundsMap[round].push(m);
   }
