@@ -1,0 +1,569 @@
+Build a complete MVP web app called “Vancouver Competitive LoL Project”.
+
+CORE PURPOSE
+This is an early-stage Vancouver / Lower Mainland League of Legends competitive community project.
+The site should primarily support recruitment and interest collection first, while already having the structure for future small competition events, match results, and a VOD archive.
+The long-term direction may evolve into more ongoing local competitive formats, but the first lightweight testing format is 1v1 as a practical starting point before any possible future 5v5 direction.
+
+BRAND / POSITIONING
+Working name: Vancouver Competitive LoL Project
+
+Primary hero message:
+A place for local players to improve, compete, and be seen.
+
+Tone:
+Serious competitive project, but still approachable.
+
+Audience:
+Local Vancouver / Lower Mainland LoL players who want a more serious competitive environment, but the site must not feel exclusive, elitist, or intimidating.
+
+IMPORTANT PRODUCT POSITIONING
+The site must clearly communicate:
+- this is for Vancouver / Lower Mainland players
+- this is competitive, but approachable
+- this is more than a one-off bracket idea
+- this includes replay / VOD archive value
+- the first lightweight test may be 1v1, but the project is not permanently limited to 1v1
+- this is an earnest grassroots competitive initiative, not a fake large-scale pro league
+
+TECH STACK REQUIREMENTS
+Use exactly this stack:
+- Next.js
+- TypeScript
+- Tailwind CSS
+- PostgreSQL
+
+GENERAL TECHNICAL EXPECTATIONS
+- Use a clean, maintainable project structure
+- Use real server-side persistence with PostgreSQL
+- Add simple admin authentication
+- There should be no public player account system yet
+- Only admin login is needed
+- Public users submit data through forms
+- Keep the code easy to extend later
+- Use sensible validation
+- Use clean error states
+- Use reusable UI components
+- Implement real CRUD, not mock-only frontend behavior
+- Ensure the app actually runs
+
+MVP CONSTRAINTS
+This is NOT a full esports platform.
+Do NOT build:
+- automated bracket engine
+- player account system
+- public user auth
+- full team management
+- advanced match stats
+- recruiter dashboard
+- Twitch integration
+- per-player upload system
+- chat system
+- notifications system
+- email automation
+- complex permissions system
+- signup / password reset flow
+- role system
+- analytics dashboard beyond simple admin counts
+- unnecessary animations
+- fancy visual gimmicks
+- overengineered architecture
+
+This should be a focused MVP that feels real, polished, stable, and extendable.
+
+VISUAL DESIGN DIRECTION
+Create a dark, hard-edged, professional competitive website style.
+The site should feel closer to a serious tournament / competition hub than a casual gaming website.
+
+Visual rules:
+- Mature, restrained, and credible
+- Sharp, clean, modern, structured
+- Strong hierarchy
+- Strong readability
+- Clear layout
+- Professional desktop-first feel, while still fully mobile responsive
+- Background should use dark charcoal / near-black tones
+- Use restrained accent colors only
+- Accent colors should feel professional and competitive, such as deep blue, steel blue, muted violet, or cool-toned highlights
+- Cards and panels should feel slightly sharp / firm rather than soft and playful
+- Typography should feel modern, strong, readable, and serious
+- Emphasize trust, structure, seriousness, and competitive identity
+- The site must not look like a fake Riot clone
+- The site must not look like a streamer page
+- The site must not look like a gaming gimmick website
+
+Avoid:
+- excessive glow
+- cyberpunk neon overload
+- flashy gradients everywhere
+- exaggerated gamer effects
+- loud, cheesy esports cliches
+- visual clutter
+- inconsistent card styles
+- random decorative UI patterns
+
+DESIGN SYSTEM / COMPONENT GUIDANCE
+Use a small, consistent component system.
+Reuse a limited set of components across the app:
+- layout containers
+- headings
+- buttons
+- cards
+- form fields
+- badges
+- tables / structured result rows
+- filter controls
+- nav and footer
+
+Do not create an oversized or inconsistent design system.
+Keep visual language consistent throughout the app.
+
+OVERALL UX PHILOSOPHY
+Make the project feel real even at MVP stage.
+Public-facing pages should communicate direction, legitimacy, and intent.
+Users should immediately understand:
+1. what this project is
+2. who it is for
+3. how to join
+4. where to see events, results, and VODs
+
+SITE STRUCTURE
+
+Create these PUBLIC pages:
+1. Home
+2. About
+3. General Interest
+4. Events
+5. Event Detail
+6. Results
+7. VOD Archive
+8. Contact
+
+Create these PROTECTED ADMIN pages:
+1. Admin Login
+2. Admin Dashboard
+3. Manage General Interest submissions
+4. Manage Events
+5. Manage Event Registrations
+6. Manage Match Results
+7. Manage VOD Entries
+
+ROUTING REQUIREMENTS
+Use clean, predictable routes:
+- /
+- /about
+- /interest
+- /events
+- /events/[slug]
+- /results
+- /vods
+- /contact
+- /admin
+- /admin/login
+- /admin/interests
+- /admin/events
+- /admin/registrations
+- /admin/matches
+- /admin/vods
+
+Ensure route naming and structure are clean and consistent.
+
+PUBLIC PAGE REQUIREMENTS
+
+1. HOME PAGE
+Purpose:
+- Sell the idea clearly
+- Make the project feel serious and intentional
+- Make the project feel active even in MVP stage
+
+Content requirements:
+- Hero section with title: Vancouver Competitive LoL Project
+- Subtitle: A place for local players to improve, compete, and be seen.
+- Supporting copy explaining this is an early-stage Vancouver / Lower Mainland LoL competitive community project
+- Explain that the project is testing lightweight local competitive formats, starting with smaller formats like 1v1 before any future expansion
+- Primary CTA: Join Interest List
+- Secondary CTA: View Events
+- Tertiary CTA: View VOD Archive
+
+Add 3 feature blocks:
+- Competitive local play
+- Match records and VOD archive
+- A place to grow and be seen
+
+Add a “Current Phase” section:
+- early-stage validation
+- local interest gathering
+- lightweight competition testing
+- building match archive foundations
+
+Add a “Latest / Upcoming Event” preview if available
+
+Add a “Recent VOD Entries” preview if available
+
+2. ABOUT PAGE
+Purpose:
+- Explain the project clearly and credibly
+- Make the project sound grounded, not grandiose
+
+Content requirements:
+- Explain that this project is about exploring a more consistent local competitive environment for LoL players in Vancouver / Lower Mainland
+- Explain that the goal is not just one-off brackets
+- Explain the value of continuity, match records, replay / VOD archive, and player growth
+- Explain that the project is currently starting small and testing what is realistic
+- Keep tone serious and realistic
+- Do not overpromise
+
+Add a “Current Focus” section that clearly states:
+- building local interest
+- testing lightweight formats
+- collecting early match records
+- building VOD archive foundations
+
+3. GENERAL INTEREST PAGE
+Purpose:
+- Main recruitment page
+
+Required form fields:
+- Riot ID
+- Discord username
+- Current rank
+- City / area
+- Preferred format (1v1 / 5v5 / in-house / open to any)
+- Availability
+- Already have a team? (yes/no)
+- Interested even without prize pool? (yes/no)
+- Short optional notes
+
+Behavior:
+- Save submissions to PostgreSQL
+- Show clear success state
+- Validate required fields
+- Keep the page clean and serious
+- Make form UX straightforward
+
+4. EVENTS PAGE
+Purpose:
+- Public event listing page
+
+Each event card must include:
+- title
+- format
+- date
+- registration status
+- short description
+- CTA to view event detail
+
+Requirements:
+- Support future event types
+- Initial seeded examples should include a 1v1-style test event
+- Make event cards structured and professional
+
+5. EVENT DETAIL PAGE
+Purpose:
+- Show a single event clearly
+
+Content requirements:
+- event title
+- format
+- date
+- registration open / closed
+- short description
+- full description
+- rules summary
+- event-specific registration form
+- list of associated matches / results if available
+- list of related VOD entries if available
+
+Requirements:
+- Event detail must use slug-based routing
+- Keep layout clean and readable
+- Make the registration area clear and easy to find
+
+6. RESULTS PAGE
+Purpose:
+- Public match record archive
+
+Each result entry must include:
+- event
+- match title
+- player names or side names
+- winner
+- score
+- VOD link if available
+- optional format label
+
+Requirements:
+- Support search
+- Support filtering by event
+- Support filtering by format
+- Keep search and filtering simple and robust
+- Use either a clean table/card hybrid or another structured presentation that works well on desktop and mobile
+- Results should feel like a real archive, not a placeholder list
+
+7. VOD ARCHIVE PAGE
+Purpose:
+- Public archive of match VODs
+
+Each VOD entry must include:
+- title
+- event
+- format
+- players involved
+- optional role tag
+- optional notes
+- external video link
+
+Requirements:
+- Support search
+- Support filter by event
+- Support filter by format
+- Support filter by optional role tag
+- Keep filters simple and reliable
+- This page should feel useful as a learning archive, even in MVP form
+
+8. CONTACT PAGE
+Purpose:
+- Simple public contact page
+
+Requirements:
+- Include short contact copy
+- Include email placeholder
+- Make it easy to later replace with a real project email or Discord link
+
+FORM REQUIREMENTS
+
+There must be TWO distinct public forms:
+
+1. GENERAL INTEREST FORM
+Fields:
+- Riot ID
+- Discord username
+- Current rank
+- City / area
+- Preferred format
+- Availability
+- Already have a team?
+- Interested even without prize pool?
+- Optional notes
+
+2. EVENT-SPECIFIC REGISTRATION FORM
+Fields:
+- Riot ID
+- Discord username
+- Current rank
+- City / area
+- Confirm availability for that event
+- Optional notes
+
+Both forms must:
+- save correctly to PostgreSQL
+- validate required fields
+- show clear success state
+- be visible in admin dashboard views
+
+ADMIN AUTH REQUIREMENTS
+Use a single-admin MVP auth model only.
+Requirements:
+- admin login page
+- no public signup
+- no password reset
+- no role system
+- no multi-admin complexity unless needed minimally in schema
+- keep it simple and stable
+
+ADMIN DASHBOARD REQUIREMENTS
+Protected admin dashboard must allow the admin to:
+- view general interest submissions
+- create, edit, delete events
+- view event-specific registrations
+- create, edit, delete match results
+- create, edit, delete VOD entries
+
+Admin dashboard UX requirements:
+- clean dashboard layout
+- simple forms
+- no overengineering
+- designed for one-person operation
+- show useful summary counts and recent items
+- admin should be able to quickly see recent submissions, registrations, events, results, and VOD content
+
+RELATIONAL DATA REQUIREMENTS
+Ensure the following are truly relationally connected:
+- events
+- event registrations
+- matches
+- VOD entries
+
+Requirements:
+- Events must be able to display related registrations, matches, and VOD entries
+- Results should clearly connect back to events
+- VOD entries should clearly connect back to events
+- Admin CRUD should preserve consistent relationships
+- Seeded content should appear correctly across linked pages
+
+DATABASE DESIGN
+
+Create PostgreSQL schema for at least these tables:
+
+1. admin_users
+- id
+- email
+- password_hash
+- created_at
+
+2. interest_submissions
+- id
+- riot_id
+- discord_username
+- current_rank
+- city
+- preferred_format
+- availability
+- has_team
+- willing_without_prize
+- notes
+- created_at
+
+3. events
+- id
+- title
+- slug
+- format
+- event_date
+- registration_status
+- short_description
+- full_description
+- rules_summary
+- created_at
+- updated_at
+
+4. event_registrations
+- id
+- event_id
+- riot_id
+- discord_username
+- current_rank
+- city
+- availability_confirmation
+- notes
+- created_at
+
+5. matches
+- id
+- event_id
+- match_title
+- side_a_name
+- side_b_name
+- winner_name
+- score
+- format
+- vod_url
+- created_at
+- updated_at
+
+6. vod_entries
+- id
+- event_id
+- title
+- format
+- player_names
+- role_tag
+- notes
+- video_url
+- created_at
+- updated_at
+
+Use sensible field types and foreign keys.
+
+IMPLEMENTATION DETAILS
+- Use reusable UI components
+- Keep search/filter implementation simple and reliable
+- Avoid unnecessary heavy state libraries
+- Minimize dependencies
+- Do not introduce unnecessary UI libraries if core stack can handle it
+- Prefer correctness and maintainability over visual flourishes
+- Keep frontend and backend code organized and readable
+- Keep naming clean and consistent
+- Keep CRUD flows simple and stable
+
+SEED DATA REQUIREMENTS
+Seed the database with realistic example content:
+- at least 1 example event
+- at least 3 example results
+- at least 3 example VOD entries
+- at least 2 example general interest submissions
+
+The seed data should make the app feel alive and testable.
+
+NAVIGATION REQUIREMENTS
+Top nav must include:
+- Home
+- About
+- Interest
+- Events
+- Results
+- VOD Archive
+- Contact
+
+Footer must include:
+- project name
+- short one-line mission
+- basic nav links
+
+COPYWRITING GUIDANCE
+Write all public text in English.
+Tone must be:
+- serious
+- credible
+- grounded
+- approachable
+- not corporate
+- not overhyped
+- not cheesy gamer language
+- not overly grandiose
+
+This should feel like an earnest local competitive initiative.
+
+CODE QUALITY EXPECTATIONS
+- production-style structure
+- clean naming
+- minimal unnecessary complexity
+- real backend persistence
+- stable CRUD
+- easy to extend later into standings, player pages, or team systems
+- predictable route structure
+- consistent layout and styling
+
+IMPLEMENTATION PRIORITIES
+- Prioritize working functionality over visual polish
+- Keep the implementation lean and stable
+- Minimize dependencies
+- Use simple, reliable CRUD flows
+- Use clean relational data between events, registrations, matches, and VOD entries
+- Use predictable routes and consistent page structure
+- Use a single-admin MVP auth model only
+- Keep filters simple and robust
+- Do not add unnecessary animations or flashy effects
+
+WHAT TO GENERATE
+Please generate:
+1. full project structure
+2. database schema
+3. all required public pages
+4. admin authentication
+5. admin dashboard and CRUD flows
+6. responsive UI
+7. seed data
+8. README with setup instructions and extension notes
+
+FINAL VERIFICATION REQUIREMENTS
+Before finishing:
+- ensure the app runs
+- ensure all navigation works
+- ensure all forms save correctly
+- ensure admin can manage all content
+- ensure seeded content appears in the correct places
+- ensure all pages render properly
+- ensure event, result, and VOD relationships work correctly
+- ensure the design matches the requested style
+- keep the implementation lean, stable, and extendable

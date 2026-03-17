@@ -1,0 +1,977 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Vancouver Competitive LoL Project API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: interests
+    description: General interest submissions
+  - name: events
+    description: Events management
+  - name: registrations
+    description: Event registrations
+  - name: matches
+    description: Match results
+  - name: vods
+    description: VOD entries
+  - name: admin
+    description: Admin auth
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Admin logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/me:
+    get:
+      operationId: adminMe
+      tags: [admin]
+      summary: Get current admin session
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard summary stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /interests:
+    get:
+      operationId: listInterests
+      tags: [interests]
+      summary: List all interest submissions (admin)
+      responses:
+        "200":
+          description: List of interest submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InterestSubmission"
+    post:
+      operationId: createInterest
+      tags: [interests]
+      summary: Submit general interest form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInterestRequest"
+      responses:
+        "201":
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterestSubmission"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /interests/{id}:
+    delete:
+      operationId: deleteInterest
+      tags: [interests]
+      summary: Delete an interest submission (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List all events
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create an event (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{slug}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get a single event by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{id}/edit:
+    put:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "200":
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}/delete:
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /registrations:
+    get:
+      operationId: listRegistrations
+      tags: [registrations]
+      summary: List all registrations (admin)
+      parameters:
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of registrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventRegistration"
+    post:
+      operationId: createRegistration
+      tags: [registrations]
+      summary: Register for an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRegistrationRequest"
+      responses:
+        "201":
+          description: Registration created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventRegistration"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /registrations/{id}:
+    delete:
+      operationId: deleteRegistration
+      tags: [registrations]
+      summary: Delete a registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /matches:
+    get:
+      operationId: listMatches
+      tags: [matches]
+      summary: List all match results
+      parameters:
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+    post:
+      operationId: createMatch
+      tags: [matches]
+      summary: Create a match result (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "201":
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+
+  /matches/{id}:
+    put:
+      operationId: updateMatch
+      tags: [matches]
+      summary: Update a match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "200":
+          description: Match updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+    delete:
+      operationId: deleteMatch
+      tags: [matches]
+      summary: Delete a match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /vods:
+    get:
+      operationId: listVods
+      tags: [vods]
+      summary: List all VOD entries
+      parameters:
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: roleTag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of VODs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VodEntry"
+    post:
+      operationId: createVod
+      tags: [vods]
+      summary: Create a VOD entry (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodRequest"
+      responses:
+        "201":
+          description: VOD created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodEntry"
+
+  /vods/{id}:
+    put:
+      operationId: updateVod
+      tags: [vods]
+      summary: Update a VOD entry (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodRequest"
+      responses:
+        "200":
+          description: VOD updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodEntry"
+    delete:
+      operationId: deleteVod
+      tags: [vods]
+      summary: Delete a VOD entry (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AdminLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    AdminMeResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        email:
+          type: string
+      required:
+        - authenticated
+
+    AdminStats:
+      type: object
+      properties:
+        interests:
+          type: integer
+        events:
+          type: integer
+        registrations:
+          type: integer
+        matches:
+          type: integer
+        vods:
+          type: integer
+      required:
+        - interests
+        - events
+        - registrations
+        - matches
+        - vods
+
+    InterestSubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        preferredFormat:
+          type: string
+        availability:
+          type: string
+        hasTeam:
+          type: boolean
+        willingWithoutPrize:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - riotId
+        - discordUsername
+        - currentRank
+        - city
+        - preferredFormat
+        - availability
+        - hasTeam
+        - willingWithoutPrize
+        - createdAt
+
+    CreateInterestRequest:
+      type: object
+      properties:
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        preferredFormat:
+          type: string
+        availability:
+          type: string
+        hasTeam:
+          type: boolean
+        willingWithoutPrize:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+      required:
+        - riotId
+        - discordUsername
+        - currentRank
+        - city
+        - preferredFormat
+        - availability
+        - hasTeam
+        - willingWithoutPrize
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - slug
+        - format
+        - eventDate
+        - registrationStatus
+        - shortDescription
+        - createdAt
+        - updatedAt
+
+    EventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        vods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+      required:
+        - id
+        - title
+        - slug
+        - format
+        - eventDate
+        - registrationStatus
+        - shortDescription
+        - createdAt
+        - updatedAt
+        - matches
+        - vods
+
+    CreateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+      required:
+        - title
+        - slug
+        - format
+        - eventDate
+        - registrationStatus
+        - shortDescription
+
+    EventRegistration:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+          nullable: true
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        availabilityConfirmation:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - eventId
+        - riotId
+        - discordUsername
+        - currentRank
+        - city
+        - availabilityConfirmation
+        - createdAt
+
+    CreateRegistrationRequest:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        availabilityConfirmation:
+          type: string
+        notes:
+          type: string
+          nullable: true
+      required:
+        - eventId
+        - riotId
+        - discordUsername
+        - currentRank
+        - city
+        - availabilityConfirmation
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        matchTitle:
+          type: string
+        sideAName:
+          type: string
+        sideBName:
+          type: string
+        winnerName:
+          type: string
+        score:
+          type: string
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        vodUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - matchTitle
+        - sideAName
+        - sideBName
+        - winnerName
+        - createdAt
+        - updatedAt
+
+    CreateMatchRequest:
+      type: object
+      properties:
+        eventId:
+          type: integer
+          nullable: true
+        matchTitle:
+          type: string
+        sideAName:
+          type: string
+        sideBName:
+          type: string
+        winnerName:
+          type: string
+        score:
+          type: string
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        vodUrl:
+          type: string
+          nullable: true
+      required:
+        - matchTitle
+        - sideAName
+        - sideBName
+        - winnerName
+
+    VodEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - videoUrl
+        - createdAt
+        - updatedAt
+
+    CreateVodRequest:
+      type: object
+      properties:
+        eventId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+      required:
+        - title
+        - videoUrl

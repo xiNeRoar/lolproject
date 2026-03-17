@@ -1,0 +1,16 @@
+packages:
+  "framer-motion": "For page transitions and smooth UI animations matching the premium aesthetic"
+  "@hookform/resolvers": "Zod validation integration with react-hook-form"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes without style conflicts"
+  "date-fns": "For formatting event dates nicely"
+  "lucide-react": "For crisp, consistent iconography across the app"
+
+images:
+  - path: "artifacts/vclol/public/images/hero-bg.png"
+    description: "Dark, moody, abstract geometric background with subtle steel blue glowing lines, conveying a serious competitive esports/gaming atmosphere without being tacky. High contrast, mostly charcoal and black."
+    aspect_ratio: "16:9"
+
+notes:
+  - The API hooks are imported from @workspace/api-client-react
+  - Admin authentication relies on HTTP-only cookies
