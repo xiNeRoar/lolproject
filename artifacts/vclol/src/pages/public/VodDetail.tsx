@@ -15,9 +15,25 @@ function formatSeconds(s: number): string {
 
 function buildTimestampUrl(videoUrl: string | null | undefined, seconds: number): string {
   if (!videoUrl) return "#";
-  // Append YouTube-compatible timestamp; use &t= if query string already exists
   const separator = videoUrl.includes("?") ? "&" : "?";
   return `${videoUrl}${separator}t=${seconds}`;
+}
+
+function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  let videoId: string | null = null;
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") {
+      videoId = u.pathname.slice(1).split("?")[0];
+    } else if (u.hostname.includes("youtube.com")) {
+      videoId = u.searchParams.get("v");
+    }
+  } catch {
+    return null;
+  }
+  if (!videoId) return null;
+  return `https://www.youtube.com/embed/${videoId}`;
 }
 
 export default function VodDetail() {
@@ -89,17 +105,32 @@ export default function VodDetail() {
           )}
         </div>
 
-        {/* Watch button — external link only, no iframe embedding */}
-        <div className="mb-6">
-          <a
-            href={vod.videoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Video className="w-5 h-5" /> Watch VOD
-          </a>
-        </div>
+        {/* YouTube embed */}
+        {(() => {
+          const embedUrl = getYouTubeEmbedUrl(vod.videoUrl);
+          return embedUrl ? (
+            <div className="mb-6 rounded-xl overflow-hidden border border-border/40 bg-black aspect-video">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={vod.title}
+              />
+            </div>
+          ) : (
+            <div className="mb-6">
+              <a
+                href={vod.videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                <Video className="w-5 h-5" /> Watch VOD
+              </a>
+            </div>
+          );
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Timestamps */}

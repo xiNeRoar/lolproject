@@ -153,63 +153,58 @@ export default function Vods() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {vods?.map((vod) => (
-              <Card
-                key={vod.id}
-                className="h-full bg-card/40 border-border/40 hover:bg-card/80 hover:border-primary/50 transition-all duration-300 flex flex-col"
-              >
-                <a href={vod.videoUrl} target="_blank" rel="noreferrer" className="block group">
+              <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
+                <Card className="h-full bg-card/40 border-border/40 group-hover:bg-card/80 group-hover:border-primary/50 transition-all duration-300 flex flex-col">
                   <div className="aspect-video bg-background flex items-center justify-center border-b border-border/40 relative overflow-hidden rounded-t-lg">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
                     <PlayCircle className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
                   </div>
-                </a>
-                <CardContent className="p-5 flex flex-col flex-1">
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge variant="outline" className="bg-background text-[10px]">
-                      {vod.format || "Match"}
-                    </Badge>
-                    {vod.roleTag && (
-                      <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                        {vod.roleTag}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-lg leading-tight mb-1">{vod.title}</h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {vod.eventTitle || "Independent Match"}
-                  </p>
-
-                  {/* Champion info */}
-                  {vod.champion && (
-                    <div className="flex gap-1 flex-wrap mb-3">
-                      <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
-                        {vod.champion}
-                        {vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}
+                  <CardContent className="p-5 flex flex-col flex-1">
+                    <div className="flex justify-between items-start mb-3">
+                      <Badge variant="outline" className="bg-background text-[10px]">
+                        {vod.format || "Match"}
                       </Badge>
-                      {vod.position && (
-                        <Badge variant="outline" className="text-xs">{vod.position}</Badge>
-                      )}
-                      {vod.patch && (
-                        <span className="text-[10px] text-muted-foreground self-center">
-                          P{vod.patch}
+                      {vod.roleTag && (
+                        <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                          {vod.roleTag}
                         </span>
                       )}
                     </div>
-                  )}
-
-                  {vod.playerNames && (
-                    <p className="text-sm text-muted-foreground line-clamp-1 border-t border-border/30 pt-3 mb-3">
-                      <span className="font-medium text-foreground/70">Players:</span> {vod.playerNames}
+                    <h3 className="font-semibold text-lg leading-tight mb-1">{vod.title}</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {vod.eventTitle || "Independent Match"}
                     </p>
-                  )}
 
-                  <div className="mt-auto pt-3 border-t border-border/30">
-                    <Link href={`/vods/${vod.id}`} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    {/* Champion info */}
+                    {vod.champion && (
+                      <div className="flex gap-1 flex-wrap mb-3">
+                        <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                          {vod.champion}
+                          {vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}
+                        </Badge>
+                        {vod.position && (
+                          <Badge variant="outline" className="text-xs">{vod.position}</Badge>
+                        )}
+                        {vod.patch && (
+                          <span className="text-[10px] text-muted-foreground self-center">
+                            P{vod.patch}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {vod.playerNames && (
+                      <p className="text-sm text-muted-foreground line-clamp-1 border-t border-border/30 pt-3 mb-3">
+                        <span className="font-medium text-foreground/70">Players:</span> {vod.playerNames}
+                      </p>
+                    )}
+
+                    <div className="mt-auto pt-3 border-t border-border/30 flex items-center gap-1 text-xs font-medium text-primary">
                       View Details <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
