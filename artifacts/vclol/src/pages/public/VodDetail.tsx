@@ -129,9 +129,9 @@ export default function VodDetail() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">VOD not found.</p>
-          <Link href="/vods" className="text-primary hover:underline text-sm mt-2 inline-block">
-            Back to VODs
-          </Link>
+          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">
+            ← Back
+          </button>
         </div>
       </PublicLayout>
     );
@@ -141,9 +141,9 @@ export default function VodDetail() {
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <Link href="/vods" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> Back to VODs
-        </Link>
+        <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Back
+        </button>
 
         {/* Title */}
         <div className="mb-6">
