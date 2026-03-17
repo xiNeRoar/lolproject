@@ -1651,6 +1651,15 @@ components:
         isPlayoff:
           type: boolean
           nullable: true
+        round:
+          type: integer
+          nullable: true
+        bracketSlot:
+          type: integer
+          nullable: true
+        isLosersBracket:
+          type: boolean
+          nullable: true
       required:
         - matchTitle
         - sideAName

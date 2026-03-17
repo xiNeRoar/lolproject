@@ -19,4 +19,7 @@ export interface CreateMatchRequest {
   playerBId?: number | null;
   seasonId?: number | null;
   isPlayoff?: boolean | null;
+  round?: number | null;
+  bracketSlot?: number | null;
+  isLosersBracket?: boolean | null;
 }

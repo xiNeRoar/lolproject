@@ -30,6 +30,11 @@ function formatMatch(
     playerBEloAfter: row.playerBEloAfter,
     seasonId: row.seasonId,
     isPlayoff: row.isPlayoff ?? false,
+    round: row.round,
+    bracketSlot: row.bracketSlot,
+    nextMatchId: row.nextMatchId,
+    isLosersBracket: row.isLosersBracket ?? false,
+    groupId: row.groupId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -118,6 +123,7 @@ router.post("/", requireAdmin, async (req, res) => {
   const {
     eventId, matchTitle, sideAName, sideBName, winnerName,
     score, format, vodUrl, playerAId, playerBId, seasonId, isPlayoff,
+    round, bracketSlot, isLosersBracket,
   } = req.body as {
     eventId?: number | null;
     matchTitle?: string;
@@ -131,6 +137,9 @@ router.post("/", requireAdmin, async (req, res) => {
     playerBId?: number | null;
     seasonId?: number | null;
     isPlayoff?: boolean | null;
+    round?: number | null;
+    bracketSlot?: number | null;
+    isLosersBracket?: boolean | null;
   };
 
   if (!matchTitle || !sideAName || !sideBName || !winnerName) {
@@ -184,6 +193,9 @@ router.post("/", requireAdmin, async (req, res) => {
         playerBEloAfter,
         seasonId: seasonId ? Number(seasonId) : null,
         isPlayoff: isPlayoff || false,
+        round: round ? Number(round) : null,
+        bracketSlot: bracketSlot ? Number(bracketSlot) : null,
+        isLosersBracket: isLosersBracket || false,
       })
       .returning();
 
@@ -263,6 +275,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   const {
     eventId, matchTitle, sideAName, sideBName, winnerName,
     score, format, vodUrl, seasonId, isPlayoff,
+    round, bracketSlot, isLosersBracket,
   } = req.body as {
     eventId?: number | null;
     matchTitle?: string;
@@ -274,6 +287,9 @@ router.put("/:id", requireAdmin, async (req, res) => {
     vodUrl?: string | null;
     seasonId?: number | null;
     isPlayoff?: boolean | null;
+    round?: number | null;
+    bracketSlot?: number | null;
+    isLosersBracket?: boolean | null;
   };
 
   const [row] = await db
@@ -289,6 +305,9 @@ router.put("/:id", requireAdmin, async (req, res) => {
       vodUrl: vodUrl !== undefined ? (vodUrl || null) : undefined,
       seasonId: seasonId !== undefined ? (seasonId ? Number(seasonId) : null) : undefined,
       isPlayoff: isPlayoff !== undefined ? (isPlayoff || false) : undefined,
+      round: round !== undefined ? (round ? Number(round) : null) : undefined,
+      bracketSlot: bracketSlot !== undefined ? (bracketSlot ? Number(bracketSlot) : null) : undefined,
+      isLosersBracket: isLosersBracket !== undefined ? (isLosersBracket || false) : undefined,
       updatedAt: new Date(),
     })
     .where(eq(matchesTable.id, id))

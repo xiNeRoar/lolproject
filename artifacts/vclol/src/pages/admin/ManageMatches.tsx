@@ -40,7 +40,7 @@ export default function ManageMatches() {
   const playerBElo = players?.find((p) => p.id === Number(watchedPlayerBId))?.currentElo;
 
   const openNew = () => {
-    reset({ eventId: "", playerAId: "", playerBId: "", seasonId: "", isPlayoff: false });
+    reset({ eventId: "", playerAId: "", playerBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
     setEditingId(null);
     setIsOpen(true);
   };
@@ -71,6 +71,9 @@ export default function ManageMatches() {
       playerBId: data.playerBId ? Number(data.playerBId) : null,
       seasonId: data.seasonId ? Number(data.seasonId) : null,
       isPlayoff: Boolean(data.isPlayoff),
+      round: data.round ? Number(data.round) : null,
+      bracketSlot: data.bracketSlot ? Number(data.bracketSlot) : null,
+      isLosersBracket: Boolean(data.isLosersBracket),
     };
 
     if (editingId) {
@@ -154,6 +157,25 @@ export default function ManageMatches() {
             <Input placeholder="Score (e.g. 2-1)" className="col-span-2" {...register("score")} />
           </div>
           <Input placeholder="VOD URL (Optional)" {...register("vodUrl")} />
+
+          {/* Bracket Section */}
+          <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bracket Position (Optional)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Round #</label>
+                <Input type="number" placeholder="e.g. 1" {...register("round")} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Bracket Slot #</label>
+                <Input type="number" placeholder="e.g. 1" {...register("bracketSlot")} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input type="checkbox" className="rounded border-input" {...register("isLosersBracket")} />
+              Losers Bracket Match (Double Elimination)
+            </label>
+          </div>
 
           {/* ELO Section */}
           <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">

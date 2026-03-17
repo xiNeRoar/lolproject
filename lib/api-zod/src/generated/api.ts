@@ -347,6 +347,9 @@ export const CreateMatchBody = zod.object({
   playerBId: zod.number().nullish(),
   seasonId: zod.number().nullish(),
   isPlayoff: zod.boolean().nullish(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
 });
 
 /**
@@ -412,6 +415,9 @@ export const UpdateMatchBody = zod.object({
   playerBId: zod.number().nullish(),
   seasonId: zod.number().nullish(),
   isPlayoff: zod.boolean().nullish(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
 });
 
 export const UpdateMatchResponse = zod.object({
