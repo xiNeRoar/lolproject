@@ -163,54 +163,59 @@ router.post("/", requireAdmin, async (req, res) => {
     }
   }
 
-  const [row] = await db
-    .insert(matchesTable)
-    .values({
-      eventId: eventId ? Number(eventId) : null,
-      matchTitle,
-      sideAName,
-      sideBName,
-      winnerName,
-      score: score || null,
-      format: format || null,
-      vodUrl: vodUrl || null,
-      playerAId: playerAId ? Number(playerAId) : null,
-      playerBId: playerBId ? Number(playerBId) : null,
-      playerAEloBefore,
-      playerAEloAfter,
-      playerBEloBefore,
-      playerBEloAfter,
-      seasonId: seasonId ? Number(seasonId) : null,
-      isPlayoff: isPlayoff || false,
-    })
-    .returning();
+  // Wrap match insert + ELO player updates in a transaction for data integrity
+  const row = await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(matchesTable)
+      .values({
+        eventId: eventId ? Number(eventId) : null,
+        matchTitle,
+        sideAName,
+        sideBName,
+        winnerName,
+        score: score || null,
+        format: format || null,
+        vodUrl: vodUrl || null,
+        playerAId: playerAId ? Number(playerAId) : null,
+        playerBId: playerBId ? Number(playerBId) : null,
+        playerAEloBefore,
+        playerAEloAfter,
+        playerBEloBefore,
+        playerBEloAfter,
+        seasonId: seasonId ? Number(seasonId) : null,
+        isPlayoff: isPlayoff || false,
+      })
+      .returning();
 
-  // Update player ELO + record outcome if calculated
-  if (playerA && playerB && playerAEloAfter !== null && playerBEloAfter !== null) {
-    const playerAWon = winnerName === sideAName;
+    // Update player ELO + record outcome atomically with match insert
+    if (playerA && playerB && playerAEloAfter !== null && playerBEloAfter !== null) {
+      const playerAWon = winnerName === sideAName;
 
-    await db.update(playersTable).set({
-      currentElo: playerAEloAfter,
-      peakElo: Math.max(playerA.peakElo, playerAEloAfter),
-      wins: playerA.wins + (playerAWon ? 1 : 0),
-      losses: playerA.losses + (playerAWon ? 0 : 1),
-      updatedAt: new Date(),
-    }).where(eq(playersTable.id, playerA.id));
+      await tx.update(playersTable).set({
+        currentElo: playerAEloAfter,
+        peakElo: Math.max(playerA.peakElo, playerAEloAfter),
+        wins: playerA.wins + (playerAWon ? 1 : 0),
+        losses: playerA.losses + (playerAWon ? 0 : 1),
+        updatedAt: new Date(),
+      }).where(eq(playersTable.id, playerA.id));
 
-    await db.update(playersTable).set({
-      currentElo: playerBEloAfter,
-      peakElo: Math.max(playerB.peakElo, playerBEloAfter),
-      wins: playerB.wins + (playerAWon ? 0 : 1),
-      losses: playerB.losses + (playerAWon ? 1 : 0),
-      updatedAt: new Date(),
-    }).where(eq(playersTable.id, playerB.id));
-  }
+      await tx.update(playersTable).set({
+        currentElo: playerBEloAfter,
+        peakElo: Math.max(playerB.peakElo, playerBEloAfter),
+        wins: playerB.wins + (playerAWon ? 0 : 1),
+        losses: playerB.losses + (playerAWon ? 1 : 0),
+        updatedAt: new Date(),
+      }).where(eq(playersTable.id, playerB.id));
+    }
+
+    return inserted!;
+  });
 
   const event = eventId
     ? (await db.select().from(eventsTable).where(eq(eventsTable.id, Number(eventId))))[0]
     : null;
 
-  res.status(201).json(formatMatch(row!, event?.title ?? null));
+  res.status(201).json(formatMatch(row, event?.title ?? null));
 });
 
 router.put("/:id", requireAdmin, async (req, res) => {

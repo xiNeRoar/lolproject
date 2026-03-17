@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { seasonsTable, playersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { softResetElo } from "../lib/elo";
 
@@ -24,7 +24,7 @@ router.get("/", async (_req, res) => {
   const rows = await db
     .select()
     .from(seasonsTable)
-    .orderBy(seasonsTable.startDate);
+    .orderBy(desc(seasonsTable.startDate));
   res.json(rows.map(formatSeason));
 });
 

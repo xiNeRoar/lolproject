@@ -296,47 +296,4 @@ router.delete("/:id", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-router.post("/:id/timestamps", requireAdmin, async (req, res) => {
-  const vodId = parseInt(req.params.id as string);
-  if (isNaN(vodId)) { res.status(400).json({ error: "Invalid vod id" }); return; }
-
-  const [vod] = await db.select().from(vodEntriesTable).where(eq(vodEntriesTable.id, vodId));
-  if (!vod) { res.status(404).json({ error: "VOD not found" }); return; }
-
-  const { label, seconds, type } = req.body as {
-    label?: string;
-    seconds?: number;
-    type?: string;
-  };
-
-  if (!label || seconds === undefined || seconds === null) {
-    res.status(400).json({ error: "label and seconds are required" });
-    return;
-  }
-
-  const [row] = await db
-    .insert(vodTimestampsTable)
-    .values({
-      vodId,
-      label,
-      seconds: Number(seconds),
-      type: type || "manual",
-    })
-    .returning();
-
-  res.status(201).json(formatTimestamp(row!));
-});
-
-router.delete("/:id/timestamps/:tsId", requireAdmin, async (req, res) => {
-  const vodId = parseInt(req.params.id as string);
-  const tsId = parseInt(req.params.tsId as string);
-  if (isNaN(vodId) || isNaN(tsId)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-
-  await db.delete(vodTimestampsTable).where(eq(vodTimestampsTable.id, tsId));
-  res.json({ success: true });
-});
-
 export default router;

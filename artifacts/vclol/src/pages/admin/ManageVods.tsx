@@ -10,6 +10,7 @@ import {
   useCreateVodTimestamp,
   useDeleteVodTimestamp,
   type VodEntry,
+  type CreateVodRequest,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,15 +128,21 @@ export default function ManageVods() {
   };
 
   const onSubmit = (data: Record<string, unknown>) => {
-    // Cast to any — all required fields (title, videoUrl) come from the form
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = {
-      ...data,
+    const payload: CreateVodRequest = {
+      title: String(data.title ?? ""),
+      videoUrl: String(data.videoUrl ?? ""),
+      format: data.format ? String(data.format) : null,
+      playerNames: data.playerNames ? String(data.playerNames) : null,
+      roleTag: data.roleTag ? String(data.roleTag) : null,
+      notes: data.notes ? String(data.notes) : null,
+      champion: data.champion ? String(data.champion) : null,
+      opponentChampion: data.opponentChampion ? String(data.opponentChampion) : null,
+      position: data.position ? String(data.position) : null,
+      patch: data.patch ? String(data.patch) : null,
       eventId: data.eventId ? Number(data.eventId) : null,
       playerId: data.playerId ? Number(data.playerId) : null,
       playerEloAtTime: data.playerEloAtTime ? Number(data.playerEloAtTime) : null,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any;
+    };
     if (editingId) {
       updateMut.mutate(
         { id: editingId, data: payload },

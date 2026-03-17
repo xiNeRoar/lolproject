@@ -8,6 +8,7 @@ import {
   useListPlayers,
   useListSeasons,
   type Match,
+  type CreateMatchRequest,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,17 +58,20 @@ export default function ManageMatches() {
   };
 
   const onSubmit = (data: Record<string, unknown>) => {
-    // Cast through unknown to satisfy generated CreateMatchRequest type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = {
-      ...(data as Record<string, unknown>),
+    const payload: CreateMatchRequest = {
+      matchTitle: String(data.matchTitle ?? ""),
+      sideAName: String(data.sideAName ?? ""),
+      sideBName: String(data.sideBName ?? ""),
+      winnerName: String(data.winnerName ?? ""),
+      score: data.score ? String(data.score) : null,
+      format: data.format ? String(data.format) : null,
+      vodUrl: data.vodUrl ? String(data.vodUrl) : null,
       eventId: data.eventId ? Number(data.eventId) : null,
       playerAId: data.playerAId ? Number(data.playerAId) : null,
       playerBId: data.playerBId ? Number(data.playerBId) : null,
       seasonId: data.seasonId ? Number(data.seasonId) : null,
       isPlayoff: Boolean(data.isPlayoff),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any;
+    };
 
     if (editingId) {
       updateMut.mutate(

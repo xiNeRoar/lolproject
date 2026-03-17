@@ -204,10 +204,8 @@ export default function Vods() {
                   )}
 
                   <div className="mt-auto pt-3 border-t border-border/30">
-                    <Link href={`/vods/${vod.id}`}>
-                      <a className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-                        View Details <ArrowRight className="w-3 h-3" />
-                      </a>
+                    <Link href={`/vods/${vod.id}`} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                      View Details <ArrowRight className="w-3 h-3" />
                     </Link>
                   </div>
                 </CardContent>
