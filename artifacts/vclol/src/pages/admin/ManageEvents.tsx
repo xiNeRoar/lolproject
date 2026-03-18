@@ -3,18 +3,19 @@ import { useListEvents, useCreateEvent, useUpdateEvent, useDeleteEvent, useListR
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, Settings2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { formatDate } from "@/lib/utils";
 
 export default function ManageEvents() {
   const { data: events, isLoading } = useListEvents();
   const { data: allRegs } = useListRegistrations();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const regCountByEvent = useMemo(() => {
     const map: Record<number, number> = {};
@@ -92,7 +93,9 @@ export default function ManageEvents() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => openEdit(event)}><Edit className="w-4 h-4" /></Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}`)}>
+                <Settings2 className="w-4 h-4 mr-1.5" /> Manage
+              </Button>
               <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(event.id)}><Trash2 className="w-4 h-4" /></Button>
             </div>
           </div>

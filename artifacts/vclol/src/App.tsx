@@ -25,8 +25,8 @@ import MatchDetail from "@/pages/public/MatchDetail";
 // Admin Pages
 import Login from "@/pages/admin/Login";
 import Dashboard from "@/pages/admin/Dashboard";
-import ManageInterests from "@/pages/admin/ManageInterests";
 import ManageEvents from "@/pages/admin/ManageEvents";
+import ManageEventDetail from "@/pages/admin/ManageEventDetail";
 import ManageRegistrations from "@/pages/admin/ManageRegistrations";
 import ManageMatches from "@/pages/admin/ManageMatches";
 import ManageVods from "@/pages/admin/ManageVods";
@@ -58,8 +58,8 @@ function Router() {
       
       <Route path="/admin/login" component={Login} />
       <Route path="/admin" component={Dashboard} />
-      <Route path="/admin/interests" component={ManageInterests} />
       <Route path="/admin/events" component={ManageEvents} />
+      <Route path="/admin/events/:id" component={ManageEventDetail} />
       <Route path="/admin/registrations" component={ManageRegistrations} />
       <Route path="/admin/matches" component={ManageMatches} />
       <Route path="/admin/vods" component={ManageVods} />

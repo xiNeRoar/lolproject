@@ -54,6 +54,40 @@ Generated hooks available: `useGetPlayerEvents`, `useGetPlayerChampions`, `useGe
 
 ---
 
+## Admin UI Overhaul — Frontend (Replit)
+
+The current admin is organised by database table (flat list of 9 disconnected pages). Industry standard organises by workflow. Needs a full restructure.
+
+### Entity relationships (reference)
+```
+Season → Matches, Challenges, Ladder Settings
+Event → Event Registrations, Matches (by round/bracket)
+Player → Matches (as A/B), Challenges, ELO History, Badges, VODs, Registrations
+Challenge → (when completed) generates a Match
+Interest Submissions → DEAD, unused, remove
+```
+
+### Checklist
+
+| ID | Task | Who | Status |
+|----|------|-----|--------|
+| A1 | **Delete ManageInterests** — remove page file + nav link | Replit | DONE |
+| A2 | **Reorganise Admin nav** — group into sections: Players / Seasons / Events / Content / Settings instead of 9 flat links | Replit | DONE |
+| A3 | **Event admin — unified Tabs page** — `/admin/events/:id` with 4 tabs: Details \| Registrations \| Bracket \| Matches. ManageEvents list now has "Manage →" button per event | Replit | DONE |
+| A4 | **ManageMatches — Event filter + Round column** — dropdown to filter match list by event; Round # shown as badge in table | Replit | DONE |
+| A5 | **Bracket auto-generate** — needs Claude backend first (B1/B2); then admin can click "Generate Bracket" inside Event → Bracket tab | Replit (after B1/B2) | BLOCKED |
+
+### Backend needed for A5 (Claude Code)
+
+| ID | Task | Status |
+|----|------|--------|
+| B1 | `POST /api/events/:id/generate-bracket` — takes seeded player list, generates round-based match records (QF/SF/Final), assigns `round` + `bracketSlot` + `eventId` automatically | TODO |
+| B2 | `GET /api/events/:id/bracket` — returns event matches organised by round for admin bracket view; same data as public EventDetail but admin-accessible | TODO |
+
+**Workflow for A5:** Claude builds B1+B2 → updates OpenAPI spec → runs codegen → Replit adds "Generate Bracket" button + bracket editor inside Event Tabs (A3 → Bracket tab)
+
+---
+
 ## Phase 2 — Needs Claude Code backend first
 
 These require new backend endpoints before Replit can build UI.

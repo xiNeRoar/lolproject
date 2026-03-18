@@ -108,17 +108,37 @@ export default function ManageMatches() {
     }
   };
 
+  const [eventFilter, setEventFilter] = useState<number | null>(null);
+
+  const filteredMatches = eventFilter === null
+    ? matches
+    : eventFilter === 0
+      ? matches?.filter((m) => !m.eventId)
+      : matches?.filter((m) => m.eventId === eventFilter);
+
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-display font-bold">Manage Matches</h1>
-        <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add Match</Button>
+        <div className="flex items-center gap-3">
+          <select
+            className="h-10 rounded-md border border-input bg-card px-3 py-2 text-sm"
+            value={eventFilter ?? ""}
+            onChange={(e) => setEventFilter(e.target.value === "" ? null : Number(e.target.value))}
+          >
+            <option value="">All Matches</option>
+            <option value={0}>Independent (no event)</option>
+            {events?.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
+          </select>
+          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add Match</Button>
+        </div>
       </div>
 
       <div className="bg-card border border-border/50 rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
             <tr>
+              <th className="px-6 py-3">Round</th>
               <th className="px-6 py-3">Event / Format</th>
               <th className="px-6 py-3">Matchup</th>
               <th className="px-6 py-3">Score</th>
@@ -128,9 +148,18 @@ export default function ManageMatches() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={5} className="px-6 py-4 text-center">Loading...</td></tr>
-            ) : matches?.map((item) => (
+              <tr><td colSpan={6} className="px-6 py-4 text-center">Loading...</td></tr>
+            ) : !filteredMatches?.length ? (
+              <tr><td colSpan={6} className="px-6 py-6 text-center text-muted-foreground">No matches found.</td></tr>
+            ) : filteredMatches?.map((item) => (
               <tr key={item.id} className="border-b border-border/20 hover:bg-muted/20">
+                <td className="px-6 py-4">
+                  {item.round ? (
+                    <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded">R{item.round}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="px-6 py-4">
                   <div className="font-medium text-primary">{item.eventTitle || "Independent"}</div>
                   <div className="text-xs text-muted-foreground">{item.format} • {item.matchTitle}</div>
