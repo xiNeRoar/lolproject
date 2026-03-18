@@ -166,13 +166,13 @@ export default function PlayerProfile() {
                     <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
                       <TrendingUp className="w-3 h-3" /> ELO
                     </div>
-                    <div className="text-2xl font-display font-bold text-primary">{player.currentElo}</div>
+                    <div className="text-3xl font-display font-bold text-primary">{player.currentElo}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
                       <Trophy className="w-3 h-3" /> Peak
                     </div>
-                    <div className="text-2xl font-display font-bold text-yellow-400">{player.peakElo}</div>
+                    <div className="text-3xl font-display font-bold text-yellow-400">{player.peakElo}</div>
                   </div>
                 </div>
                 {isLoggedIn && player.id !== myPlayerId && (
@@ -187,15 +187,15 @@ export default function PlayerProfile() {
             <div className="mt-6 border-t border-border/40 pt-5">
               <div className="flex items-center divide-x divide-border/40">
                 <div className="flex-1 text-center px-4 py-1">
-                  <div className="text-3xl font-display font-bold text-green-400">{player.wins}</div>
+                  <div className="text-xl font-display font-bold text-green-400">{player.wins}</div>
                   <div className="text-xs text-muted-foreground mt-1">Wins</div>
                 </div>
                 <div className="flex-1 text-center px-4 py-1">
-                  <div className="text-3xl font-display font-bold text-red-400">{player.losses}</div>
+                  <div className="text-xl font-display font-bold text-red-400">{player.losses}</div>
                   <div className="text-xs text-muted-foreground mt-1">Losses</div>
                 </div>
                 <div className="flex-1 text-center px-4 py-1">
-                  <div className="text-3xl font-display font-bold">{winRate}%</div>
+                  <div className="text-xl font-display font-bold">{winRate}%</div>
                   <div className="text-xs text-muted-foreground mt-1">Win Rate</div>
                 </div>
               </div>
