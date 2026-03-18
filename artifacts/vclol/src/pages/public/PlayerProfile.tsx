@@ -218,7 +218,7 @@ export default function PlayerProfile() {
         {badges && badges.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Badges</CardTitle>
+              <CardTitle className="text-base font-display">Badges</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -240,7 +240,7 @@ export default function PlayerProfile() {
         {eloChartData.length > 1 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">ELO History</CardTitle>
+              <CardTitle className="text-base font-display">ELO History</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
@@ -276,7 +276,7 @@ export default function PlayerProfile() {
         {championStats && championStats.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Champion Pool</CardTitle>
+              <CardTitle className="text-base font-display">Champion Pool</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-5">
@@ -314,7 +314,7 @@ export default function PlayerProfile() {
         {playerEvents && playerEvents.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Events</CardTitle>
+              <CardTitle className="text-base font-display">Events</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/30">
@@ -356,7 +356,7 @@ export default function PlayerProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Recent Matches</CardTitle>
+              <CardTitle className="text-base font-display">Recent Matches</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.recentMatches?.length ? (
@@ -408,7 +408,7 @@ export default function PlayerProfile() {
 
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">VODs</CardTitle>
+              <CardTitle className="text-base font-display">VODs</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.vods?.length ? (
