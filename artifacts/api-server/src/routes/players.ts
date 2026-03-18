@@ -53,6 +53,7 @@ function formatVod(v: typeof vodEntriesTable.$inferSelect) {
   return {
     id: v.id,
     eventId: v.eventId,
+    matchId: v.matchId ?? null,
     eventTitle: null as string | null,
     title: v.title,
     format: v.format,

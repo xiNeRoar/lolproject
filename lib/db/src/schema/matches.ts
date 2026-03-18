@@ -15,6 +15,8 @@ export const matchesTable = pgTable("matches", {
   score: text("score"),
   format: text("format"),
   vodUrl: text("vod_url"),
+  gameId: text("game_id"),
+  resultSource: text("result_source").notNull().default("admin_manual"),
   playerAId: integer("player_a_id").references(() => playersTable.id, { onDelete: "set null" }),
   playerBId: integer("player_b_id").references(() => playersTable.id, { onDelete: "set null" }),
   playerAEloBefore: integer("player_a_elo_before"),

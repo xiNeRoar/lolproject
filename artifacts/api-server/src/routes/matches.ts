@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable } from "@workspace/db";
+import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable, vodEntriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
@@ -287,11 +287,27 @@ router.get("/:id", async (req, res) => {
     playerBRiotId = pB?.riotId ?? null;
   }
 
+  // M2: Fetch related VODs for this match
+  const matchVods = await db
+    .select()
+    .from(vodEntriesTable)
+    .where(eq(vodEntriesTable.matchId, id));
+
   res.json({
     ...formatMatch(match, eventTitle ?? null),
     eventSlug: eventSlug ?? null,
     playerARiotId,
     playerBRiotId,
+    vods: matchVods.map((v) => ({
+      id: v.id,
+      title: v.title,
+      videoUrl: v.videoUrl,
+      playerId: v.playerId,
+      champion: v.champion,
+      opponentChampion: v.opponentChampion,
+      position: v.position,
+      createdAt: v.createdAt.toISOString(),
+    })),
   });
 });
 

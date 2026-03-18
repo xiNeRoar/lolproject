@@ -14,6 +14,7 @@ export const playersTable = pgTable("players", {
   discordId: text("discord_id"),
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
+  registrationStatus: text("registration_status").notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -3,10 +3,12 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
 import { playersTable } from "./players";
+import { matchesTable } from "./matches";
 
 export const vodEntriesTable = pgTable("vod_entries", {
   id: serial("id").primaryKey(),
   eventId: integer("event_id").references(() => eventsTable.id, { onDelete: "set null" }),
+  matchId: integer("match_id").references(() => matchesTable.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   format: text("format"),
   playerNames: text("player_names"),

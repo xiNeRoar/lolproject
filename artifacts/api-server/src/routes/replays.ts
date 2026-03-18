@@ -126,6 +126,7 @@ router.patch("/:id", async (req, res) => {
         if (youtubeUrlA) {
           await db.insert(vodEntriesTable).values({
             eventId: match.eventId,
+            matchId: match.id,
             title: `${playerAName} vs ${playerBName} — POV A`,
             format: match.format || "1v1",
             playerNames: `${playerAName}, ${playerBName}`,
@@ -136,6 +137,7 @@ router.patch("/:id", async (req, res) => {
         if (youtubeUrlB) {
           await db.insert(vodEntriesTable).values({
             eventId: match.eventId,
+            matchId: match.id,
             title: `${playerBName} vs ${playerAName} — POV B`,
             format: match.format || "1v1",
             playerNames: `${playerAName}, ${playerBName}`,

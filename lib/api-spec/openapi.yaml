@@ -1918,6 +1918,9 @@ components:
         eventId:
           type: integer
           nullable: true
+        matchId:
+          type: integer
+          nullable: true
         eventTitle:
           type: string
           nullable: true

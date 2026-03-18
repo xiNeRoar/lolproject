@@ -183,6 +183,7 @@ export const GetEventResponse = zod.object({
     zod.object({
       id: zod.number(),
       eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
       eventTitle: zod.string().nullish(),
       title: zod.string(),
       format: zod.string().nullish(),
@@ -507,6 +508,7 @@ export const ListVodsQueryParams = zod.object({
 export const ListVodsResponseItem = zod.object({
   id: zod.number(),
   eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
   eventTitle: zod.string().nullish(),
   title: zod.string(),
   format: zod.string().nullish(),
@@ -583,6 +585,7 @@ export const GetVodResponse = zod.object({
     zod.object({
       id: zod.number(),
       eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
       eventTitle: zod.string().nullish(),
       title: zod.string(),
       format: zod.string().nullish(),
@@ -631,6 +634,7 @@ export const UpdateVodBody = zod.object({
 export const UpdateVodResponse = zod.object({
   id: zod.number(),
   eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
   eventTitle: zod.string().nullish(),
   title: zod.string(),
   format: zod.string().nullish(),
@@ -755,6 +759,7 @@ export const GetPlayerByIdResponse = zod.object({
     zod.object({
       id: zod.number(),
       eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
       eventTitle: zod.string().nullish(),
       title: zod.string(),
       format: zod.string().nullish(),
@@ -857,6 +862,7 @@ export const GetPlayerResponse = zod.object({
     zod.object({
       id: zod.number(),
       eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
       eventTitle: zod.string().nullish(),
       title: zod.string(),
       format: zod.string().nullish(),

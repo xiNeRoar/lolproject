@@ -14,6 +14,7 @@ function formatVodEntry(
   return {
     id: v.id,
     eventId: v.eventId,
+    matchId: v.matchId ?? null,
     eventTitle: extra.eventTitle ?? null,
     title: v.title,
     format: v.format,
@@ -61,6 +62,7 @@ router.get("/", async (req, res) => {
     .select({
       id: vodEntriesTable.id,
       eventId: vodEntriesTable.eventId,
+      matchId: vodEntriesTable.matchId,
       title: vodEntriesTable.title,
       format: vodEntriesTable.format,
       playerNames: vodEntriesTable.playerNames,
@@ -106,6 +108,7 @@ router.get("/", async (req, res) => {
     rows.map((r) => ({
       id: r.id,
       eventId: r.eventId,
+      matchId: r.matchId ?? null,
       eventTitle: r.eventTitle ?? null,
       title: r.title,
       format: r.format,
