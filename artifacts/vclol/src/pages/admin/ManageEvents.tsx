@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Users, Settings2 } from "lucide-react";
+import { Plus, Trash2, Users, ArrowRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -124,14 +124,12 @@ export default function ManageEvents() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm" className="text-xs gap-1.5"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary hover:text-primary hover:bg-primary/10 gap-1 mr-1"
                         onClick={() => navigate(`/admin/events/${event.id}`)}>
-                        <Settings2 className="w-3.5 h-3.5" /> Manage
-                      </Button>
-                      <Button variant="ghost" size="icon"
-                        onClick={() => openEdit(event)}
-                        title="Edit event details">
-                        <Settings2 className="w-4 h-4 text-muted-foreground" />
+                        Manage <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon"
                         onClick={() => handleDelete(event.id)}>

@@ -92,11 +92,11 @@ export default function ManageEventDetail() {
   const isDoubleElim = event?.format?.toLowerCase().includes("double");
 
   useEffect(() => {
-    if (playerA) setMatchValue("sideAName", playerA.riotId);
+    setMatchValue("sideAName", playerA ? playerA.riotId : "");
   }, [watchedPlayerAId]);
 
   useEffect(() => {
-    if (playerB) setMatchValue("sideBName", playerB.riotId);
+    setMatchValue("sideBName", playerB ? playerB.riotId : "");
   }, [watchedPlayerBId]);
 
   const openNewMatch = () => {
@@ -382,51 +382,33 @@ export default function ManageEventDetail() {
               {/* Players — links to VCLoL accounts → auto-fills names + enables ELO update */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Players <span className="normal-case font-normal text-muted-foreground/60 ml-1">— link VCLoL accounts to auto-fill names &amp; enable ELO update</span>
+                  Players <span className="normal-case font-normal text-muted-foreground/60 ml-1">— link VCLoL accounts to enable ELO update</span>
                 </p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player A</label>
+                  {/* Player A */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground block">Player A</label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerAId")}>
-                      <option value="">None (manual name)</option>
+                      <option value="">None — enter name manually</option>
                       {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
                     </select>
-                    {watchedPlayerAId && playerAElo !== undefined && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-primary">{playerAElo}</span></p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player B</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
-                      <option value="">None (manual name)</option>
-                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
-                    </select>
-                    {watchedPlayerBId && playerBElo !== undefined && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-primary">{playerBElo}</span></p>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Side A Name</label>
                     {watchedPlayerAId ? (
-                      <div className="flex h-10 w-full items-center gap-2 rounded-md border border-border/30 bg-muted/40 px-3 text-sm">
-                        <span className="font-medium text-foreground">{playerA?.riotId}</span>
-                        <span className="text-xs text-muted-foreground">(auto-filled)</span>
-                      </div>
+                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{playerAElo}</span></p>
                     ) : (
-                      <Input placeholder="e.g. Zed#NA1" {...regMatch("sideAName", { required: true })} />
+                      <Input placeholder="Side A name (e.g. Zed#NA1)" {...regMatch("sideAName", { required: true })} />
                     )}
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Side B Name</label>
+                  {/* Player B */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-muted-foreground block">Player B</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
+                      <option value="">None — enter name manually</option>
+                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                    </select>
                     {watchedPlayerBId ? (
-                      <div className="flex h-10 w-full items-center gap-2 rounded-md border border-border/30 bg-muted/40 px-3 text-sm">
-                        <span className="font-medium text-foreground">{playerB?.riotId}</span>
-                        <span className="text-xs text-muted-foreground">(auto-filled)</span>
-                      </div>
+                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{playerBElo}</span></p>
                     ) : (
-                      <Input placeholder="e.g. Jinx#KR1" {...regMatch("sideBName", { required: true })} />
+                      <Input placeholder="Side B name (e.g. Jinx#KR1)" {...regMatch("sideBName", { required: true })} />
                     )}
                   </div>
                 </div>
@@ -483,11 +465,9 @@ export default function ManageEventDetail() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      Bracket Slot #
-                      <span className="ml-1 text-muted-foreground/60 normal-case font-normal">(position within round: 1=top)</span>
-                    </label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Bracket Slot #</label>
                     <Input type="number" min="1" placeholder="e.g. 1" {...regMatch("bracketSlot")} />
+                    <p className="text-xs text-muted-foreground/60 mt-1">Position within round — 1 = top match</p>
                   </div>
                 </div>
                 {isDoubleElim && (
