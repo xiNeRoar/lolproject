@@ -10,6 +10,7 @@ import {
 import { useListEvents, useListVods, useListMatches } from "@workspace/api-client-react";
 import { formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const DD = "https://ddragon.leagueoflegends.com";
 
@@ -26,6 +27,14 @@ export default function Home() {
   const { data: events } = useListEvents();
   const { data: vods } = useListVods();
   const { data: matches } = useListMatches();
+
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => {
+    const sync = () => setLoggedIn(!!localStorage.getItem("vclol_player_id"));
+    sync();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
 
   const upcomingEvent = events?.find(e => e.registrationStatus !== 'closed') || events?.[0];
   const recentVods = vods?.slice(0, 3);
@@ -66,16 +75,33 @@ export default function Home() {
               A serious environment for local players to improve, compete, and be seen. Structured grassroots competition for the Lower Mainland.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/register">
-                <Button size="lg" className="font-semibold w-full sm:w-auto">
-                  Register Now <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-              <Link href="/events">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  View Events
-                </Button>
-              </Link>
+              {loggedIn ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button size="lg" className="font-semibold w-full sm:w-auto">
+                      My Dashboard <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/ladder">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                      View Ladder
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/register">
+                    <Button size="lg" className="font-semibold w-full sm:w-auto">
+                      Register Now <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/events">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                      View Events
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         </div>

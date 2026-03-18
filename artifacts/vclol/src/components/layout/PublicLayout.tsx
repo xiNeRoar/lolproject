@@ -9,7 +9,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const [playerId, setPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
-    setPlayerId(localStorage.getItem("vclol_player_id"));
+    const sync = () => setPlayerId(localStorage.getItem("vclol_player_id"));
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", sync);
+    };
   }, []);
 
   const navLinks = [
@@ -48,20 +55,28 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
             </nav>
 
-            {/* CTA & Auth */}
-            <div className="hidden md:flex items-center space-x-4">
+            {/* CTA & Auth — desktop */}
+            <div className="hidden md:flex items-center space-x-3">
               {playerId ? (
-                <Link href="/dashboard" className="text-sm font-medium text-primary hover:text-primary/80">
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                >
                   My Dashboard
                 </Link>
               ) : (
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Login
-                </Link>
+                <>
+                  <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                  >
+                    Register
+                  </Link>
+                </>
               )}
-              <Link href="/register" className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
-                Register
-              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -95,13 +110,34 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   {link.label}
                 </Link>
               ))}
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 mt-4 rounded-md text-base font-medium bg-primary text-primary-foreground"
-              >
-                Register
-              </Link>
+              <div className="pt-2 border-t border-border/40 mt-2">
+                {playerId ? (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground"
+                  >
+                    My Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 mt-1 rounded-md text-base font-medium bg-primary text-primary-foreground"
+                    >
+                      Register
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

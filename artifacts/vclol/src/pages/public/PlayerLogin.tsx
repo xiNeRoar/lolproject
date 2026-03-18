@@ -1,9 +1,18 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
 
 export default function PlayerLogin() {
-  // TODO Claude: implement Discord OAuth flow
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (localStorage.getItem("vclol_player_id")) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
   return (
     <PublicLayout>
       <div className="max-w-sm mx-auto px-4 pt-24 pb-16">
