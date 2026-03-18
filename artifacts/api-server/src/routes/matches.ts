@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { matchesTable, eventsTable, playersTable } from "@workspace/db";
+import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
+import { checkMatchBadges } from "../lib/badges";
 
 const router = Router();
 
@@ -165,10 +166,13 @@ router.post("/", requireAdmin, async (req, res) => {
       playerAEloBefore = pA.currentElo;
       playerBEloBefore = pB.currentElo;
 
-      // Determine winner by matching winnerName to sideAName/sideBName
+      // C10: Read K-factor from ladderSettings instead of using hardcoded value
+      const [settings] = await db.select().from(ladderSettingsTable).limit(1);
+      const kFactor = settings?.kFactor ?? 32;
+
       const playerAWon = winnerName === sideAName;
-      playerAEloAfter = calculateElo(pA.currentElo, pB.currentElo, playerAWon);
-      playerBEloAfter = calculateElo(pB.currentElo, pA.currentElo, !playerAWon);
+      playerAEloAfter = calculateElo(pA.currentElo, pB.currentElo, playerAWon, kFactor);
+      playerBEloAfter = calculateElo(pB.currentElo, pA.currentElo, !playerAWon, kFactor);
     }
   }
 
@@ -218,10 +222,33 @@ router.post("/", requireAdmin, async (req, res) => {
         losses: playerB.losses + (playerAWon ? 1 : 0),
         updatedAt: new Date(),
       }).where(eq(playersTable.id, playerB.id));
+
+      // C7: Write elo_history for both players
+      await tx.insert(eloHistoryTable).values({
+        playerId: playerA.id,
+        elo: playerAEloAfter,
+        delta: playerAEloAfter - playerA.currentElo,
+        matchId: inserted!.id,
+        reason: "match",
+      });
+      await tx.insert(eloHistoryTable).values({
+        playerId: playerB.id,
+        elo: playerBEloAfter,
+        delta: playerBEloAfter - playerB.currentElo,
+        matchId: inserted!.id,
+        reason: "match",
+      });
     }
 
     return inserted!;
   });
+
+  // C23: Auto-award badges after match
+  if (playerA && playerB) {
+    checkMatchBadges(playerA.id, playerB.id).catch((err) =>
+      console.error("[badges] Error checking match badges:", err)
+    );
+  }
 
   const event = eventId
     ? (await db.select().from(eventsTable).where(eq(eventsTable.id, Number(eventId))))[0]

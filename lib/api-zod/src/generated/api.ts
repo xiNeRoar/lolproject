@@ -661,6 +661,17 @@ export const DeleteVodResponse = zod.object({
 });
 
 /**
+ * @summary Public player registration
+ */
+export const RegisterPlayerBody = zod.object({
+  riotId: zod.string(),
+  discordId: zod.string(),
+  discordUsername: zod.string(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+});
+
+/**
  * @summary List all players (admin)
  */
 export const ListPlayersResponseItem = zod.object({
@@ -690,6 +701,108 @@ export const CreatePlayerBody = zod.object({
   isActive: zod.boolean().nullish(),
   email: zod.string().nullish(),
   notificationPreference: zod.string().nullish(),
+});
+
+/**
+ * @summary Get player profile by numeric ID (public)
+ */
+export const GetPlayerByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPlayerByIdResponse = zod.object({
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  discordId: zod.string().nullish(),
+  recentMatches: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      matchTitle: zod.string(),
+      sideAName: zod.string(),
+      sideBName: zod.string(),
+      winnerName: zod.string(),
+      score: zod.string().nullish(),
+      format: zod.string().nullish(),
+      vodUrl: zod.string().nullish(),
+      playerAId: zod.number().nullish(),
+      playerBId: zod.number().nullish(),
+      playerAEloBefore: zod.number().nullish(),
+      playerAEloAfter: zod.number().nullish(),
+      playerBEloBefore: zod.number().nullish(),
+      playerBEloAfter: zod.number().nullish(),
+      seasonId: zod.number().nullish(),
+      isPlayoff: zod.boolean(),
+      round: zod.number().nullish(),
+      bracketSlot: zod.number().nullish(),
+      nextMatchId: zod.number().nullish(),
+      isLosersBracket: zod.boolean().nullish(),
+      groupId: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  vods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      playerEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Player self-update (own account only)
+ */
+export const UpdatePlayerProfileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePlayerProfileBody = zod.object({
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+});
+
+export const UpdatePlayerProfileResponse = zod.object({
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  discordId: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
 });
 
 /**
@@ -807,6 +920,83 @@ export const DeletePlayerParams = zod.object({
 
 export const DeletePlayerResponse = zod.object({
   success: zod.boolean(),
+});
+
+/**
+ * @summary Submit a replay file
+ */
+export const SubmitReplayBody = zod.object({
+  matchId: zod.number(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  renderMode: zod.string(),
+});
+
+/**
+ * @summary List all replay queue entries (admin)
+ */
+export const ListReplayQueueResponseItem = zod.object({
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
+});
+export const ListReplayQueueResponse = zod.array(ListReplayQueueResponseItem);
+
+/**
+ * @summary Get next pending replay job (render machine)
+ */
+export const GetNextReplayJobResponse = zod.object({
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
+});
+
+/**
+ * @summary Update replay submission status (render machine)
+ */
+export const UpdateReplayStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateReplayStatusBody = zod.object({
+  status: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+});
+
+export const UpdateReplayStatusResponse = zod.object({
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
 });
 
 /**
@@ -985,6 +1175,12 @@ export const GetLadderSettingsResponse = zod.object({
   maxChallengesPerWeek: zod.number(),
   maxChallengesSameOpponentPerWeek: zod.number(),
   challengeExpiryHours: zod.number(),
+  maxDeclinesPerWeek: zod.number(),
+  maxDeclinesSameOpponentPerWeek: zod.number(),
+  noShowExpiryDays: zod.number(),
+  playoffMinPlayers: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -998,6 +1194,12 @@ export const UpdateLadderSettingsBody = zod.object({
   maxChallengesPerWeek: zod.number(),
   maxChallengesSameOpponentPerWeek: zod.number(),
   challengeExpiryHours: zod.number(),
+  maxDeclinesPerWeek: zod.number(),
+  maxDeclinesSameOpponentPerWeek: zod.number(),
+  noShowExpiryDays: zod.number(),
+  playoffMinPlayers: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -1008,6 +1210,12 @@ export const UpdateLadderSettingsResponse = zod.object({
   maxChallengesPerWeek: zod.number(),
   maxChallengesSameOpponentPerWeek: zod.number(),
   challengeExpiryHours: zod.number(),
+  maxDeclinesPerWeek: zod.number(),
+  maxDeclinesSameOpponentPerWeek: zod.number(),
+  noShowExpiryDays: zod.number(),
+  playoffMinPlayers: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
   updatedAt: zod.string(),
 });
 

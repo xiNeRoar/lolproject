@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayer, useGetLadderSettings, useSetChallengeGameReady } from "@workspace/api-client-react";
+import { useGetPlayerById, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayerProfile, useGetLadderSettings, useSetChallengeGameReady } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,7 +138,7 @@ function GameIdSubmit({ challengeId }: { challengeId: number }) {
 }
 
 function DashboardContent({ pid }: { pid: number }) {
-  const { data: player } = useGetPlayer(String(pid));
+  const { data: player } = useGetPlayerById(pid);
   const { data: eloHistory } = useGetEloHistory(pid);
   const { data: badges } = useGetPlayerBadges(pid);
   const { data: challenges } = useGetChallengesForPlayer(pid);
@@ -146,7 +146,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const { data: ladderSettings } = useGetLadderSettings();
   const acceptChallenge = useAcceptChallenge();
   const declineChallenge = useDeclineChallenge();
-  const updatePlayer = useUpdatePlayer();
+  const updatePlayer = useUpdatePlayerProfile();
 
   const [notifPref, setNotifPref] = useState<string | null>(null);
 
@@ -165,7 +165,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const handleSaveNotif = () => {
     if (!notifPref) return;
     updatePlayer.mutate(
-      { id: pid, data: { notificationPreference: notifPref } as Parameters<typeof updatePlayer.mutate>[0]["data"] },
+      { id: pid, data: { notificationPreference: notifPref } },
       { onSuccess: () => toast.success("Notification preference saved") }
     );
   };

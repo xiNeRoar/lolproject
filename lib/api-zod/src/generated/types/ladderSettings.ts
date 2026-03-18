@@ -13,5 +13,11 @@ export interface LadderSettings {
   maxChallengesPerWeek: number;
   maxChallengesSameOpponentPerWeek: number;
   challengeExpiryHours: number;
+  maxDeclinesPerWeek: number;
+  maxDeclinesSameOpponentPerWeek: number;
+  noShowExpiryDays: number;
+  playoffMinPlayers: number;
+  playoffSize: number;
+  playoffFormat: string;
   updatedAt: string;
 }

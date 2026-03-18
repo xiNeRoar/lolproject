@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { seasonsTable, playersTable } from "@workspace/db";
+import { seasonsTable, playersTable, seasonChampionsTable, eloHistoryTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { softResetElo } from "../lib/elo";
+import { checkSeasonBadges } from "../lib/badges";
 
 const router = Router();
 
@@ -143,7 +144,7 @@ router.post("/:id/complete", requireAdmin, async (req, res) => {
 
   const factor = parseFloat(String(target.eloResetFactor)) || 0.5;
 
-  // Use a transaction: mark season completed then apply ELO soft reset to all active players
+  // Use a transaction: mark season completed, record champion, apply ELO soft reset, write elo_history
   await db.transaction(async (tx) => {
     await tx
       .update(seasonsTable)
@@ -155,14 +156,46 @@ router.post("/:id/complete", requireAdmin, async (req, res) => {
       .from(playersTable)
       .where(eq(playersTable.isActive, true));
 
+    // C8: Find player with highest ELO and insert season_champion
+    if (activePlayers.length > 0) {
+      const champion = activePlayers.reduce((best, p) => p.currentElo > best.currentElo ? p : best);
+      await tx.insert(seasonChampionsTable).values({
+        seasonId: id,
+        playerId: champion.id,
+        finalElo: champion.currentElo,
+      });
+    }
+
+    // Apply ELO soft reset + C9: write elo_history for each reset
     for (const player of activePlayers) {
       const newElo = softResetElo(player.currentElo, factor);
+      const delta = newElo - player.currentElo;
+
       await tx
         .update(playersTable)
         .set({ currentElo: newElo, updatedAt: new Date() })
         .where(eq(playersTable.id, player.id));
+
+      await tx.insert(eloHistoryTable).values({
+        playerId: player.id,
+        elo: newElo,
+        delta,
+        matchId: null,
+        reason: "season_reset",
+      });
     }
   });
+
+  // C23: Auto-award season badges
+  const postPlayers = await db.select().from(playersTable).where(eq(playersTable.isActive, true));
+  if (postPlayers.length > 0) {
+    const champion = postPlayers.reduce((best, p) => p.currentElo > best.currentElo ? p : best);
+    checkSeasonBadges(
+      id,
+      champion.id,
+      postPlayers.map((p) => ({ id: p.id, currentElo: p.currentElo }))
+    ).catch((err) => console.error("[badges] Error checking season badges:", err));
+  }
 
   const [updated] = await db
     .select()

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { eventRegistrationsTable, eventsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
@@ -28,7 +28,12 @@ router.get("/", async (req, res) => {
       })
       .from(eventRegistrationsTable)
       .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
-      .where(eq(eventRegistrationsTable.eventId, eventId));
+      .where(
+        and(
+          eq(eventRegistrationsTable.eventId, eventId),
+          ne(eventRegistrationsTable.status, "withdrawn")
+        )
+      );
   } else {
     rows = await db
       .select({

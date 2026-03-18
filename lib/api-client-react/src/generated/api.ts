@@ -50,10 +50,15 @@ import type {
   Player,
   PlayerBadge,
   PlayerProfile,
+  RegisterPlayerRequest,
+  ReplaySubmission,
   Season,
   SeasonChampion,
   SetChallengeGameReadyBody,
+  SubmitReplayRequest,
   SuccessResponse,
+  UpdatePlayerProfileRequest,
+  UpdateReplayStatusRequest,
   VodDetail,
   VodEntry,
   VodTimestamp,
@@ -2411,6 +2416,92 @@ export const useDeleteVod = <
 };
 
 /**
+ * @summary Public player registration
+ */
+export const getRegisterPlayerUrl = () => {
+  return `/api/players/register`;
+};
+
+export const registerPlayer = async (
+  registerPlayerRequest: RegisterPlayerRequest,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getRegisterPlayerUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(registerPlayerRequest),
+  });
+};
+
+export const getRegisterPlayerMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof registerPlayer>>,
+    TError,
+    { data: BodyType<RegisterPlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof registerPlayer>>,
+  TError,
+  { data: BodyType<RegisterPlayerRequest> },
+  TContext
+> => {
+  const mutationKey = ["registerPlayer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof registerPlayer>>,
+    { data: BodyType<RegisterPlayerRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return registerPlayer(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RegisterPlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof registerPlayer>>
+>;
+export type RegisterPlayerMutationBody = BodyType<RegisterPlayerRequest>;
+export type RegisterPlayerMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Public player registration
+ */
+export const useRegisterPlayer = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof registerPlayer>>,
+    TError,
+    { data: BodyType<RegisterPlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof registerPlayer>>,
+  TError,
+  { data: BodyType<RegisterPlayerRequest> },
+  TContext
+> => {
+  return useMutation(getRegisterPlayerMutationOptions(options));
+};
+
+/**
  * @summary List all players (admin)
  */
 export const getListPlayersUrl = () => {
@@ -2567,6 +2658,181 @@ export const useCreatePlayer = <
   TContext
 > => {
   return useMutation(getCreatePlayerMutationOptions(options));
+};
+
+/**
+ * @summary Get player profile by numeric ID (public)
+ */
+export const getGetPlayerByIdUrl = (id: number) => {
+  return `/api/players/by-id/${id}`;
+};
+
+export const getPlayerById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerProfile> => {
+  return customFetch<PlayerProfile>(getGetPlayerByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerByIdQueryKey = (id: number) => {
+  return [`/api/players/by-id/${id}`] as const;
+};
+
+export const getGetPlayerByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerById>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerByIdQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerById>>> = ({
+    signal,
+  }) => getPlayerById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerById>>
+>;
+export type GetPlayerByIdQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get player profile by numeric ID (public)
+ */
+
+export function useGetPlayerById<
+  TData = Awaited<ReturnType<typeof getPlayerById>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Player self-update (own account only)
+ */
+export const getUpdatePlayerProfileUrl = (id: number) => {
+  return `/api/players/${id}/profile`;
+};
+
+export const updatePlayerProfile = async (
+  id: number,
+  updatePlayerProfileRequest: UpdatePlayerProfileRequest,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getUpdatePlayerProfileUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updatePlayerProfileRequest),
+  });
+};
+
+export const getUpdatePlayerProfileMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    TError,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePlayerProfile>>,
+  TError,
+  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+  TContext
+> => {
+  const mutationKey = ["updatePlayerProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePlayerProfile(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePlayerProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePlayerProfile>>
+>;
+export type UpdatePlayerProfileMutationBody =
+  BodyType<UpdatePlayerProfileRequest>;
+export type UpdatePlayerProfileMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Player self-update (own account only)
+ */
+export const useUpdatePlayerProfile = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    TError,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePlayerProfile>>,
+  TError,
+  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+  TContext
+> => {
+  return useMutation(getUpdatePlayerProfileMutationOptions(options));
 };
 
 /**
@@ -2823,6 +3089,330 @@ export const useDeletePlayer = <
   TContext
 > => {
   return useMutation(getDeletePlayerMutationOptions(options));
+};
+
+/**
+ * @summary Submit a replay file
+ */
+export const getSubmitReplayUrl = () => {
+  return `/api/replays`;
+};
+
+export const submitReplay = async (
+  submitReplayRequest: SubmitReplayRequest,
+  options?: RequestInit,
+): Promise<ReplaySubmission> => {
+  return customFetch<ReplaySubmission>(getSubmitReplayUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitReplayRequest),
+  });
+};
+
+export const getSubmitReplayMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitReplay>>,
+    TError,
+    { data: BodyType<SubmitReplayRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitReplay>>,
+  TError,
+  { data: BodyType<SubmitReplayRequest> },
+  TContext
+> => {
+  const mutationKey = ["submitReplay"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitReplay>>,
+    { data: BodyType<SubmitReplayRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitReplay(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitReplayMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitReplay>>
+>;
+export type SubmitReplayMutationBody = BodyType<SubmitReplayRequest>;
+export type SubmitReplayMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a replay file
+ */
+export const useSubmitReplay = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitReplay>>,
+    TError,
+    { data: BodyType<SubmitReplayRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitReplay>>,
+  TError,
+  { data: BodyType<SubmitReplayRequest> },
+  TContext
+> => {
+  return useMutation(getSubmitReplayMutationOptions(options));
+};
+
+/**
+ * @summary List all replay queue entries (admin)
+ */
+export const getListReplayQueueUrl = () => {
+  return `/api/replays/queue`;
+};
+
+export const listReplayQueue = async (
+  options?: RequestInit,
+): Promise<ReplaySubmission[]> => {
+  return customFetch<ReplaySubmission[]>(getListReplayQueueUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListReplayQueueQueryKey = () => {
+  return [`/api/replays/queue`] as const;
+};
+
+export const getListReplayQueueQueryOptions = <
+  TData = Awaited<ReturnType<typeof listReplayQueue>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listReplayQueue>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListReplayQueueQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listReplayQueue>>> = ({
+    signal,
+  }) => listReplayQueue({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listReplayQueue>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListReplayQueueQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listReplayQueue>>
+>;
+export type ListReplayQueueQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all replay queue entries (admin)
+ */
+
+export function useListReplayQueue<
+  TData = Awaited<ReturnType<typeof listReplayQueue>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listReplayQueue>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListReplayQueueQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get next pending replay job (render machine)
+ */
+export const getGetNextReplayJobUrl = () => {
+  return `/api/replays/queue/next`;
+};
+
+export const getNextReplayJob = async (
+  options?: RequestInit,
+): Promise<ReplaySubmission | void> => {
+  return customFetch<ReplaySubmission | void>(getGetNextReplayJobUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNextReplayJobQueryKey = () => {
+  return [`/api/replays/queue/next`] as const;
+};
+
+export const getGetNextReplayJobQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNextReplayJob>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getNextReplayJob>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetNextReplayJobQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getNextReplayJob>>
+  > = ({ signal }) => getNextReplayJob({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNextReplayJob>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNextReplayJobQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNextReplayJob>>
+>;
+export type GetNextReplayJobQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get next pending replay job (render machine)
+ */
+
+export function useGetNextReplayJob<
+  TData = Awaited<ReturnType<typeof getNextReplayJob>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getNextReplayJob>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNextReplayJobQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update replay submission status (render machine)
+ */
+export const getUpdateReplayStatusUrl = (id: number) => {
+  return `/api/replays/${id}`;
+};
+
+export const updateReplayStatus = async (
+  id: number,
+  updateReplayStatusRequest: UpdateReplayStatusRequest,
+  options?: RequestInit,
+): Promise<ReplaySubmission> => {
+  return customFetch<ReplaySubmission>(getUpdateReplayStatusUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateReplayStatusRequest),
+  });
+};
+
+export const getUpdateReplayStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReplayStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdateReplayStatusRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateReplayStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdateReplayStatusRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateReplayStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateReplayStatus>>,
+    { id: number; data: BodyType<UpdateReplayStatusRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateReplayStatus(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateReplayStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateReplayStatus>>
+>;
+export type UpdateReplayStatusMutationBody =
+  BodyType<UpdateReplayStatusRequest>;
+export type UpdateReplayStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update replay submission status (render machine)
+ */
+export const useUpdateReplayStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReplayStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdateReplayStatusRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateReplayStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdateReplayStatusRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateReplayStatusMutationOptions(options));
 };
 
 /**

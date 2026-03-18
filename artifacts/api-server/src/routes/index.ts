@@ -17,6 +17,9 @@ import eloHistoryRouter from "./eloHistory";
 import seasonChampionsRouter from "./seasonChampions";
 import playerBadgesRouter from "./playerBadges";
 import matchmakingQueueRouter from "./matchmakingQueue";
+import replaysRouter from "./replays";
+import authRouter from "./auth";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -38,5 +41,8 @@ router.use("/elo-history", eloHistoryRouter);
 router.use("/season-champions", seasonChampionsRouter);
 router.use("/player-badges", playerBadgesRouter);
 router.use("/matchmaking-queue", matchmakingQueueRouter);
+router.use("/replays", replaysRouter);
+router.use("/auth", authRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

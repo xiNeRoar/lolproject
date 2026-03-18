@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { challengesTable, playersTable } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
+import { challengesTable, playersTable, ladderSettingsTable } from "@workspace/db";
+import { eq, or, and, gte, count } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { notifyPlayer } from "../lib/notifications";
 
 const router = Router();
 
@@ -92,20 +93,29 @@ router.get("/player/:playerId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    if (!req.session.playerId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
     const { challengedId, scheduledTime } = req.body as { challengedId: number; scheduledTime: string };
     if (!challengedId || !scheduledTime) {
       return res.status(400).json({ error: "challengedId and scheduledTime are required" });
     }
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    const challengerId = req.session.playerId;
+
+    // C11: Read challenge expiry from ladderSettings
+    const [settings] = await db.select().from(ladderSettingsTable).limit(1);
+    const expiryHours = settings?.challengeExpiryHours ?? 48;
+    const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
     const inserted = await db
       .insert(challengesTable)
       .values({
-        challengerId: challengedId,
+        challengerId,
         challengedId,
         scheduledTime: new Date(scheduledTime),
         expiresAt,
       })
       .returning();
+    notifyPlayer(challengedId, "challenge_received", "New Challenge", "You have received a new challenge!").catch(() => {});
     res.status(201).json(formatChallenge(inserted[0]));
   } catch (err) {
     res.status(500).json({ error: "Failed to create challenge" });
@@ -114,12 +124,20 @@ router.post("/", async (req, res) => {
 
 router.put("/:id/accept", async (req, res) => {
   try {
+    if (!req.session.playerId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const [challenge] = await db.select().from(challengesTable).where(eq(challengesTable.id, Number(req.params.id)));
+    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+    if (challenge.challengedId !== req.session.playerId) {
+      return res.status(403).json({ error: "Only the challenged player can accept" });
+    }
     const updated = await db
       .update(challengesTable)
       .set({ status: "accepted", updatedAt: new Date() })
-      .where(eq(challengesTable.id, Number(req.params.id)))
+      .where(eq(challengesTable.id, challenge.id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Challenge not found" });
+    notifyPlayer(challenge.challengerId, "challenge_accepted", "Challenge Accepted", "Your challenge has been accepted!").catch(() => {});
     res.json(formatChallenge(updated[0]));
   } catch (err) {
     res.status(500).json({ error: "Failed to accept challenge" });
@@ -128,12 +146,69 @@ router.put("/:id/accept", async (req, res) => {
 
 router.put("/:id/decline", async (req, res) => {
   try {
+    if (!req.session.playerId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const challengeId = Number(req.params.id);
+    const [challenge] = await db.select().from(challengesTable).where(eq(challengesTable.id, challengeId));
+    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+    if (challenge.challengedId !== req.session.playerId) {
+      return res.status(403).json({ error: "Only the challenged player can decline" });
+    }
+
+    const challengedId = challenge.challengedId;
+    const challengerId = challenge.challengerId;
+
+    // Load decline limits from ladderSettings
+    const [settings] = await db.select().from(ladderSettingsTable).limit(1);
+    const maxDeclinesPerWeek = settings?.maxDeclinesPerWeek ?? 2;
+    const maxDeclinesSameOpponentPerWeek = settings?.maxDeclinesSameOpponentPerWeek ?? 1;
+
+    // Start of current week (Monday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+
+    // Count total declines this week by challenged player
+    const [totalDeclines] = await db
+      .select({ value: count() })
+      .from(challengesTable)
+      .where(
+        and(
+          eq(challengesTable.challengedId, challengedId),
+          eq(challengesTable.status, "declined"),
+          gte(challengesTable.updatedAt, weekStart)
+        )
+      );
+
+    if ((totalDeclines?.value ?? 0) >= maxDeclinesPerWeek) {
+      return res.status(403).json({ error: "Weekly decline limit reached" });
+    }
+
+    // Count declines this week vs same challenger
+    const [sameOpponentDeclines] = await db
+      .select({ value: count() })
+      .from(challengesTable)
+      .where(
+        and(
+          eq(challengesTable.challengedId, challengedId),
+          eq(challengesTable.challengerId, challengerId),
+          eq(challengesTable.status, "declined"),
+          gte(challengesTable.updatedAt, weekStart)
+        )
+      );
+
+    if ((sameOpponentDeclines?.value ?? 0) >= maxDeclinesSameOpponentPerWeek) {
+      return res.status(403).json({ error: "Decline limit vs this opponent reached" });
+    }
+
     const updated = await db
       .update(challengesTable)
       .set({ status: "declined", updatedAt: new Date() })
-      .where(eq(challengesTable.id, Number(req.params.id)))
+      .where(eq(challengesTable.id, challengeId))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Challenge not found" });
+    notifyPlayer(challenge.challengerId, "challenge_declined", "Challenge Declined", "Your challenge has been declined.").catch(() => {});
     res.json(formatChallenge(updated[0]));
   } catch (err) {
     res.status(500).json({ error: "Failed to decline challenge" });
@@ -142,13 +217,20 @@ router.put("/:id/decline", async (req, res) => {
 
 router.put("/:id/game-ready", async (req, res) => {
   try {
+    if (!req.session.playerId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const [challenge] = await db.select().from(challengesTable).where(eq(challengesTable.id, Number(req.params.id)));
+    if (!challenge) return res.status(404).json({ error: "Challenge not found" });
+    if (challenge.challengerId !== req.session.playerId && challenge.challengedId !== req.session.playerId) {
+      return res.status(403).json({ error: "Only participants can submit game ID" });
+    }
     const { gameId } = req.body as { gameId: string };
     const updated = await db
       .update(challengesTable)
       .set({ gameId, updatedAt: new Date() })
-      .where(eq(challengesTable.id, Number(req.params.id)))
+      .where(eq(challengesTable.id, challenge.id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Challenge not found" });
     res.json(formatChallenge(updated[0]));
   } catch (err) {
     res.status(500).json({ error: "Failed to update game ID" });

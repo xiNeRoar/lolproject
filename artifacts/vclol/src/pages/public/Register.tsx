@@ -1,7 +1,52 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRegisterPlayer } from "@workspace/api-client-react";
 
 export default function Register() {
+  const [, navigate] = useLocation();
+  const [riotId, setRiotId] = useState("");
+  const [discordUsername, setDiscordUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useRegisterPlayer({
+    mutation: {
+      onSuccess: (data) => {
+        localStorage.setItem("vclol_player_id", String(data.id));
+        navigate(`/player/${data.riotId}`);
+      },
+      onError: (err: any) => {
+        const msg = err?.payload?.error || err?.message || "Registration failed";
+        setError(msg);
+      },
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!riotId.trim() || !discordUsername.trim()) {
+      setError("Riot ID and Discord username are required");
+      return;
+    }
+
+    // TODO Claude: replace localStorage auth — discordId will come from Discord OAuth session (C20)
+    mutate({
+      data: {
+        riotId: riotId.trim(),
+        discordId: discordUsername.trim(),
+        discordUsername: discordUsername.trim(),
+        email: email.trim() || undefined,
+      },
+    });
+  };
+
   return (
     <PublicLayout>
       <div className="max-w-md mx-auto px-4 pt-24 pb-16">
@@ -11,8 +56,8 @@ export default function Register() {
         </div>
         <Card className="border-border/40 bg-card/60">
           <CardContent className="pt-6 pb-6">
-            <div className="space-y-4">
-              <div className="text-center space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="text-center space-y-2 mb-2">
                 <h2 className="text-xl font-display font-bold">Step 1: Connect Discord</h2>
                 <p className="text-sm text-muted-foreground">
                   Your Discord account verifies your identity on the platform.
@@ -28,17 +73,56 @@ export default function Register() {
                 </svg>
                 Continue with Discord
               </a>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/40" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">or register manually</span></div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="discordUsername">Discord Username</Label>
+                <Input
+                  id="discordUsername"
+                  placeholder="e.g. player123"
+                  value={discordUsername}
+                  onChange={(e) => setDiscordUsername(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="riotId">Riot ID</Label>
+                <Input
+                  id="riotId"
+                  placeholder="e.g. Player#NA1"
+                  value={riotId}
+                  onChange={(e) => setRiotId(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-destructive text-center">{error}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Registering..." : "Register"}
+              </Button>
+
               <p className="text-xs text-muted-foreground text-center">
                 Already registered?{" "}
                 <a href="/login" className="text-primary hover:underline">Login here →</a>
               </p>
-            </div>
-
-            <div className="mt-6 p-4 rounded-lg bg-muted/20 border border-border/30 opacity-50">
-              <p className="text-xs text-muted-foreground text-center">
-                Step 2: Verify your Riot ID — you'll enter your Riot ID (e.g. Player#NA1) to link your LoL account.
-              </p>
-            </div>
+            </form>
           </CardContent>
         </Card>
       </div>

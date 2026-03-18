@@ -250,6 +250,49 @@ export interface CreatePlayerRequest {
   notificationPreference?: string | null;
 }
 
+export interface UpdatePlayerProfileRequest {
+  email?: string | null;
+  notificationPreference?: string | null;
+}
+
+export interface RegisterPlayerRequest {
+  riotId: string;
+  discordId: string;
+  discordUsername: string;
+  email?: string | null;
+  notificationPreference?: string | null;
+}
+
+export interface ReplaySubmission {
+  id: number;
+  matchId?: number | null;
+  playerId?: number | null;
+  roflFilePath?: string | null;
+  fileSizeBytes?: number | null;
+  status: string;
+  renderMode: string;
+  youtubeUrlA?: string | null;
+  youtubeUrlB?: string | null;
+  errorMessage?: string | null;
+  submittedAt: string;
+  processedAt?: string | null;
+}
+
+export interface SubmitReplayRequest {
+  matchId: number;
+  playerId?: number | null;
+  roflFilePath?: string | null;
+  fileSizeBytes?: number | null;
+  renderMode: string;
+}
+
+export interface UpdateReplayStatusRequest {
+  status: string;
+  youtubeUrlA?: string | null;
+  youtubeUrlB?: string | null;
+  errorMessage?: string | null;
+}
+
 export interface PlayerProfile {
   id: number;
   riotId: string;
@@ -349,6 +392,12 @@ export interface LadderSettings {
   maxChallengesPerWeek: number;
   maxChallengesSameOpponentPerWeek: number;
   challengeExpiryHours: number;
+  maxDeclinesPerWeek: number;
+  maxDeclinesSameOpponentPerWeek: number;
+  noShowExpiryDays: number;
+  playoffMinPlayers: number;
+  playoffSize: number;
+  playoffFormat: string;
   updatedAt: string;
 }
 

@@ -663,6 +663,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /players/register:
+    post:
+      operationId: registerPlayer
+      tags: [players]
+      summary: Public player registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPlayerRequest"
+      responses:
+        "201":
+          description: Player registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate riotId or discordId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /players:
     get:
       operationId: listPlayers
@@ -694,6 +725,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Player"
+
+  /players/by-id/{id}:
+    get:
+      operationId: getPlayerById
+      tags: [players]
+      summary: Get player profile by numeric ID (public)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player profile with stats and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{id}/profile:
+    put:
+      operationId: updatePlayerProfile
+      tags: [players]
+      summary: Player self-update (own account only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlayerProfileRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Cannot edit another player's profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /players/{riotId}:
     get:
@@ -763,6 +856,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+
+  /replays:
+    post:
+      operationId: submitReplay
+      tags: [replays]
+      summary: Submit a replay file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitReplayRequest"
+      responses:
+        "201":
+          description: Replay submission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
+
+  /replays/queue:
+    get:
+      operationId: listReplayQueue
+      tags: [replays]
+      summary: List all replay queue entries (admin)
+      responses:
+        "200":
+          description: Replay queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReplaySubmission"
+
+  /replays/queue/next:
+    get:
+      operationId: getNextReplayJob
+      tags: [replays]
+      summary: Get next pending replay job (render machine)
+      responses:
+        "200":
+          description: Next pending job or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
+        "204":
+          description: No pending jobs
+
+  /replays/{id}:
+    patch:
+      operationId: updateReplayStatus
+      tags: [replays]
+      summary: Update replay submission status (render machine)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateReplayStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
 
   /seasons:
     get:
@@ -1913,6 +2080,114 @@ components:
         - riotId
         - discordUsername
 
+    UpdatePlayerProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+
+    RegisterPlayerRequest:
+      type: object
+      properties:
+        riotId:
+          type: string
+        discordId:
+          type: string
+        discordUsername:
+          type: string
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+      required:
+        - riotId
+        - discordId
+        - discordUsername
+
+    ReplaySubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+          nullable: true
+        playerId:
+          type: integer
+          nullable: true
+        roflFilePath:
+          type: string
+          nullable: true
+        fileSizeBytes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        renderMode:
+          type: string
+        youtubeUrlA:
+          type: string
+          nullable: true
+        youtubeUrlB:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+        processedAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - status
+        - renderMode
+        - submittedAt
+
+    SubmitReplayRequest:
+      type: object
+      properties:
+        matchId:
+          type: integer
+        playerId:
+          type: integer
+          nullable: true
+        roflFilePath:
+          type: string
+          nullable: true
+        fileSizeBytes:
+          type: integer
+          nullable: true
+        renderMode:
+          type: string
+      required:
+        - matchId
+        - renderMode
+
+    UpdateReplayStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        youtubeUrlA:
+          type: string
+          nullable: true
+        youtubeUrlB:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+      required:
+        - status
+
     PlayerProfile:
       type: object
       properties:
@@ -2182,6 +2457,18 @@ components:
           type: integer
         challengeExpiryHours:
           type: integer
+        maxDeclinesPerWeek:
+          type: integer
+        maxDeclinesSameOpponentPerWeek:
+          type: integer
+        noShowExpiryDays:
+          type: integer
+        playoffMinPlayers:
+          type: integer
+        playoffSize:
+          type: integer
+        playoffFormat:
+          type: string
         updatedAt:
           type: string
       required:
@@ -2191,6 +2478,12 @@ components:
         - maxChallengesPerWeek
         - maxChallengesSameOpponentPerWeek
         - challengeExpiryHours
+        - maxDeclinesPerWeek
+        - maxDeclinesSameOpponentPerWeek
+        - noShowExpiryDays
+        - playoffMinPlayers
+        - playoffSize
+        - playoffFormat
         - updatedAt
 
     AdminScheduleSettings:
