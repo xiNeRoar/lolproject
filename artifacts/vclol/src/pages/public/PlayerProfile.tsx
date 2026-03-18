@@ -184,19 +184,32 @@ export default function PlayerProfile() {
             </div>
 
             {/* W / L / WR */}
-            <div className="mt-6 grid grid-cols-3 gap-4 border-t border-border/40 pt-6">
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Wins</div>
-                <div className="text-xl font-display font-bold text-green-400">{player.wins}</div>
+            <div className="mt-6 border-t border-border/40 pt-5">
+              <div className="flex items-center divide-x divide-border/40">
+                <div className="flex-1 text-center px-4 py-1">
+                  <div className="text-3xl font-display font-bold text-green-400">{player.wins}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Wins</div>
+                </div>
+                <div className="flex-1 text-center px-4 py-1">
+                  <div className="text-3xl font-display font-bold text-red-400">{player.losses}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Losses</div>
+                </div>
+                <div className="flex-1 text-center px-4 py-1">
+                  <div className="text-3xl font-display font-bold">{winRate}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Win Rate</div>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Losses</div>
-                <div className="text-xl font-display font-bold text-red-400">{player.losses}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Win Rate</div>
-                <div className="text-xl font-display font-bold">{winRate}%</div>
-              </div>
+              {player.wins + player.losses > 0 && (
+                <div className="mt-4 space-y-1.5">
+                  <div className="flex h-1.5 rounded-full overflow-hidden bg-border/30">
+                    <div className="bg-green-500/70 transition-all" style={{ width: `${winRate}%` }} />
+                    <div className="bg-red-500/70 flex-1" />
+                  </div>
+                  <div className="text-xs text-muted-foreground text-center">
+                    {player.wins + player.losses} games played
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
