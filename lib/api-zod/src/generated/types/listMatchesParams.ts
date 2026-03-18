@@ -10,4 +10,6 @@ export type ListMatchesParams = {
   eventId?: number;
   format?: string;
   search?: string;
+  seasonId?: number;
+  playerId?: number;
 };

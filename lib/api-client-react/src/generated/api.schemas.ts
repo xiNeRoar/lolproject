@@ -421,6 +421,8 @@ export type ListMatchesParams = {
   eventId?: number;
   format?: string;
   search?: string;
+  seasonId?: number;
+  playerId?: number;
 };
 
 export type ListVodsParams = {
@@ -434,6 +436,7 @@ export type ListVodsParams = {
   patch?: string;
   eloMin?: number;
   eloMax?: number;
+  playerId?: number;
 };
 
 export type SetChallengeGameReadyBody = {

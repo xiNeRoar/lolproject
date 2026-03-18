@@ -18,7 +18,7 @@ export default function Contact() {
             <h3 className="text-xl font-bold mb-2">Discord</h3>
             <p className="text-muted-foreground mb-6">The primary hub for all project communication and matchmaking.</p>
             <p className="text-sm font-medium border border-border/50 bg-background px-4 py-2 rounded">
-              Links provided via Interest Form
+              Join via the Discord link on our Register page
             </p>
           </div>
 

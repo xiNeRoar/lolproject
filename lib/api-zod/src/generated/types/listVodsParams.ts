@@ -17,4 +17,5 @@ export type ListVodsParams = {
   patch?: string;
   eloMin?: number;
   eloMax?: number;
+  playerId?: number;
 };

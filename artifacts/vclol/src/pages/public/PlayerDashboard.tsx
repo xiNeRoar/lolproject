@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayer, useGetLadderSettings } from "@workspace/api-client-react";
+import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayer, useGetLadderSettings, useSetChallengeGameReady } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 function eloBadgeColor(elo: number) {
@@ -42,6 +43,42 @@ function LoggedOutState() {
           </Link>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function GameIdSubmit({ challengeId }: { challengeId: number }) {
+  const [gameId, setGameId] = useState("");
+  const setGameReady = useSetChallengeGameReady();
+  const queryClient = useQueryClient();
+
+  return (
+    <div className="flex gap-2 mt-2">
+      <input
+        type="text"
+        placeholder="Enter Game ID"
+        value={gameId}
+        onChange={(e) => setGameId(e.target.value)}
+        className="flex h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      <Button
+        size="sm"
+        className="h-8 text-xs shrink-0"
+        disabled={!gameId.trim() || setGameReady.isPending}
+        onClick={() =>
+          setGameReady.mutate(
+            { id: challengeId, data: { gameId: gameId.trim() } },
+            {
+              onSuccess: () => {
+                setGameId("");
+                queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
+              },
+            }
+          )
+        }
+      >
+        {setGameReady.isPending ? "..." : "Submit"}
+      </Button>
     </div>
   );
 }
@@ -161,29 +198,26 @@ function DashboardContent({ pid }: { pid: number }) {
               <p className="text-sm text-muted-foreground">No upcoming matches</p>
             ) : (
               upcomingMatches.map((c) => {
-                const minutesUntil = c.scheduledTime
-                  ? Math.floor((new Date(c.scheduledTime).getTime() - Date.now()) / 60000)
-                  : null;
-                const isRoomReady = minutesUntil !== null && minutesUntil <= 30 && minutesUntil > -60;
+                const isHost = c.challengerId === pid;
                 return (
-                  <div key={c.id} className={`p-3 rounded-lg border ${isRoomReady ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-background/50 border-border/30"}`}>
+                  <div key={c.id} className="p-3 rounded-lg bg-background/50 border border-border/30 space-y-1">
                     <p className="text-sm font-medium">
                       vs {c.challengerId === pid ? c.challengedRiotId : c.challengerRiotId ?? "Opponent"}
                     </p>
                     {c.scheduledTime && (
                       <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>
                     )}
-                    {isRoomReady ? (
-                      <div className="mt-2 space-y-1">
-                        <p className="text-xs font-semibold text-primary animate-pulse">🟢 Match starting soon — Room Ready!</p>
-                        <p className="text-xs text-muted-foreground">Custom lobby details will be posted in Discord. Check the #match-rooms channel.</p>
+                    {c.gameId ? (
+                      <p className="text-xs text-green-400">✓ Room ready — Game ID: {c.gameId}</p>
+                    ) : isHost ? (
+                      <div>
+                        <p className="text-xs text-yellow-400">
+                          You are the room host. Open a custom game, invite your opponent by their Riot ID, then submit the Game ID below.
+                        </p>
+                        <GameIdSubmit challengeId={c.id} />
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {minutesUntil !== null && minutesUntil > 30
-                          ? `Starts in ${minutesUntil < 60 ? `${minutesUntil}m` : `${Math.floor(minutesUntil / 60)}h ${minutesUntil % 60}m`}`
-                          : "Room details will appear on Discord when match time approaches"}
-                      </p>
+                      <p className="text-xs text-muted-foreground">Waiting for room host to open the game and submit Game ID...</p>
                     )}
                   </div>
                 );
@@ -220,7 +254,8 @@ function DashboardContent({ pid }: { pid: number }) {
           </CardHeader>
           <CardContent className="space-y-2">
             {(player.recentMatches ?? []).slice(0, 5).map((m) => {
-              const won = m.winnerName === player.riotId || m.winnerName === m.sideAName;
+              const isA = m.playerAId === pid;
+              const won = m.winnerName === (isA ? m.sideAName : m.sideBName);
               const delta = (m.playerAId === pid ? (m.playerAEloAfter ?? 0) - (m.playerAEloBefore ?? 0) : (m.playerBEloAfter ?? 0) - (m.playerBEloBefore ?? 0));
               return (
                 <Link key={m.id} href={`/matches/${m.id}`}>

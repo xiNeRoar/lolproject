@@ -412,6 +412,16 @@ paths:
           required: false
           schema:
             type: string
+        - name: seasonId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: playerId
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: List of matches
@@ -552,6 +562,11 @@ paths:
           schema:
             type: integer
         - name: eloMax
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: playerId
           in: query
           required: false
           schema:

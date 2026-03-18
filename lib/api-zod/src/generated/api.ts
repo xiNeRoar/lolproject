@@ -326,6 +326,8 @@ export const ListMatchesQueryParams = zod.object({
   eventId: zod.coerce.number().optional(),
   format: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
+  seasonId: zod.coerce.number().optional(),
+  playerId: zod.coerce.number().optional(),
 });
 
 export const ListMatchesResponseItem = zod.object({
@@ -499,6 +501,7 @@ export const ListVodsQueryParams = zod.object({
   patch: zod.coerce.string().optional(),
   eloMin: zod.coerce.number().optional(),
   eloMax: zod.coerce.number().optional(),
+  playerId: zod.coerce.number().optional(),
 });
 
 export const ListVodsResponseItem = zod.object({

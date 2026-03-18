@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer, useGetEloHistory, useGetPlayerBadges } from "@workspace/api-client-react";
+import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useListSeasonChampions } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,6 @@ import { ChallengeModal } from "@/components/ChallengeModal";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-
-// TODO: replace with real session
-const myPlayerId = Number(localStorage.getItem("vclol_player_id"));
 
 function eloBadgeColor(elo: number) {
   if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
@@ -40,9 +37,18 @@ export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
   const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
   const [challengeOpen, setChallengeOpen] = useState(false);
-  const isLoggedIn = !!localStorage.getItem("vclol_player_id");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [myPlayerId, setMyPlayerId] = useState(0);
   const { data: eloHistory } = useGetEloHistory(player?.id ?? 0, { query: { enabled: !!player?.id } });
   const { data: badges } = useGetPlayerBadges(player?.id ?? 0, { query: { enabled: !!player?.id } });
+  const { data: seasonChampions } = useListSeasonChampions({ query: { enabled: !!player?.id } });
+  const myChampionships = seasonChampions?.filter(c => c.playerId === player?.id) ?? [];
+
+  useEffect(() => {
+    const id = localStorage.getItem("vclol_player_id");
+    setIsLoggedIn(!!id);
+    setMyPlayerId(id ? Number(id) : 0);
+  }, []);
 
   if (isLoading) {
     return (
@@ -135,6 +141,15 @@ export default function PlayerProfile() {
                 <div className="text-xl font-display font-bold">{winRate}%</div>
               </div>
             </div>
+            {myChampionships.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border/40 flex flex-wrap gap-2">
+                {myChampionships.map((c) => (
+                  <span key={c.id} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium">
+                    🏆 Season Champion
+                  </span>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

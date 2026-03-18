@@ -21,14 +21,15 @@ export default function About() {
 
             <section className="bg-card border border-border/50 p-8 rounded-lg relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 mt-0">Current Focus: Gathering & Testing</h2>
+              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 mt-0">Current Phase: Active Competition</h2>
               <p className="text-muted-foreground mb-4">
-                We are currently in the early stages of this project. Instead of launching massive 32-team brackets immediately, we are taking a measured approach:
+                The platform is live. Players can register, compete on the ELO Ladder, and build a verifiable match record over time.
               </p>
               <ul className="list-disc pl-5 text-muted-foreground space-y-2">
-                <li><strong className="text-foreground">Validating Interest:</strong> Finding out who is actually looking for serious play in the Lower Mainland.</li>
-                <li><strong className="text-foreground">Lightweight Formats:</strong> Running 1v1s, organized in-houses, and small-scale events to test our infrastructure.</li>
-                <li><strong className="text-foreground">Building Archives:</strong> Starting the process of recording matches and creating a VOD library that players can use to study and showcase their skills.</li>
+                <li><strong className="text-foreground">ELO Ladder:</strong> Persistent competitive ranking that tracks your progress across seasons.</li>
+                <li><strong className="text-foreground">VOD Archive:</strong> First-person match recordings with timestamps, searchable by champion, matchup, and ELO range.</li>
+                <li><strong className="text-foreground">Events & Brackets:</strong> Structured tournaments with bracket progression and recorded results.</li>
+                <li><strong className="text-foreground">Challenge System:</strong> Challenge any ladder player directly through the website.</li>
               </ul>
             </section>
 

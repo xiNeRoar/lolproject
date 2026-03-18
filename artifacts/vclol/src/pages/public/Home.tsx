@@ -65,9 +65,9 @@ export default function Home() {
               A serious environment for local players to improve, compete, and be seen. Structured grassroots competition for the Lower Mainland.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/interest">
+              <Link href="/register">
                 <Button size="lg" className="font-semibold w-full sm:w-auto">
-                  Join Interest List <ArrowRight className="ml-2 w-4 h-4" />
+                  Register Now <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <Link href="/events">
@@ -105,8 +105,8 @@ export default function Home() {
           <Badge className="mb-3">Genesis Phase</Badge>
           <h2 className="text-xl font-bold font-display mb-3">We're just getting started</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
-            Currently gathering interest and running lightweight test events to validate formats.
-            By participating now, you help shape the future of Vancouver's competitive scene.
+            Building Vancouver's first structured competitive LoL ladder. Register to compete, 
+            build your match record, and track your ELO over time.
           </p>
         </div>
       </section>

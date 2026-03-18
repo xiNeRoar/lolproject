@@ -5,12 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trophy, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChallengeModal } from "@/components/ChallengeModal";
-
-// TODO Claude: replace localStorage auth with real session
-const isLoggedIn = !!localStorage.getItem("vclol_player_id");
-const myPlayerId = Number(localStorage.getItem("vclol_player_id"));
 
 function eloBadgeColor(elo: number) {
   if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
@@ -37,6 +33,14 @@ export default function Ladder() {
   const { data, isLoading } = useGetLadder();
   const { data: settings } = useGetLadderSettings();
   const [challengeTarget, setChallengeTarget] = useState<{ id: number; riotId: string } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [myPlayerId, setMyPlayerId] = useState(0);
+
+  useEffect(() => {
+    const id = localStorage.getItem("vclol_player_id");
+    setIsLoggedIn(!!id);
+    setMyPlayerId(id ? Number(id) : 0);
+  }, []);
 
   return (
     <PublicLayout>
