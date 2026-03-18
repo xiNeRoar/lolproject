@@ -17,10 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Clock } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit, Trash2, Clock, Film, X } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 const POSITIONS = ["Mid", "Top", "Jungle", "Bot", "Support"];
 const TIMESTAMP_TYPES = ["manual", "kill", "death", "tower", "first_blood"];
@@ -106,8 +107,20 @@ export default function ManageVods() {
   const { data: events } = useListEvents();
   const { data: players } = useListPlayers();
   const queryClient = useQueryClient();
+  const [location, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const matchIdFilter = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("matchId");
+  }, [location]);
+
+  const displayedVods = useMemo(() => {
+    if (!vods) return [];
+    if (!matchIdFilter) return vods;
+    return vods.filter((v) => String(v.matchId) === matchIdFilter);
+  }, [vods, matchIdFilter]);
 
   const createMut = useCreateVod();
   const updateMut = useUpdateVod();
@@ -169,7 +182,25 @@ export default function ManageVods() {
         <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add VOD</Button>
       </div>
 
-      {/* Render Queue */}
+      {/* Match filter banner */}
+      {matchIdFilter && (
+        <div className="flex items-center gap-3 mb-6 px-4 py-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <Film className="w-4 h-4 text-primary shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-medium text-primary">Showing VODs for Match #{matchIdFilter}</span>
+            <span className="text-xs text-muted-foreground ml-2">({displayedVods.length} VOD{displayedVods.length !== 1 ? "s" : ""})</span>
+          </div>
+          <button
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => navigate("/admin/vods")}
+          >
+            <X className="w-3.5 h-3.5" /> Clear filter
+          </button>
+        </div>
+      )}
+
+      {/* Render Queue — hidden when filtering by match */}
+      {!matchIdFilter && (
       <div className="mb-8">
         <h2 className="text-xl font-display font-bold mb-4">Render Queue</h2>
         <div className="bg-card border border-border/50 rounded-lg overflow-hidden">
@@ -188,6 +219,7 @@ export default function ManageVods() {
           </div>
         </div>
       </div>
+      )}
 
       <div className="bg-card border border-border/50 rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full text-sm text-left">
@@ -202,7 +234,7 @@ export default function ManageVods() {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={4} className="px-6 py-4 text-center">Loading...</td></tr>
-            ) : vods?.map((item) => (
+            ) : displayedVods.map((item) => (
               <tr key={item.id} className="border-b border-border/20 hover:bg-muted/20">
                 <td className="px-6 py-4">
                   <div className="font-bold">{item.title}</div>

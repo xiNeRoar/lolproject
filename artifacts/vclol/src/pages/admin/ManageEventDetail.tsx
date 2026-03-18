@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Edit, Plus, Users, Swords, Trophy, ClipboardList } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Trash2, Edit, Plus, Users, Swords, Trophy, ClipboardList, Film } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +46,14 @@ function BracketTab({ matches, format }: { matches: Match[]; format: string }) {
   if (fmt.includes("swiss")) return <SwissRoundsTable matches={matches} />;
   return <SingleEliminationBracket matches={matches} />;
 }
+
+const ROUND_LABELS: Record<number, string> = {
+  0: "GS",
+  1: "QF",
+  2: "SF",
+  3: "Final",
+  4: "3rd",
+};
 
 export default function ManageEventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -401,40 +409,55 @@ export default function ManageEventDetail() {
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
                   <th className="px-6 py-3">Round</th>
-                  <th className="px-6 py-3">Title / Format</th>
-                  <th className="px-6 py-3">Matchup</th>
+                  <th className="px-6 py-3">Players</th>
+                  <th className="px-6 py-3">Result</th>
                   <th className="px-6 py-3">Score</th>
+                  <th className="px-6 py-3 hidden lg:table-cell">Date</th>
                   <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {eventMatches.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">No matches yet.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-6 text-center text-muted-foreground">No matches yet.</td></tr>
                 ) : (
                   [...eventMatches].sort((a, b) => (a.round ?? 99) - (b.round ?? 99)).map((m) => (
                     <tr key={m.id} className="border-b border-border/20 hover:bg-muted/20">
                       <td className="px-6 py-4">
-                        {m.round ? (
-                          <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded">R{m.round}</span>
+                        {m.round != null ? (
+                          <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded">
+                            {ROUND_LABELS[m.round] ?? `R${m.round}`}
+                          </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium">{m.matchTitle}</div>
-                        <div className="text-xs text-muted-foreground">{m.format}</div>
+                        <div className="font-medium">{m.sideAName}</div>
+                        <div className="text-xs text-muted-foreground">vs {m.sideBName}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={m.winnerName === m.sideAName ? "font-bold text-primary" : ""}>{m.sideAName}</span>
-                        <span className="mx-2 text-muted-foreground text-xs">vs</span>
-                        <span className={m.winnerName === m.sideBName ? "font-bold text-primary" : ""}>{m.sideBName}</span>
+                        {m.winnerName
+                          ? <span className="text-green-400 font-medium text-xs">{m.winnerName} wins</span>
+                          : <span className="text-muted-foreground text-xs">TBD</span>}
                       </td>
-                      <td className="px-6 py-4 font-display font-bold">{m.score || "—"}</td>
+                      <td className="px-6 py-4 font-mono text-xs">{m.score || "—"}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-xs hidden lg:table-cell">
+                        {m.createdAt
+                          ? new Date(m.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })
+                          : "—"}
+                      </td>
                       <td className="px-6 py-4 text-right">
-                        <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete match?")) deleteMatch.mutate({ id: m.id }, { onSuccess: invalidateMatches }); }}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" title="Edit match" onClick={() => openEditMatch(m)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Manage VODs for this match" onClick={() => navigate(`/admin/vods?matchId=${m.id}`)}>
+                            <Film className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Delete match" onClick={() => { if (confirm("Delete match?")) deleteMatch.mutate({ id: m.id }, { onSuccess: invalidateMatches }); }}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))

@@ -6,9 +6,11 @@ import {
   useDeleteChallenge,
   useListMatches,
   useCreateMatch,
+  useUpdateMatch,
   useDeleteMatch,
   useListSeasonChampions,
   type CreateMatchRequest,
+  type Match,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowLeft, Trophy, Zap, Swords, Star, ClipboardCheck,
-  UserX, ShieldAlert, ExternalLink, Plus, Info,
+  UserX, ShieldAlert, ExternalLink, Plus, Info, Edit, Trash2, Film,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -81,6 +83,8 @@ export default function ManageSeasonDetail() {
   const deleteChallenge = useDeleteChallenge();
   const deleteMatch = useDeleteMatch();
   const createMatch = useCreateMatch();
+  const updateMatch = useUpdateMatch();
+  const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
 
   // ── Match form (Add Match dialog) ───────────────────────────
   const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control: matchControl, setValue: setMatchVal } = useForm();
@@ -99,7 +103,28 @@ export default function ManageSeasonDetail() {
 
   const openNewMatch = () => {
     resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", score: "" });
+    setEditingMatchId(null);
     setMatchDialogOpen(true);
+  };
+
+  const openEditMatch = (m: Match) => {
+    const winner = m.winnerName === m.sideBName ? "B" : "A";
+    resetMatch({
+      playerAId: m.playerAId ? String(m.playerAId) : "",
+      playerBId: m.playerBId ? String(m.playerBId) : "",
+      sideAName: m.sideAName,
+      sideBName: m.sideBName,
+      winner,
+      score: m.score ?? "",
+    });
+    setEditingMatchId(m.id);
+    setMatchDialogOpen(true);
+  };
+
+  const invalidateMatchQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
   };
 
   const onMatchSubmit = (data: Record<string, unknown>) => {
@@ -113,6 +138,7 @@ export default function ManageSeasonDetail() {
       winnerName,
       score: data.score ? String(data.score) : null,
       format: "BO1",
+      vodUrl: null,
       eventId: null,
       playerAId: data.playerAId ? Number(data.playerAId) : null,
       playerBId: data.playerBId ? Number(data.playerBId) : null,
@@ -122,14 +148,22 @@ export default function ManageSeasonDetail() {
       bracketSlot: null,
       isLosersBracket: false,
     };
-    createMatch.mutate({ data: payload }, {
-      onSuccess: () => {
-        setMatchDialogOpen(false);
-        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
-      },
-    });
+    if (editingMatchId) {
+      updateMatch.mutate({ id: editingMatchId, data: payload }, {
+        onSuccess: () => {
+          setMatchDialogOpen(false);
+          setEditingMatchId(null);
+          invalidateMatchQueries();
+        },
+      });
+    } else {
+      createMatch.mutate({ data: payload }, {
+        onSuccess: () => {
+          setMatchDialogOpen(false);
+          invalidateMatchQueries();
+        },
+      });
+    }
   };
 
   // ── Derived data ────────────────────────────────────────────
@@ -465,14 +499,18 @@ export default function ManageSeasonDetail() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="text-xs"
-                          onClick={() => navigate(`/matches/${m.id}`)}>
-                          View
+                        <Button variant="ghost" size="icon" title="Edit match" onClick={() => openEditMatch(m)}>
+                          <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost"
-                          className="text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                          onClick={() => { if (confirm("Delete this match? ELO changes will NOT be reversed automatically.")) deleteMatch.mutate({ id: m.id }); }}>
-                          Delete
+                        <Button variant="ghost" size="icon" title="Manage VODs for this match" onClick={() => navigate(`/admin/vods?matchId=${m.id}`)}>
+                          <Film className="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="View public match page" onClick={() => window.open(`/matches/${m.id}`, "_blank")}>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Delete match — ELO changes will NOT be reversed automatically"
+                          onClick={() => { if (confirm("Delete this match?\n\nELO changes will NOT be reversed automatically.")) deleteMatch.mutate({ id: m.id }); }}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
                     </td>
@@ -482,10 +520,10 @@ export default function ManageSeasonDetail() {
             </table>
           </div>
 
-          {/* Add Ladder Match Dialog */}
-          <Dialog open={matchDialogOpen} onOpenChange={setMatchDialogOpen}>
+          {/* Add / Edit Ladder Match Dialog */}
+          <Dialog open={matchDialogOpen} onOpenChange={(open) => { setMatchDialogOpen(open); if (!open) setEditingMatchId(null); }}>
             <DialogHeader>
-              <DialogTitle>Add Ladder Match</DialogTitle>
+              <DialogTitle>{editingMatchId ? "Edit Ladder Match" : "Add Ladder Match"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleMatchSubmit(onMatchSubmit)} className="space-y-4 mt-4">
               {/* Players */}
@@ -538,8 +576,8 @@ export default function ManageSeasonDetail() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={createMatch.isPending || !watchedPlayerAId || !watchedPlayerBId}>
-                  {createMatch.isPending ? "Saving…" : "Save Match"}
+                <Button type="submit" disabled={(createMatch.isPending || updateMatch.isPending) || (!editingMatchId && (!watchedPlayerAId || !watchedPlayerBId))}>
+                  {createMatch.isPending || updateMatch.isPending ? "Saving…" : editingMatchId ? "Save Changes" : "Save Match"}
                 </Button>
               </div>
             </form>
