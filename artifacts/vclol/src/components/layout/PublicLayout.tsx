@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Menu, X, Shield } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +17,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       window.removeEventListener("storage", sync);
       window.removeEventListener("focus", sync);
     };
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("vclol_player_id");
+    window.dispatchEvent(new Event("storage"));
+    setMobileMenuOpen(false);
   }, []);
 
   const navLinks = [
@@ -58,12 +64,20 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {/* CTA & Auth — desktop */}
             <div className="hidden md:flex items-center space-x-3">
               {playerId ? (
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                >
-                  My Dashboard
-                </Link>
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                  >
+                    My Dashboard
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -112,13 +126,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
               <div className="pt-2 border-t border-border/40 mt-2">
                 {playerId ? (
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground"
-                  >
-                    My Dashboard
-                  </Link>
+                  <>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground"
+                    >
+                      My Dashboard
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 mt-1 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link
