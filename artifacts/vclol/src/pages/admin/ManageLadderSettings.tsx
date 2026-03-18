@@ -47,6 +47,12 @@ export default function ManageLadderSettings() {
     maxChallengesPerWeek: 3,
     maxChallengesSameOpponentPerWeek: 1,
     challengeExpiryHours: 48,
+    maxDeclinesPerWeek: 2,
+    maxDeclinesSameOpponentPerWeek: 1,
+    noShowExpiryDays: 7,
+    playoffMinPlayers: 4,
+    playoffSize: 8,
+    playoffFormat: "single_elimination",
   });
 
   const [sForm, setSForm] = useState({
@@ -64,6 +70,12 @@ export default function ManageLadderSettings() {
         maxChallengesPerWeek: ladder.maxChallengesPerWeek,
         maxChallengesSameOpponentPerWeek: ladder.maxChallengesSameOpponentPerWeek,
         challengeExpiryHours: ladder.challengeExpiryHours,
+        maxDeclinesPerWeek: (ladder as any).maxDeclinesPerWeek ?? 2,
+        maxDeclinesSameOpponentPerWeek: (ladder as any).maxDeclinesSameOpponentPerWeek ?? 1,
+        noShowExpiryDays: (ladder as any).noShowExpiryDays ?? 7,
+        playoffMinPlayers: (ladder as any).playoffMinPlayers ?? 4,
+        playoffSize: (ladder as any).playoffSize ?? 8,
+        playoffFormat: (ladder as any).playoffFormat ?? "single_elimination",
       });
     }
   }, [ladder]);
@@ -88,7 +100,13 @@ export default function ManageLadderSettings() {
           maxChallengesPerWeek: Number(lForm.maxChallengesPerWeek),
           maxChallengesSameOpponentPerWeek: Number(lForm.maxChallengesSameOpponentPerWeek),
           challengeExpiryHours: Number(lForm.challengeExpiryHours),
-        },
+          maxDeclinesPerWeek: Number(lForm.maxDeclinesPerWeek),
+          maxDeclinesSameOpponentPerWeek: Number(lForm.maxDeclinesSameOpponentPerWeek),
+          noShowExpiryDays: Number(lForm.noShowExpiryDays),
+          playoffMinPlayers: Number(lForm.playoffMinPlayers),
+          playoffSize: Number(lForm.playoffSize),
+          playoffFormat: lForm.playoffFormat,
+        } as Parameters<typeof updateLadder.mutate>[0]["data"],
       },
       { onSuccess: () => toast({ title: "Ladder settings saved." }) }
     );
@@ -156,6 +174,48 @@ export default function ManageLadderSettings() {
                   hint="Time window before a challenge auto-expires"
                   value={lForm.challengeExpiryHours}
                   onChange={(v) => setLForm((f) => ({ ...f, challengeExpiryHours: Number(v) }))}
+                />
+                <Field
+                  label="Max Declines Per Week"
+                  hint="How many challenges a player can decline per week (across all challengers)"
+                  type="number"
+                  value={lForm.maxDeclinesPerWeek}
+                  onChange={(v) => setLForm((f) => ({ ...f, maxDeclinesPerWeek: Number(v) }))}
+                />
+                <Field
+                  label="Max Declines vs Same Opponent Per Week"
+                  hint="How many times a player can decline the same challenger per week"
+                  type="number"
+                  value={lForm.maxDeclinesSameOpponentPerWeek}
+                  onChange={(v) => setLForm((f) => ({ ...f, maxDeclinesSameOpponentPerWeek: Number(v) }))}
+                />
+                <Field
+                  label="No-Show Expiry (Days)"
+                  hint="Days after accepted challenge before it's flagged as no-show"
+                  type="number"
+                  value={lForm.noShowExpiryDays}
+                  onChange={(v) => setLForm((f) => ({ ...f, noShowExpiryDays: Number(v) }))}
+                />
+                <Field
+                  label="Playoff Min Players"
+                  hint="Minimum qualified players needed to run a playoff"
+                  type="number"
+                  value={lForm.playoffMinPlayers}
+                  onChange={(v) => setLForm((f) => ({ ...f, playoffMinPlayers: Number(v) }))}
+                />
+                <Field
+                  label="Playoff Size"
+                  hint="Number of players in the playoff bracket (4 or 8)"
+                  type="number"
+                  value={lForm.playoffSize}
+                  onChange={(v) => setLForm((f) => ({ ...f, playoffSize: Number(v) }))}
+                />
+                <Field
+                  label="Playoff Format"
+                  hint="Bracket format for playoffs"
+                  type="text"
+                  value={lForm.playoffFormat}
+                  onChange={(v) => setLForm((f) => ({ ...f, playoffFormat: v }))}
                 />
                 <Button
                   className="w-full mt-2"

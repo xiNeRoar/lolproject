@@ -30,6 +30,12 @@ export default function PlayerLogin() {
               New player?{" "}
               <Link href="/register" className="text-primary hover:underline">Register here →</Link>
             </p>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Developer?{" "}
+              <a href="/dev-login" className="text-yellow-400 hover:underline opacity-70">
+                Dev Login →
+              </a>
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -169,6 +169,26 @@ export default function ManageVods() {
         <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add VOD</Button>
       </div>
 
+      {/* Render Queue */}
+      <div className="mb-8">
+        <h2 className="text-xl font-display font-bold mb-4">Render Queue</h2>
+        <div className="bg-card border border-border/50 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-border/30 bg-muted/20">
+            <p className="text-sm text-muted-foreground">
+              .rofl files waiting to be rendered and uploaded to YouTube.
+              Render machine must be running on your Windows PC.
+            </p>
+          </div>
+          {/* Placeholder — Claude Code will wire up the actual API */}
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 border border-border/40">
+              <span className="w-2 h-2 rounded-full bg-muted-foreground/40" />
+              Render queue API not yet connected — Claude Code will implement
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-card border border-border/50 rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">

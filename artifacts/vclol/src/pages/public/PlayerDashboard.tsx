@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -43,6 +43,60 @@ function LoggedOutState() {
           </Link>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function RoflUploadButton({ matchId, matchDate }: { matchId: number; matchDate: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [done, setDone] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Estimate patch expiry: ~14 days from match date
+  const expiryDate = new Date(new Date(matchDate).getTime() + 14 * 24 * 60 * 60 * 1000);
+  const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  const expired = daysLeft <= 0;
+
+  if (expired) {
+    return <span className="text-xs text-muted-foreground/50 italic">Replay expired</span>;
+  }
+
+  if (done) {
+    return <span className="text-xs text-green-400">✓ Uploaded</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".rofl"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setUploading(true);
+          try {
+            const formData = new FormData();
+            formData.append("rofl", file);
+            formData.append("matchId", String(matchId));
+            const res = await fetch("/api/replays", { method: "POST", body: formData });
+            if (res.ok) setDone(true);
+          } finally {
+            setUploading(false);
+          }
+        }}
+      />
+      <button
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="text-xs text-primary hover:underline disabled:opacity-50"
+      >
+        {uploading ? "Uploading..." : "Upload .rofl"}
+      </button>
+      {daysLeft <= 3 && (
+        <span className="text-xs text-yellow-400">({daysLeft}d left)</span>
+      )}
     </div>
   );
 }
@@ -181,7 +235,25 @@ function DashboardContent({ pid }: { pid: number }) {
                   {c.scheduledTime && <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>}
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" onClick={() => acceptChallenge.mutate({ id: c.id })}>Accept</Button>
-                    <Button size="sm" variant="outline" onClick={() => declineChallenge.mutate({ id: c.id })}>Decline</Button>
+                    {/* TODO: when backend returns 403 on decline (quota reached), hide this button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        declineChallenge.mutate(
+                          { id: c.id },
+                          {
+                            onError: (err: any) => {
+                              if (err?.status === 403) {
+                                toast.error("Decline limit reached — this challenge has been auto-accepted.");
+                              }
+                            },
+                          }
+                        )
+                      }
+                    >
+                      Decline
+                    </Button>
                   </div>
                 </div>
               ))
@@ -270,6 +342,7 @@ function DashboardContent({ pid }: { pid: number }) {
                         {delta > 0 ? `+${delta}` : delta}
                       </span>
                     )}
+                    <RoflUploadButton matchId={m.id} matchDate={m.createdAt} />
                   </div>
                 </Link>
               );
