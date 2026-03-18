@@ -18,6 +18,7 @@ import Vods from "@/pages/public/Vods";
 import VodDetail from "@/pages/public/VodDetail";
 import Ladder from "@/pages/public/Ladder";
 import PlayerProfile from "@/pages/public/PlayerProfile";
+import DevLogin from "@/pages/public/DevLogin";
 import Contact from "@/pages/public/Contact";
 import MatchDetail from "@/pages/public/MatchDetail";
 
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/ladder" component={Ladder} />
       <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
+      <Route path="/dev-login" component={DevLogin} />
       <Route path="/matches/:id" component={MatchDetail} />
       
       <Route path="/admin/login" component={Login} />

@@ -72,6 +72,23 @@ function formatVod(v: typeof vodEntriesTable.$inferSelect) {
   };
 }
 
+// GET /public-list — public: minimal player list for dev login (id, riotId, discordUsername, elo, W/L)
+router.get("/public-list", async (_req, res) => {
+  const rows = await db
+    .select({
+      id: playersTable.id,
+      riotId: playersTable.riotId,
+      discordUsername: playersTable.discordUsername,
+      currentElo: playersTable.currentElo,
+      wins: playersTable.wins,
+      losses: playersTable.losses,
+    })
+    .from(playersTable)
+    .where(eq(playersTable.isActive, true))
+    .orderBy(desc(playersTable.currentElo));
+  res.json(rows);
+});
+
 // GET / — admin: list all players ordered by currentElo desc
 router.get("/", requireAdmin, async (_req, res) => {
   const rows = await db

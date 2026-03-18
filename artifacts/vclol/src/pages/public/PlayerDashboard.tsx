@@ -6,11 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-
-// TODO Claude: replace localStorage auth check with real Discord OAuth session
-const playerId = localStorage.getItem("vclol_player_id");
 
 function eloBadgeColor(elo: number) {
   if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
@@ -306,6 +303,21 @@ function DashboardContent({ pid }: { pid: number }) {
 }
 
 export default function PlayerDashboard() {
+  const [playerId, setPlayerId] = useState<string | null>(() =>
+    localStorage.getItem("vclol_player_id")
+  );
+
+  useEffect(() => {
+    const onStorage = () => setPlayerId(localStorage.getItem("vclol_player_id"));
+    window.addEventListener("storage", onStorage);
+    // Also re-check on focus in case localStorage was set in same tab
+    window.addEventListener("focus", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onStorage);
+    };
+  }, []);
+
   if (!playerId) {
     return (
       <PublicLayout>
