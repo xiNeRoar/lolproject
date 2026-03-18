@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, Edit, Plus, Users, Swords, Trophy, ClipboardList } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
@@ -90,6 +90,28 @@ export default function ManageEventDetail() {
   const playerAElo = playerA?.currentElo;
   const playerBElo = playerB?.currentElo;
   const isDoubleElim = event?.format?.toLowerCase().includes("double");
+
+  const roundOptions = useMemo(() => {
+    const fmt = event?.format ?? "";
+    if (fmt === "In-house" || fmt === "1v1 Ladder") return null;
+    if (fmt === "Round Robin") return [{ label: "Group Stage", value: "0" }];
+    if (fmt === "Swiss") return Array.from({ length: 8 }, (_, i) => ({ label: `Round ${i + 1}`, value: String(i + 1) }));
+    if (fmt === "Group Stage + Knockout") return [
+      { label: "Group Stage", value: "0" },
+      { label: "Quarter Finals", value: "1" },
+      { label: "Semi Finals", value: "2" },
+      { label: "Final", value: "3" },
+      { label: "3rd Place", value: "4" },
+    ];
+    return [
+      { label: "Quarter Finals", value: "1" },
+      { label: "Semi Finals", value: "2" },
+      { label: "Final", value: "3" },
+      { label: "3rd Place", value: "4" },
+    ];
+  }, [event?.format]);
+
+  const showBracketSection = roundOptions !== null;
 
   useEffect(() => {
     setMatchValue("sideAName", playerA ? playerA.riotId : "");
@@ -449,7 +471,8 @@ export default function ManageEventDetail() {
                 </div>
               </div>
 
-              {/* Bracket Position */}
+              {/* Bracket Position — hidden for In-house / 1v1 Ladder */}
+              {showBracketSection && (
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bracket Position</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -457,11 +480,9 @@ export default function ManageEventDetail() {
                     <label className="text-xs text-muted-foreground mb-1 block">Round</label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("round")}>
                       <option value="">— No round</option>
-                      <option value="0">Group Stage</option>
-                      <option value="1">Quarter Finals</option>
-                      <option value="2">Semi Finals</option>
-                      <option value="3">Final</option>
-                      <option value="4">3rd Place</option>
+                      {roundOptions!.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -477,6 +498,7 @@ export default function ManageEventDetail() {
                   </label>
                 )}
               </div>
+              )}
 
               {/* Playoff Link — only for season playoff events */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
