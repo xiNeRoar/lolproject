@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 function eloBadgeColor(elo: number) {
@@ -170,13 +171,26 @@ function DashboardContent({ pid }: { pid: number }) {
     );
   };
 
+  const [, navigate] = useLocation();
+
+  const handleLogout = () => {
+    localStorage.removeItem("vclol_player_id");
+    window.dispatchEvent(new Event("storage"));
+    navigate("/dev-login");
+  };
+
   if (!player) return <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 animate-pulse"><div className="h-48 bg-card rounded-xl" /></div>;
 
   const currentNotifPref = notifPref ?? player.notificationPreference ?? "web";
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 space-y-6">
-      <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
+        <Button size="sm" variant="outline" className="text-xs text-muted-foreground" onClick={handleLogout}>
+          Switch Player
+        </Button>
+      </div>
 
       {/* ELO Card */}
       <Card className="border-border/40 bg-card/60">
