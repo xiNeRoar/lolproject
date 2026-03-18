@@ -210,13 +210,18 @@ export default function ManageLadderSettings() {
                   value={lForm.playoffSize}
                   onChange={(v) => setLForm((f) => ({ ...f, playoffSize: Number(v) }))}
                 />
-                <Field
-                  label="Playoff Format"
-                  hint="Bracket format for playoffs"
-                  type="text"
-                  value={lForm.playoffFormat}
-                  onChange={(v) => setLForm((f) => ({ ...f, playoffFormat: v }))}
-                />
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Playoff Format</label>
+                  <p className="text-xs text-muted-foreground">Bracket format for playoffs</p>
+                  <select
+                    value={lForm.playoffFormat}
+                    onChange={(e) => setLForm((f) => ({ ...f, playoffFormat: e.target.value }))}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="single_elimination">Single Elimination</option>
+                    <option value="double_elimination">Double Elimination</option>
+                  </select>
+                </div>
                 <Button
                   className="w-full mt-2"
                   onClick={handleSaveLadder}

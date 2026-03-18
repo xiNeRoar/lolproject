@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Clock, Film, X } from "lucide-react";
-import { useState, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Plus, Edit, Trash2, Clock, Film, X, Wand2 } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
@@ -126,19 +126,38 @@ export default function ManageVods() {
   const updateMut = useUpdateVod();
   const deleteMut = useDeleteVod();
 
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, setValue, getValues, control } = useForm();
+  const watchedPlayerId = useWatch({ control, name: "playerId" });
+  const skipAutoFill = useRef(false);
 
   const openNew = () => {
+    skipAutoFill.current = true;
     reset({ eventId: "", playerId: "" });
     setEditingId(null);
     setIsOpen(true);
   };
 
   const openEdit = (vod: VodEntry) => {
+    skipAutoFill.current = true;
     reset({ ...vod, eventId: vod.eventId || "", playerId: vod.playerId || "" });
     setEditingId(vod.id);
     setIsOpen(true);
   };
+
+  useEffect(() => {
+    if (skipAutoFill.current) {
+      skipAutoFill.current = false;
+      return;
+    }
+    if (!watchedPlayerId) {
+      setValue("playerEloAtTime", "");
+      return;
+    }
+    const player = players?.find((p) => p.id === Number(watchedPlayerId));
+    if (player?.currentElo) {
+      setValue("playerEloAtTime", player.currentElo);
+    }
+  }, [watchedPlayerId]);
 
   const onSubmit = (data: Record<string, unknown>) => {
     const payload: CreateVodRequest = {
@@ -261,7 +280,31 @@ export default function ManageVods() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogHeader><DialogTitle>{editingId ? "Edit VOD" : "Add VOD"}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-          <Input placeholder="VOD Title" {...register("title", { required: true })} />
+          <div className="flex gap-2">
+            <Input placeholder="VOD Title" {...register("title", { required: true })} className="flex-1" />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              title="Auto-generate title from player names and champion"
+              onClick={() => {
+                const { playerNames, champion } = getValues();
+                if (!playerNames) return;
+                const parts = String(playerNames).split(",").map((s: string) => s.trim());
+                let title = "";
+                if (champion && parts[0]) {
+                  title = `${parts[0]} (${champion}) vs ${parts[1] ?? "Opponent"} — VCLoL`;
+                } else if (parts.length >= 2 && parts[1]) {
+                  title = `${parts[0]} vs ${parts[1]} — VCLoL`;
+                } else {
+                  title = `${playerNames} — VCLoL`;
+                }
+                setValue("title", title);
+              }}
+            >
+              <Wand2 className="w-4 h-4" />
+            </Button>
+          </div>
           <Input placeholder="Video URL (YouTube/Twitch)" {...register("videoUrl", { required: true })} />
           <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("eventId")}>
             <option value="">No Event (Independent)</option>
