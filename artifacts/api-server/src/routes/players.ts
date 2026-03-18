@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { playersTable, matchesTable, vodEntriesTable } from "@workspace/db";
-import { eq, desc, or, inArray } from "drizzle-orm";
+import { playersTable, matchesTable, vodEntriesTable, eventRegistrationsTable, eventsTable } from "@workspace/db";
+import { eq, desc, or, inArray, and, count, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
@@ -244,6 +244,133 @@ router.post("/", requireAdmin, async (req, res) => {
     .returning();
 
   res.status(201).json(formatPlayer(row!));
+});
+
+// S1: GET /:id/events — player's event participation + placement
+router.get("/:id/events", async (req, res) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const regs = await db
+    .select({
+      eventId: eventRegistrationsTable.eventId,
+      status: eventRegistrationsTable.status,
+      eventTitle: eventsTable.title,
+      eventSlug: eventsTable.slug,
+      eventDate: eventsTable.eventDate,
+      eventFormat: eventsTable.format,
+    })
+    .from(eventRegistrationsTable)
+    .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
+    .where(eq(eventRegistrationsTable.playerId, id));
+
+  // For each event, figure out placement from matches
+  const result = [];
+  for (const reg of regs) {
+    if (!reg.eventId) continue;
+    // Count wins and losses in this event
+    const eventMatches = await db
+      .select()
+      .from(matchesTable)
+      .where(
+        and(
+          eq(matchesTable.eventId, reg.eventId),
+          or(eq(matchesTable.playerAId, id), eq(matchesTable.playerBId, id))
+        )
+      );
+    const wins = eventMatches.filter((m) =>
+      (m.playerAId === id && m.winnerName === m.sideAName) ||
+      (m.playerBId === id && m.winnerName === m.sideBName)
+    ).length;
+    const losses = eventMatches.length - wins;
+
+    result.push({
+      eventId: reg.eventId,
+      eventTitle: reg.eventTitle,
+      eventSlug: reg.eventSlug,
+      eventDate: reg.eventDate,
+      eventFormat: reg.eventFormat,
+      registrationStatus: reg.status,
+      matchesPlayed: eventMatches.length,
+      wins,
+      losses,
+    });
+  }
+
+  res.json(result);
+});
+
+// S2: GET /:id/champions — player's champion pool from VOD metadata
+router.get("/:id/champions", async (req, res) => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const vods = await db
+    .select({
+      champion: vodEntriesTable.champion,
+    })
+    .from(vodEntriesTable)
+    .where(eq(vodEntriesTable.playerId, id));
+
+  // Aggregate champion counts
+  const champMap: Record<string, number> = {};
+  for (const v of vods) {
+    if (v.champion) {
+      champMap[v.champion] = (champMap[v.champion] || 0) + 1;
+    }
+  }
+
+  const champions = Object.entries(champMap)
+    .map(([champion, games]) => ({ champion, games }))
+    .sort((a, b) => b.games - a.games);
+
+  res.json(champions);
+});
+
+// S7: GET /:idA/h2h/:idB — head-to-head record between two players
+router.get("/:idA/h2h/:idB", async (req, res) => {
+  const idA = parseInt(req.params.idA as string);
+  const idB = parseInt(req.params.idB as string);
+  if (isNaN(idA) || isNaN(idB)) { res.status(400).json({ error: "Invalid ids" }); return; }
+
+  const matches = await db
+    .select()
+    .from(matchesTable)
+    .where(
+      or(
+        and(eq(matchesTable.playerAId, idA), eq(matchesTable.playerBId, idB)),
+        and(eq(matchesTable.playerAId, idB), eq(matchesTable.playerBId, idA))
+      )
+    )
+    .orderBy(desc(matchesTable.createdAt));
+
+  let winsA = 0;
+  let winsB = 0;
+  for (const m of matches) {
+    const aIsPlayerA = m.playerAId === idA;
+    const aWon = aIsPlayerA
+      ? m.winnerName === m.sideAName
+      : m.winnerName === m.sideBName;
+    if (aWon) winsA++;
+    else winsB++;
+  }
+
+  res.json({
+    playerAId: idA,
+    playerBId: idB,
+    totalMatches: matches.length,
+    playerAWins: winsA,
+    playerBWins: winsB,
+    matches: matches.map((m) => ({
+      id: m.id,
+      matchTitle: m.matchTitle,
+      sideAName: m.sideAName,
+      sideBName: m.sideBName,
+      winnerName: m.winnerName,
+      score: m.score,
+      createdAt: m.createdAt.toISOString(),
+    })),
+  });
 });
 
 // GET /by-id/:id — public: fetch player profile by numeric ID (registered before /:riotId)

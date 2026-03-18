@@ -340,7 +340,44 @@ export interface LadderEntry {
   peakElo: number;
   wins: number;
   losses: number;
-  winRate: number;
+  winRate?: number;
+  topChampion?: string | null;
+}
+
+export interface PlayerEventParticipation {
+  eventId: number;
+  eventTitle?: string | null;
+  eventSlug?: string | null;
+  eventDate?: string | null;
+  eventFormat?: string | null;
+  registrationStatus?: string | null;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+}
+
+export interface PlayerChampionStats {
+  champion: string;
+  games: number;
+}
+
+export type H2HRecordMatchesItem = {
+  id?: number;
+  matchTitle?: string;
+  sideAName?: string;
+  sideBName?: string;
+  winnerName?: string;
+  score?: string | null;
+  createdAt?: string;
+};
+
+export interface H2HRecord {
+  playerAId: number;
+  playerBId: number;
+  totalMatches: number;
+  playerAWins: number;
+  playerBWins: number;
+  matches: H2HRecordMatchesItem[];
 }
 
 export interface LadderResponse {

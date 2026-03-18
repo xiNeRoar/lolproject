@@ -811,6 +811,68 @@ export const UpdatePlayerProfileResponse = zod.object({
 });
 
 /**
+ * @summary Get events a player participated in
+ */
+export const GetPlayerEventsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPlayerEventsResponseItem = zod.object({
+  eventId: zod.number(),
+  eventTitle: zod.string().nullish(),
+  eventSlug: zod.string().nullish(),
+  eventDate: zod.string().nullish(),
+  eventFormat: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+  matchesPlayed: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+});
+export const GetPlayerEventsResponse = zod.array(GetPlayerEventsResponseItem);
+
+/**
+ * @summary Get player champion pool from VOD metadata
+ */
+export const GetPlayerChampionsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPlayerChampionsResponseItem = zod.object({
+  champion: zod.string(),
+  games: zod.number(),
+});
+export const GetPlayerChampionsResponse = zod.array(
+  GetPlayerChampionsResponseItem,
+);
+
+/**
+ * @summary Head-to-head record between two players
+ */
+export const GetPlayerH2HParams = zod.object({
+  idA: zod.coerce.number(),
+  idB: zod.coerce.number(),
+});
+
+export const GetPlayerH2HResponse = zod.object({
+  playerAId: zod.number(),
+  playerBId: zod.number(),
+  totalMatches: zod.number(),
+  playerAWins: zod.number(),
+  playerBWins: zod.number(),
+  matches: zod.array(
+    zod.object({
+      id: zod.number().optional(),
+      matchTitle: zod.string().optional(),
+      sideAName: zod.string().optional(),
+      sideBName: zod.string().optional(),
+      winnerName: zod.string().optional(),
+      score: zod.string().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+});
+
+/**
  * @summary Get player profile by Riot ID (public)
  */
 export const GetPlayerParams = zod.object({
@@ -1123,7 +1185,8 @@ export const GetLadderResponse = zod.object({
       peakElo: zod.number(),
       wins: zod.number(),
       losses: zod.number(),
-      winRate: zod.number(),
+      winRate: zod.number().optional(),
+      topChampion: zod.string().nullish(),
     }),
   ),
 });

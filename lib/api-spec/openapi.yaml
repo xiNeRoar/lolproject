@@ -788,6 +788,72 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /players/{id}/events:
+    get:
+      operationId: getPlayerEvents
+      tags: [players]
+      summary: Get events a player participated in
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of event participations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerEventParticipation"
+
+  /players/{id}/champions:
+    get:
+      operationId: getPlayerChampions
+      tags: [players]
+      summary: Get player champion pool from VOD metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Champion pool
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerChampionStats"
+
+  /players/{idA}/h2h/{idB}:
+    get:
+      operationId: getPlayerH2H
+      tags: [players]
+      summary: Head-to-head record between two players
+      parameters:
+        - name: idA
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idB
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: H2H record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/H2HRecord"
+
   /players/{riotId}:
     get:
       operationId: getPlayer
@@ -2315,6 +2381,9 @@ components:
           type: integer
         winRate:
           type: number
+        topChampion:
+          type: string
+          nullable: true
       required:
         - rank
         - id
@@ -2324,6 +2393,90 @@ components:
         - peakElo
         - wins
         - losses
+
+    PlayerEventParticipation:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+          nullable: true
+        eventSlug:
+          type: string
+          nullable: true
+        eventDate:
+          type: string
+          nullable: true
+        eventFormat:
+          type: string
+          nullable: true
+        registrationStatus:
+          type: string
+          nullable: true
+        matchesPlayed:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+      required:
+        - eventId
+        - matchesPlayed
+        - wins
+        - losses
+
+    PlayerChampionStats:
+      type: object
+      properties:
+        champion:
+          type: string
+        games:
+          type: integer
+      required:
+        - champion
+        - games
+
+    H2HRecord:
+      type: object
+      properties:
+        playerAId:
+          type: integer
+        playerBId:
+          type: integer
+        totalMatches:
+          type: integer
+        playerAWins:
+          type: integer
+        playerBWins:
+          type: integer
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              matchTitle:
+                type: string
+              sideAName:
+                type: string
+              sideBName:
+                type: string
+              winnerName:
+                type: string
+              score:
+                type: string
+                nullable: true
+              createdAt:
+                type: string
+      required:
+        - playerAId
+        - playerBId
+        - totalMatches
+        - playerAWins
+        - playerBWins
+        - matches
         - winRate
 
     LadderResponse:

@@ -37,6 +37,7 @@ import type {
   Event,
   EventDetail,
   EventRegistration,
+  H2HRecord,
   HealthStatus,
   InterestSubmission,
   LadderResponse,
@@ -49,6 +50,8 @@ import type {
   MatchmakingQueueResponse,
   Player,
   PlayerBadge,
+  PlayerChampionStats,
+  PlayerEventParticipation,
   PlayerProfile,
   RegisterPlayerRequest,
   ReplaySubmission,
@@ -2834,6 +2837,270 @@ export const useUpdatePlayerProfile = <
 > => {
   return useMutation(getUpdatePlayerProfileMutationOptions(options));
 };
+
+/**
+ * @summary Get events a player participated in
+ */
+export const getGetPlayerEventsUrl = (id: number) => {
+  return `/api/players/${id}/events`;
+};
+
+export const getPlayerEvents = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerEventParticipation[]> => {
+  return customFetch<PlayerEventParticipation[]>(getGetPlayerEventsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerEventsQueryKey = (id: number) => {
+  return [`/api/players/${id}/events`] as const;
+};
+
+export const getGetPlayerEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerEventsQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerEvents>>> = ({
+    signal,
+  }) => getPlayerEvents(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerEvents>>
+>;
+export type GetPlayerEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get events a player participated in
+ */
+
+export function useGetPlayerEvents<
+  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerEventsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get player champion pool from VOD metadata
+ */
+export const getGetPlayerChampionsUrl = (id: number) => {
+  return `/api/players/${id}/champions`;
+};
+
+export const getPlayerChampions = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerChampionStats[]> => {
+  return customFetch<PlayerChampionStats[]>(getGetPlayerChampionsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerChampionsQueryKey = (id: number) => {
+  return [`/api/players/${id}/champions`] as const;
+};
+
+export const getGetPlayerChampionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerChampions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerChampionsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPlayerChampions>>
+  > = ({ signal }) => getPlayerChampions(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerChampions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerChampionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerChampions>>
+>;
+export type GetPlayerChampionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get player champion pool from VOD metadata
+ */
+
+export function useGetPlayerChampions<
+  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerChampions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerChampionsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Head-to-head record between two players
+ */
+export const getGetPlayerH2HUrl = (idA: number, idB: number) => {
+  return `/api/players/${idA}/h2h/${idB}`;
+};
+
+export const getPlayerH2H = async (
+  idA: number,
+  idB: number,
+  options?: RequestInit,
+): Promise<H2HRecord> => {
+  return customFetch<H2HRecord>(getGetPlayerH2HUrl(idA, idB), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerH2HQueryKey = (idA: number, idB: number) => {
+  return [`/api/players/${idA}/h2h/${idB}`] as const;
+};
+
+export const getGetPlayerH2HQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerH2H>>,
+  TError = ErrorType<unknown>,
+>(
+  idA: number,
+  idB: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerH2H>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerH2HQueryKey(idA, idB);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerH2H>>> = ({
+    signal,
+  }) => getPlayerH2H(idA, idB, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(idA && idB),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerH2H>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerH2HQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerH2H>>
+>;
+export type GetPlayerH2HQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Head-to-head record between two players
+ */
+
+export function useGetPlayerH2H<
+  TData = Awaited<ReturnType<typeof getPlayerH2H>>,
+  TError = ErrorType<unknown>,
+>(
+  idA: number,
+  idB: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerH2H>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerH2HQueryOptions(idA, idB, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get player profile by Riot ID (public)

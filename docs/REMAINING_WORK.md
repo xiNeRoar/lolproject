@@ -1,174 +1,69 @@
-# VCLoL — Remaining Work (Post C1–C24)
+# VCLoL — Remaining Work
 
-All C1–C24 backend tasks from CLAUDE.md are DONE and pushed to GitHub.
-
-This file lists everything the PRD requires that is NOT yet implemented, with clear assignment.
+All backend tasks (C1–C24 + M1–M5 + S1/S2/S3/S7) are DONE.
 
 ---
 
-## How to read this file
+## What's done (backend)
 
-- **Claude** = backend work (schema, Express routes, API endpoints, business logic)
-- **Replit** = frontend work (React components, UI, pages, styling, navigation)
-- **Both** = Claude does backend first, then Replit wires it into UI
-- Priority follows PRD Section 5 MoSCoW
+| Task | Endpoint | Status |
+|------|----------|--------|
+| C1–C24 | All CLAUDE.md backend tasks | DONE |
+| M1 | `vod_entries.matchId` FK | DONE |
+| M2 | `GET /matches/:id` returns `vods[]` | DONE |
+| M4 | `matches.gameId` + `resultSource` fields | DONE |
+| M5 | `players.registrationStatus` field | DONE |
+| S1 | `GET /api/players/:id/events` | DONE |
+| S2 | `GET /api/players/:id/champions` | DONE |
+| S3 | `GET /api/ladder` returns `topChampion` per player | DONE |
+| S7 | `GET /api/players/:idA/h2h/:idB` | DONE |
 
----
-
-## MUST HAVE (PRD says MVP is broken without these)
-
-### M1: vod_entries needs matchId FK
-**Who:** Claude (schema + backend)
-- Add `matchId` integer FK to `vod_entries` table referencing `matches.id`
-- Update OpenAPI `VodEntry` schema to include `matchId`
-- Run codegen
-- Update `replays.ts` PATCH (C18 auto-create VODs) to set `matchId` when creating VOD entries
-- This unblocks: M2, M3, M5, M7
-
-### M2: MatchDetail shows all related VODs
-**Who:** Both (Claude: backend endpoint, Replit: UI)
-- Claude: In `matches.ts` GET `/:id`, query `vod_entries` where `matchId = id`, return as `vods[]` in response
-- Replit: MatchDetail page renders VOD list (player A POV + player B POV cards)
-
-### M3: VOD → Match navigation
-**Who:** Replit (frontend only, once M1 is done)
-- VodDetail page: if `vod.matchId` exists, show "View Match" link to `/matches/{matchId}`
-- VOD cards everywhere: show match context badge
-
-### M4: matches table additions from PRD
-**Who:** Claude (schema)
-- Add `gameId` text field (from LCU, for verification) — already exists on challenges but not on matches
-- Add `resultSource` text field: `lcu_auto | rofl_parse | admin_manual` (default: `admin_manual`)
-- Update OpenAPI, run codegen
-
-### M5: players table — registrationStatus field
-**Who:** Claude (schema)
-- Add `registrationStatus` text field: `pending_verification | active | suspended` (default: `active`)
-- PRD Section 4.1 requires this for the registration flow
+Generated hooks available: `useGetPlayerEvents`, `useGetPlayerChampions`, `useGetPlayerH2H`
 
 ---
 
-## SHOULD HAVE (Important but not MVP-blocking)
+## Replit frontend work remaining
 
-### S1: Player Profile — Events participated + placement
-**Who:** Both
-- Claude: New endpoint `GET /api/players/:id/events` — query registrations + matches for this player, compute placement per event
-- Replit: PlayerProfile page adds "Events" section with event name, date, placement
+All backend endpoints and generated hooks are ready. The following UI work needs to be done. How to display the data is entirely up to Replit.
 
-### S2: Player Profile — Champion pool
-**Who:** Both
-- Claude: New endpoint `GET /api/players/:id/champions` — aggregate from vod_entries (champion field) for this player, return champion + count + winrate
-- Replit: PlayerProfile page adds "Champion Pool" section with champion icons + stats
+### From CLAUDE.md "Frontend Still Needed"
 
-### S3: Ladder — Most played champion per player
-**Who:** Both
-- Claude: Ladder endpoint returns `topChampion` per player (aggregate from vod_entries or matches)
-- Replit: Ladder row shows champion icon next to player name
+1. **Register.tsx** — Discord OAuth flow (Discord button as Step 1, RiotID as Step 2)
+2. **PlayerDashboard match rows** — Upload Replay (.rofl) button with patch expiry indicator
+3. **ManageVods** — Render Queue panel (pending/processing/failed jobs, retry button)
+4. **ManageLadderSettings** — The 6 new fields (decline limits, no-show expiry, playoff config) are now persisted in backend; UI just needs to remove the force-cast
+5. **PlayerDashboard pending challenges** — Decline button disabled state with quota message (backend returns 403 when limit reached)
+6. **PlayerLogin** — Add "Dev Login →" link for testing
 
-### S4: Ladder — Playoff zone divider line
-**Who:** Replit (frontend only)
-- Read `ladderSettings.playoffSize` from API (already returned)
-- Render visual divider line after row N (where N = playoffSize)
-- Highlight rows above the line
+### New data now available that UI should use
 
-### S5: Ladder — Season end date countdown
-**Who:** Replit (frontend only)
-- Ladder already returns `season.endDate`
-- Render countdown timer or "X days remaining" badge
+7. **MatchDetail — VODs section**: `GET /matches/:id` now returns a `vods[]` array with all VODs linked to that match. UI should display them.
 
-### S6: Ladder — Challenge button on rows
-**Who:** Replit (frontend only)
-- Each ladder row (except own) shows "Challenge" button
-- Button opens ChallengeModal (already exists)
-- Button disabled when player's weekly challenge limit reached (check via ladderSettings)
+8. **VOD cards — match link**: Every VOD entry now has a `matchId` field. VOD cards and VodDetail can link back to the match.
 
-### S7: H2H record between players
-**Who:** Both
-- Claude: New endpoint `GET /api/players/:idA/h2h/:idB` — count wins/losses between two players from matches table
-- Replit: Show H2H record on ChallengeModal before sending challenge, and on MatchDetail
+9. **Ladder — top champion**: `GET /api/ladder` now returns `topChampion` (string, nullable) per player. Ladder rows can display it.
 
-### S8: Event winner podium display
-**Who:** Both
-- Claude: On event complete, record winner/runner-up in a new field or via season_champions
-- Replit: EventDetail page shows podium section (1st, 2nd, 3rd) at top when event is completed
+10. **Ladder — playoff zone**: Backend returns `ladderSettings.playoffSize`. UI can render a visual divider after row N.
 
-### S9: MatchDetail shows all related VODs
-**Who:** Replit (frontend, once M1+M2 backend done)
-- Render VOD cards for each POV (Player A, Player B)
-- Show "No VODs yet" if none exist
+11. **Ladder — season countdown**: Backend returns `season.endDate`. UI can show days remaining.
 
-### S10: VOD Archive — player filter UI
-**Who:** Replit (frontend only)
-- Backend already supports `?playerId=X` query param on `GET /api/vods`
-- Add player search/dropdown filter in VOD Archive page UI
+12. **Ladder — challenge button**: Each ladder row (except own) needs a Challenge button opening ChallengeModal.
 
-### S11: Player Profile — opponent names as clickable links in match history
-**Who:** Replit (frontend only)
-- Backend already returns `playerARiotId` / `playerBRiotId` in recent matches (C14 done)
-- Wrap opponent name in `<Link href="/player/{riotId}">`
+13. **Player Profile — events participated**: New endpoint `GET /api/players/:id/events` returns event participations with wins/losses per event. Use `useGetPlayerEvents(id)`. Profile should show an "Events" section.
 
-### S12: MatchDetail — show round/bracket context
-**Who:** Replit (frontend only)
-- Backend already returns `round`, `bracketSlot`, `isPlayoff` fields
-- Display "Quarter Final", "Semi Final", "Grand Final" labels based on round number
+14. **Player Profile — champion pool**: New endpoint `GET /api/players/:id/champions` returns champion + game count sorted by frequency. Use `useGetPlayerChampions(id)`. Profile should show a "Champion Pool" section.
 
----
+15. **Player Profile — opponent names as links**: Backend returns `playerARiotId`/`playerBRiotId` in recent matches. Opponent names should be clickable links to their profiles.
 
-## COULD HAVE (Nice to have, Phase 2)
+16. **H2H record**: New endpoint `GET /api/players/:idA/h2h/:idB` returns total matches, wins each, and match list. Use `useGetPlayerH2H(idA, idB)`. Show in ChallengeModal or MatchDetail.
 
-### C1: Global search (players, VODs, events)
-**Who:** Both
-- Claude: `GET /api/search?q=term` endpoint searching across players, events, vods
-- Replit: Search bar in nav, results dropdown
+17. **MatchDetail — round/bracket context**: Backend returns `round`, `bracketSlot`, `isPlayoff`. UI should display "Quarter Final", "Semi Final", etc.
 
-### C2: Recent activity feed
-**Who:** Both
-- Claude: `GET /api/activity` endpoint — recent matches, challenges, registrations
-- Replit: Activity feed component on Home page or dedicated page
+18. **VOD Archive — player filter**: Backend supports `?playerId=X` on `GET /api/vods`. UI needs a player search/dropdown filter.
 
-### C3: Rank distribution display
-**Who:** Both
-- Claude: `GET /api/ladder/distribution` — count players per ELO bracket
-- Replit: Chart on About or Ladder page
+### Phase 2 (not urgent)
 
-### C4: Series-level match data (BO3/BO5 individual games)
-**Who:** Both (significant schema work)
-- Claude: New `match_games` table linking individual games to a match series
-- Replit: MatchDetail shows game-by-game breakdown
-
-### C5: Platform activity signal on homepage
-**Who:** Replit (frontend only)
-- Show "X active players this season", "Last match played X hours ago"
-- Data available from existing endpoints
-
-### C6: Ladder — "Last active" indicator
-**Who:** Both
-- Claude: Include `lastMatchDate` in ladder response (max createdAt from matches for each player)
-- Replit: Show relative time since last match on ladder rows
-
----
-
-## WON'T HAVE (Now) — from PRD Section 5
-
-- 5v5 team ladder
-- Real-time spectating for viewers
-- In-platform voice/chat
-- Mobile app
-- Paid features / subscriptions
-- Auto-matchmaking (UI stub exists, backend Phase 2)
-
----
-
-## Execution Order
-
-**Round 1 — Claude backend fixes (do first):**
-M1 → M2 → M4 → M5
-
-**Round 2 — Replit frontend (after Claude round 1):**
-M3, S4, S5, S6, S10, S11, S12
-
-**Round 3 — Both (new features):**
-S1, S2, S3, S7, S8
-
-**Round 4 — Phase 2:**
-C1–C6
+19. **Global search** — needs backend endpoint first (not built yet)
+20. **Recent activity feed** — needs backend endpoint first (not built yet)
+21. **Rank distribution** — needs backend endpoint first (not built yet)
+22. **Series-level match data** — needs schema work first (not built yet)

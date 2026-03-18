@@ -15,5 +15,6 @@ export interface LadderEntry {
   peakElo: number;
   wins: number;
   losses: number;
-  winRate: number;
+  winRate?: number;
+  topChampion?: string | null;
 }
