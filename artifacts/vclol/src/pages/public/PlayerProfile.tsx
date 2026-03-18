@@ -105,7 +105,7 @@ export default function PlayerProfile() {
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
 
         {/* ── HERO CARD ────────────────────────────────────────────────── */}
-        <Card className={`bg-card/40 border-2 ${rank.border} mb-6 relative overflow-hidden`}>
+        <Card className="bg-card/40 border-border/40 mb-6 relative overflow-hidden">
           {/* Champion splash art background — subtle, fades left */}
           {topChampion && (
             <div className="absolute inset-0 pointer-events-none select-none">
