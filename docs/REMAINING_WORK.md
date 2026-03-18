@@ -69,6 +69,17 @@ These require new backend endpoints before Replit can build UI.
 
 ---
 
+## Dashboard data gaps (found during PlayerDashboard redesign)
+
+During the redesign of PlayerDashboard, a thorough audit of all available API data was done. Two backend gaps were discovered. Both are optional enhancements that would improve the dashboard.
+
+| Gap | Problem | Claude fix |
+|-----|---------|-----------|
+| D1 | `GET /api/elo-history/:id` — does NOT include the player's starting ELO at registration. History starts only after the first match. The ELO chart therefore misses the initial 1000-ELO baseline and can't show the full trajectory. | When a player is registered (or on first elo_history insert), also insert an `{elo: 1000, delta: 0, reason: "registration"}` row into `elo_history` so the chart always starts at 1000. |
+| D2 | `matches` table has no champion fields — `playerAChampion` / `playerBChampion` are missing. The "Recent Results" section on Dashboard and the Player Profile page cannot show which champion was played in each match. (Champion data only exists in `vod_entries`, not in matches.) | Add `playerAChampion varchar` and `playerBChampion varchar` columns to `matches` table. Expose them in `GET /api/players/by-id/:id` → `recentMatches[]` and in `GET /api/matches/:id`. Also accept them in `PATCH /api/matches/:id` so admins can fill them in. Update OpenAPI spec + run codegen. |
+
+---
+
 ## Auth — Discord OAuth (future)
 
 Current auth is localStorage stub (`vclol_player_id`). All `// TODO Claude: replace localStorage auth` comments mark where real session auth must go.
