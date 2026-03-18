@@ -113,6 +113,18 @@ export default function ManageEventDetail() {
 
   const showBracketSection = roundOptions !== null;
 
+  const roundMaxSlots: Record<string, number> = { "3": 1, "4": 1, "2": 2 };
+
+  const matchCountByRound = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of eventMatches) {
+      if (editingMatchId && m.id === editingMatchId) continue;
+      const r = String(m.round ?? "");
+      if (r && r !== "") counts[r] = (counts[r] ?? 0) + 1;
+    }
+    return counts;
+  }, [eventMatches, editingMatchId]);
+
   useEffect(() => {
     setMatchValue("sideAName", playerA ? playerA.riotId : "");
   }, [watchedPlayerAId]);
@@ -480,9 +492,23 @@ export default function ManageEventDetail() {
                     <label className="text-xs text-muted-foreground mb-1 block">Round</label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("round")}>
                       <option value="">— No round</option>
-                      {roundOptions!.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
+                      {roundOptions!.map((opt) => {
+                        const count = matchCountByRound[opt.value] ?? 0;
+                        const max = roundMaxSlots[opt.value];
+                        const isFull = max !== undefined && count >= max;
+                        const hint = isFull
+                          ? " (full)"
+                          : max !== undefined && count > 0
+                          ? ` (${count}/${max})`
+                          : opt.value === "1" && count > 0
+                          ? ` (${count} entered)`
+                          : "";
+                        return (
+                          <option key={opt.value} value={opt.value} disabled={isFull}>
+                            {opt.label}{hint}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div>
