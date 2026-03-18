@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayer } from "@workspace/api-client-react";
+import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayer, useGetLadderSettings } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const { data: badges } = useGetPlayerBadges(pid);
   const { data: challenges } = useGetChallengesForPlayer(pid);
   const { data: seasons } = useListSeasons();
+  const { data: ladderSettings } = useGetLadderSettings();
   const acceptChallenge = useAcceptChallenge();
   const declineChallenge = useDeclineChallenge();
   const updatePlayer = useUpdatePlayer();
@@ -110,11 +111,22 @@ function DashboardContent({ pid }: { pid: number }) {
 
           {/* Season Progress */}
           <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span>Matches played</span>
-              <span>{totalMatches} / 4 required for ladder</span>
-            </div>
-            <Progress value={Math.min((totalMatches / 4) * 100, 100)} className="h-2" />
+            {(() => {
+              const minRequired = ladderSettings?.minMatchesForDisplay ?? 4;
+              const pct = Math.min((totalMatches / minRequired) * 100, 100);
+              return (
+                <>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Matches played</span>
+                    <span>{totalMatches} / {minRequired} required for ladder</span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                  {totalMatches >= minRequired && (
+                    <p className="text-xs text-primary mt-1">You appear on the public ladder!</p>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
@@ -151,15 +163,34 @@ function DashboardContent({ pid }: { pid: number }) {
             {upcomingMatches.length === 0 ? (
               <p className="text-sm text-muted-foreground">No upcoming matches</p>
             ) : (
-              upcomingMatches.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg bg-background/50 border border-border/30">
-                  <p className="text-sm font-medium">
-                    vs {c.challengerId === pid ? c.challengedRiotId : c.challengerRiotId ?? "Opponent"}
-                  </p>
-                  {c.scheduledTime && <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>}
-                  <p className="text-xs text-muted-foreground mt-1">Room instructions will appear here when match time approaches</p>
-                </div>
-              ))
+              upcomingMatches.map((c) => {
+                const minutesUntil = c.scheduledTime
+                  ? Math.floor((new Date(c.scheduledTime).getTime() - Date.now()) / 60000)
+                  : null;
+                const isRoomReady = minutesUntil !== null && minutesUntil <= 30 && minutesUntil > -60;
+                return (
+                  <div key={c.id} className={`p-3 rounded-lg border ${isRoomReady ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-background/50 border-border/30"}`}>
+                    <p className="text-sm font-medium">
+                      vs {c.challengerId === pid ? c.challengedRiotId : c.challengerRiotId ?? "Opponent"}
+                    </p>
+                    {c.scheduledTime && (
+                      <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>
+                    )}
+                    {isRoomReady ? (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs font-semibold text-primary animate-pulse">🟢 Match starting soon — Room Ready!</p>
+                        <p className="text-xs text-muted-foreground">Custom lobby details will be posted in Discord. Check the #match-rooms channel.</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {minutesUntil !== null && minutesUntil > 30
+                          ? `Starts in ${minutesUntil < 60 ? `${minutesUntil}m` : `${Math.floor(minutesUntil / 60)}h ${minutesUntil % 60}m`}`
+                          : "Room details will appear on Discord when match time approaches"}
+                      </p>
+                    )}
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>

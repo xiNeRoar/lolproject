@@ -17,6 +17,9 @@ export interface PlayerProfile {
   wins: number;
   losses: number;
   isActive: boolean;
+  email?: string | null;
+  notificationPreference?: string | null;
+  discordId?: string | null;
   recentMatches: Match[];
   vods: VodEntry[];
   createdAt: string;

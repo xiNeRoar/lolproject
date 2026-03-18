@@ -168,6 +168,8 @@ export interface EventRegistration {
   city: string;
   availabilityConfirmation: string;
   notes?: string | null;
+  status: string;
+  playerId?: number | null;
   createdAt: string;
 }
 
@@ -179,6 +181,8 @@ export interface CreateRegistrationRequest {
   city: string;
   availabilityConfirmation: string;
   notes?: string | null;
+  playerId?: number | null;
+  status?: string | null;
 }
 
 export type MatchDetail = Match & {
@@ -230,6 +234,9 @@ export interface Player {
   wins: number;
   losses: number;
   isActive: boolean;
+  email?: string | null;
+  notificationPreference?: string | null;
+  discordId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -239,6 +246,8 @@ export interface CreatePlayerRequest {
   discordUsername: string;
   currentElo?: number | null;
   isActive?: boolean | null;
+  email?: string | null;
+  notificationPreference?: string | null;
 }
 
 export interface PlayerProfile {
@@ -250,6 +259,9 @@ export interface PlayerProfile {
   wins: number;
   losses: number;
   isActive: boolean;
+  email?: string | null;
+  notificationPreference?: string | null;
+  discordId?: string | null;
   recentMatches: Match[];
   vods: VodEntry[];
   createdAt: string;

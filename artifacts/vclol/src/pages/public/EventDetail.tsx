@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetEvent, useCreateRegistration } from "@workspace/api-client-react";
+import { useGetEvent, useListRegistrations } from "@workspace/api-client-react";
 import type { Match } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { MatchList } from "@/components/brackets/MatchList";
@@ -11,14 +11,8 @@ import { SwissRoundsTable } from "@/components/brackets/SwissRoundsTable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useState } from "react";
-import { Trophy, Video, Calendar, AlertCircle } from "lucide-react";
+import { Trophy, Video, Calendar, AlertCircle, Users } from "lucide-react";
 
 function EventMatches({ format, matches }: { format: string | null | undefined; matches: Match[] }) {
   if (format === "Single Elimination") return <SingleEliminationBracket matches={matches} />;
@@ -28,37 +22,15 @@ function EventMatches({ format, matches }: { format: string | null | undefined; 
   return <MatchList matches={matches} />;
 }
 
-const regSchema = z.object({
-  riotId: z.string().min(1, "Required"),
-  discordUsername: z.string().min(1, "Required"),
-  currentRank: z.string().min(1, "Required"),
-  city: z.string().min(1, "Required"),
-  availabilityConfirmation: z.string().min(1, "Required"),
-  notes: z.string().optional(),
-});
-
-type RegFormValues = z.infer<typeof regSchema>;
-
 export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { data: event, isLoading, error } = useGetEvent(slug);
-  const registerMutation = useCreateRegistration();
-  const [registered, setRegistered] = useState(false);
-
-  const { register, handleSubmit, formState: { errors } } = useForm<RegFormValues>({
-    resolver: zodResolver(regSchema)
-  });
+  const { data: registrations } = useListRegistrations(event?.id ? { eventId: event.id } : undefined);
 
   if (isLoading) return <PublicLayout><div className="p-16 text-center text-muted-foreground animate-pulse">Loading event...</div></PublicLayout>;
   if (error || !event) return <PublicLayout><div className="p-16 text-center text-destructive">Event not found.</div></PublicLayout>;
 
   const isOpen = event.registrationStatus === 'open';
-
-  const onSubmit = (data: RegFormValues) => {
-    registerMutation.mutate({ data: { ...data, eventId: event.id } }, {
-      onSuccess: () => setRegistered(true)
-    });
-  };
 
   return (
     <PublicLayout>
@@ -91,6 +63,28 @@ export default function EventDetail() {
             )}
           </section>
 
+          {/* Participants */}
+          <section>
+            <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Participants ({registrations?.length ?? 0})
+            </h2>
+            {!registrations?.length ? (
+              <p className="text-muted-foreground text-sm">No registrations yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {registrations.map((r) => (
+                  <div key={r.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-sm">
+                    <span className="font-medium">{r.riotId}</span>
+                    {r.status && r.status !== "registered" && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">{r.status}</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {event.rulesSummary && (
             <section>
               <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2">
@@ -118,60 +112,42 @@ export default function EventDetail() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {event.vods.map(v => (
-                  <a key={v.id} href={v.videoUrl} target="_blank" rel="noreferrer" className="block">
+                  <Link key={v.id} href={`/vods/${v.id}`} className="block">
                     <Card className="hover:border-primary/50 transition-colors h-full bg-card/40">
                       <CardContent className="p-4">
                         <div className="font-semibold mb-2">{v.title}</div>
                         <div className="text-xs text-primary">{v.videoUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}</div>
                       </CardContent>
                     </Card>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </section>
           )}
         </div>
 
-        {/* Sidebar / Registration */}
+        {/* Sidebar / Participate */}
         <div>
           <div className="sticky top-24">
             <Card className="border-primary/20 shadow-lg shadow-black/50">
               <CardContent className="p-6">
-                <h3 className="text-xl font-display font-bold mb-2">Registration</h3>
-                
+                <h3 className="text-xl font-display font-bold mb-2">Participate</h3>
                 {!isOpen ? (
                   <div className="bg-secondary/50 p-4 rounded text-center text-sm text-muted-foreground">
                     Registration for this event is currently closed.
                   </div>
-                ) : registered ? (
-                  <div className="bg-primary/10 text-primary p-4 rounded text-center">
-                    <p className="font-semibold mb-1">Registration Complete</p>
-                    <p className="text-sm">You are registered for this event. Monitor Discord for updates.</p>
-                  </div>
                 ) : (
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-6">
-                    <div>
-                      <Input placeholder="Riot ID (Name#Tag)" {...register("riotId")} className="bg-background" />
-                      {errors.riotId && <p className="text-xs text-destructive mt-1">{errors.riotId.message}</p>}
-                    </div>
-                    <div>
-                      <Input placeholder="Discord Username" {...register("discordUsername")} className="bg-background" />
-                    </div>
-                    <div>
-                      <Input placeholder="Current Rank" {...register("currentRank")} className="bg-background" />
-                    </div>
-                    <div>
-                      <Input placeholder="City / Area" {...register("city")} className="bg-background" />
-                    </div>
-                    <div>
-                      <Textarea placeholder="Confirm your availability for the event dates/times" {...register("availabilityConfirmation")} className="bg-background h-20" />
-                      {errors.availabilityConfirmation && <p className="text-xs text-destructive mt-1">{errors.availabilityConfirmation.message}</p>}
-                    </div>
-                    <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      {registerMutation.isPending ? "Submitting..." : "Register Now"}
-                    </Button>
-                    {registerMutation.isError && <p className="text-xs text-destructive text-center">Failed to register.</p>}
-                  </form>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      To register for this event, you must be a registered VCLoL player.
+                    </p>
+                    <Link href="/register">
+                      <Button className="w-full">Register as Player →</Button>
+                    </Link>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Already registered? Contact admin via Discord to be added to this event.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>

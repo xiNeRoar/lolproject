@@ -102,26 +102,37 @@ lib/
 
 ## Public Routes (nav order)
 
-Home → Ladder → VODs → Events → About  (+  Login | Join Interest List CTA)
+Home → Ladder → VODs → Events → About  (+  Login | Register CTA)
 Player-facing: `/register`, `/login`, `/dashboard`
 
 ## ELO System
 
 - Base ELO: 1000
-- K-Factor: 32
-- Ladder requires ≥ 4 matches to appear
+- K-Factor: configurable via DB ladder_settings (default 32)
+- Ladder requires ≥ `minMatchesForDisplay` matches to appear (from DB, not hardcoded)
 - ELO auto-calculated on `POST /matches` when both `playerAId` and `playerBId` are linked
 - Season activation applies soft ELO reset: `new_elo = 1000 + (old_elo - 1000) * factor`
 - Playoff matches tracked with `isPlayoff` flag
 
 ## Admin Features
 
-- **Players**: create/edit/delete players, track ELO + W/L
+- **Players**: create/edit/delete players, track ELO + W/L; form includes email + notificationPreference
 - **Seasons**: create/edit/delete, activate season (triggers ELO soft reset + ends previous active season)
 - **Dashboard**: counts for players, seasons, interests, events, registrations, matches, VODs
-- **Matches**: linked match records with automatic ELO computation
-- **VODs**: champion/position/patch/player metadata, timestamp management per VOD
-- **Events, Interests, Registrations**: full CRUD
+- **Matches**: linked match records with automatic ELO computation; auto-opens with pre-filled players from Challenges page
+- **VODs**: champion/position/patch/player metadata, timestamp management per VOD; GET joins players to populate playerRiotId
+- **Events**: registration count shown per event on list page
+- **Registrations**: Status column; Confirm / Withdraw / Delete actions (admin-only mutate endpoints)
+- **Interests**: full CRUD
+
+## Registration Flow
+
+- GET /api/registrations is **public** (no auth required) — allows EventDetail Participants section to show registrations
+- POST /api/registrations is public (open registration)
+- PUT /api/registrations/:id/confirm and /withdraw require admin auth
+- DELETE /api/registrations/:id requires admin auth
+- EventDetail sidebar shows "Register as Player →" link instead of free-text form
+- EventDetail Participants section: lists all registered players (riot IDs + status badges)
 
 ## Database Tables
 

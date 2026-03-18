@@ -16,5 +16,7 @@ export interface EventRegistration {
   city: string;
   availabilityConfirmation: string;
   notes?: string | null;
+  status: string;
+  playerId?: number | null;
   createdAt: string;
 }

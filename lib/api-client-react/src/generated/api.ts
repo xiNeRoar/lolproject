@@ -1381,6 +1381,174 @@ export const useDeleteRegistration = <
 };
 
 /**
+ * @summary Confirm a registration (admin)
+ */
+export const getConfirmRegistrationUrl = (id: number) => {
+  return `/api/registrations/${id}/confirm`;
+};
+
+export const confirmRegistration = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getConfirmRegistrationUrl(id), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export const getConfirmRegistrationMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmRegistration>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmRegistration>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["confirmRegistration"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmRegistration>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return confirmRegistration(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmRegistrationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmRegistration>>
+>;
+
+export type ConfirmRegistrationMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Confirm a registration (admin)
+ */
+export const useConfirmRegistration = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmRegistration>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmRegistration>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getConfirmRegistrationMutationOptions(options));
+};
+
+/**
+ * @summary Withdraw a registration (admin)
+ */
+export const getWithdrawRegistrationUrl = (id: number) => {
+  return `/api/registrations/${id}/withdraw`;
+};
+
+export const withdrawRegistration = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getWithdrawRegistrationUrl(id), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export const getWithdrawRegistrationMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawRegistration>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof withdrawRegistration>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["withdrawRegistration"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof withdrawRegistration>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return withdrawRegistration(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WithdrawRegistrationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof withdrawRegistration>>
+>;
+
+export type WithdrawRegistrationMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Withdraw a registration (admin)
+ */
+export const useWithdrawRegistration = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawRegistration>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof withdrawRegistration>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getWithdrawRegistrationMutationOptions(options));
+};
+
+/**
  * @summary List all match results
  */
 export const getListMatchesUrl = (params?: ListMatchesParams) => {

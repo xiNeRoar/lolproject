@@ -42,6 +42,8 @@ export default function ManagePlayers() {
     const payload = {
       riotId: data.riotId,
       discordUsername: data.discordUsername,
+      email: data.email || undefined,
+      notificationPreference: data.notificationPreference || undefined,
       currentElo: data.currentElo ? Number(data.currentElo) : undefined,
       isActive: data.isActive === true || data.isActive === "true",
     };
@@ -155,6 +157,24 @@ export default function ManagePlayers() {
             placeholder="Discord Username (e.g. faker#0001)"
             {...register("discordUsername", { required: true })}
           />
+          <Input
+            type="email"
+            placeholder="Email (optional)"
+            {...register("email")}
+          />
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Notification Preference</label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              {...register("notificationPreference")}
+            >
+              <option value="">Default (web)</option>
+              <option value="web">Web only</option>
+              <option value="email">Email</option>
+              <option value="discord">Discord DM</option>
+              <option value="both">Email + Discord</option>
+            </select>
+          </div>
           <Input
             type="number"
             placeholder="Starting ELO (default 1000)"

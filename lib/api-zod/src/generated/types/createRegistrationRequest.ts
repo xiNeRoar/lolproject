@@ -14,4 +14,6 @@ export interface CreateRegistrationRequest {
   city: string;
   availabilityConfirmation: string;
   notes?: string | null;
+  playerId?: number | null;
+  status?: string | null;
 }

@@ -341,6 +341,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /registrations/{id}/confirm:
+    put:
+      operationId: confirmRegistration
+      tags: [registrations]
+      summary: Confirm a registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /registrations/{id}/withdraw:
+    put:
+      operationId: withdrawRegistration
+      tags: [registrations]
+      summary: Withdraw a registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /matches:
     get:
       operationId: listMatches
@@ -1483,6 +1533,11 @@ components:
         notes:
           type: string
           nullable: true
+        status:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
         createdAt:
           type: string
       required:
@@ -1493,6 +1548,7 @@ components:
         - currentRank
         - city
         - availabilityConfirmation
+        - status
         - createdAt
 
     CreateRegistrationRequest:
@@ -1511,6 +1567,12 @@ components:
         availabilityConfirmation:
           type: string
         notes:
+          type: string
+          nullable: true
+        playerId:
+          type: integer
+          nullable: true
+        status:
           type: string
           nullable: true
       required:
@@ -1788,6 +1850,15 @@ components:
           type: integer
         isActive:
           type: boolean
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+        discordId:
+          type: string
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -1817,6 +1888,12 @@ components:
         isActive:
           type: boolean
           nullable: true
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
       required:
         - riotId
         - discordUsername
@@ -1840,6 +1917,15 @@ components:
           type: integer
         isActive:
           type: boolean
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+        discordId:
+          type: string
+          nullable: true
         recentMatches:
           type: array
           items:

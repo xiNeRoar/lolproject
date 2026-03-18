@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { playersTable, seasonsTable } from "@workspace/db";
+import { playersTable, seasonsTable, ladderSettingsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { LADDER_MIN_MATCHES } from "../lib/elo";
 
 const router = Router();
 
@@ -12,6 +11,9 @@ router.get("/", async (_req, res) => {
     .from(seasonsTable)
     .where(eq(seasonsTable.status, "active"));
 
+  const [ladderSettings] = await db.select().from(ladderSettingsTable).limit(1);
+  const minMatches = ladderSettings?.minMatchesForDisplay ?? 4;
+
   const players = await db
     .select()
     .from(playersTable)
@@ -19,7 +21,7 @@ router.get("/", async (_req, res) => {
     .orderBy(desc(playersTable.currentElo));
 
   const qualified = players.filter(
-    (p) => p.wins + p.losses >= LADDER_MIN_MATCHES
+    (p) => p.wins + p.losses >= minMatches
   );
 
   const entries = qualified.map((p, idx) => ({

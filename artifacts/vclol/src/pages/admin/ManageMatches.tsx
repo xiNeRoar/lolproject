@@ -14,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 
 export default function ManageMatches() {
   const { data: matches, isLoading } = useListMatches();
@@ -26,6 +27,7 @@ export default function ManageMatches() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const search = useSearch();
 
   const createMut = useCreateMatch();
   const updateMut = useUpdateMatch();
@@ -38,6 +40,17 @@ export default function ManageMatches() {
 
   const playerAElo = players?.find((p) => p.id === Number(watchedPlayerAId))?.currentElo;
   const playerBElo = players?.find((p) => p.id === Number(watchedPlayerBId))?.currentElo;
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const playerAId = params.get("playerAId");
+    const playerBId = params.get("playerBId");
+    if (playerAId && playerBId) {
+      reset({ eventId: "", playerAId, playerBId, seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
+      setEditingId(null);
+      setIsOpen(true);
+    }
+  }, [search]);
 
   const openNew = () => {
     reset({ eventId: "", playerAId: "", playerBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });

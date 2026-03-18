@@ -1,18 +1,29 @@
 import AdminLayout from "@/components/layout/AdminLayout";
-import { useListEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@workspace/api-client-react";
+import { useListEvents, useCreateEvent, useUpdateEvent, useDeleteEvent, useListRegistrations } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "@/lib/utils";
 
 export default function ManageEvents() {
   const { data: events, isLoading } = useListEvents();
+  const { data: allRegs } = useListRegistrations();
   const queryClient = useQueryClient();
+
+  const regCountByEvent = useMemo(() => {
+    const map: Record<number, number> = {};
+    allRegs?.forEach((r) => {
+      map[r.eventId] = (map[r.eventId] ?? 0) + 1;
+    });
+    return map;
+  }, [allRegs]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -73,6 +84,12 @@ export default function ManageEvents() {
             <div>
               <h3 className="text-xl font-bold">{event.title} <span className="text-sm font-normal text-muted-foreground ml-2">({event.slug})</span></h3>
               <p className="text-sm text-muted-foreground mt-1">{formatDate(event.eventDate)} • {event.format} • Status: {event.registrationStatus}</p>
+              <div className="flex items-center gap-1 mt-2">
+                <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {regCountByEvent[event.id] ?? 0} registration{(regCountByEvent[event.id] ?? 0) !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => openEdit(event)}><Edit className="w-4 h-4" /></Button>

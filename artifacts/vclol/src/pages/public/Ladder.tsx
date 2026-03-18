@@ -53,7 +53,7 @@ export default function Ladder() {
         ) : (
           <p className="text-muted-foreground mb-2">No active season — showing all-time standings.</p>
         )}
-        <p className="text-xs text-muted-foreground mb-10">Requires at least 4 matches to appear on the ladder.</p>
+        <p className="text-xs text-muted-foreground mb-10">Requires at least {settings?.minMatchesForDisplay ?? 4} matches to appear on the ladder.</p>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-10 sm:px-6 lg:px-8">
@@ -160,6 +160,20 @@ export default function Ladder() {
               {[1, 2, 3, 4].map((i) => <div key={i} className="h-4 bg-card rounded w-3/4" />)}
             </div>
           )}
+        </div>
+
+        <div className="mt-6 border border-border/30 rounded-xl p-6 bg-card/20 opacity-60">
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-lg font-display font-semibold">Auto Matchmaking</h3>
+            <Badge variant="outline" className="text-xs">Coming Soon</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Automatic matchmaking queue — the system will pair you with opponents of similar ELO.
+            Available in a future update.
+          </p>
+          <Button disabled className="mt-4 opacity-50" variant="outline">
+            Join Queue — Coming Soon
+          </Button>
         </div>
       </div>
 

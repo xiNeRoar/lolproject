@@ -11,4 +11,6 @@ export interface CreatePlayerRequest {
   discordUsername: string;
   currentElo?: number | null;
   isActive?: boolean | null;
+  email?: string | null;
+  notificationPreference?: string | null;
 }

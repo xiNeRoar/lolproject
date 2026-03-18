@@ -16,6 +16,9 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
     wins: p.wins,
     losses: p.losses,
     isActive: p.isActive,
+    email: p.email ?? null,
+    notificationPreference: p.notificationPreference,
+    discordId: p.discordId ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -80,11 +83,13 @@ router.get("/", requireAdmin, async (_req, res) => {
 
 // POST / — admin: create player, reject duplicate riotId with 409
 router.post("/", requireAdmin, async (req, res) => {
-  const { riotId, discordUsername, currentElo, isActive } = req.body as {
+  const { riotId, discordUsername, currentElo, isActive, email, notificationPreference } = req.body as {
     riotId?: string;
     discordUsername?: string;
     currentElo?: number;
     isActive?: boolean;
+    email?: string;
+    notificationPreference?: string;
   };
 
   if (!riotId || !discordUsername) {
@@ -111,6 +116,8 @@ router.post("/", requireAdmin, async (req, res) => {
       wins: 0,
       losses: 0,
       isActive: isActive !== false,
+      email: email || null,
+      notificationPreference: notificationPreference || "web",
     })
     .returning();
 
@@ -166,7 +173,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { riotId, discordUsername, currentElo, peakElo, wins, losses, isActive } = req.body as {
+  const { riotId, discordUsername, currentElo, peakElo, wins, losses, isActive, email, notificationPreference } = req.body as {
     riotId?: string;
     discordUsername?: string;
     currentElo?: number;
@@ -174,6 +181,8 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
     wins?: number;
     losses?: number;
     isActive?: boolean;
+    email?: string;
+    notificationPreference?: string;
   };
 
   const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
@@ -184,6 +193,8 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
   if (typeof wins === "number") updates.wins = wins;
   if (typeof losses === "number") updates.losses = losses;
   if (isActive !== undefined) updates.isActive = isActive;
+  if (email !== undefined) updates.email = email || null;
+  if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
 
   const [row] = await db
     .update(playersTable)

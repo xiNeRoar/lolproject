@@ -76,9 +76,11 @@ router.get("/", async (req, res) => {
       createdAt: vodEntriesTable.createdAt,
       updatedAt: vodEntriesTable.updatedAt,
       eventTitle: eventsTable.title,
+      playerRiotId: playersTable.riotId,
     })
     .from(vodEntriesTable)
     .leftJoin(eventsTable, eq(vodEntriesTable.eventId, eventsTable.id))
+    .leftJoin(playersTable, eq(vodEntriesTable.playerId, playersTable.id))
     .orderBy(vodEntriesTable.createdAt);
 
   if (eventId) rows = rows.filter((r) => r.eventId === eventId);
@@ -112,7 +114,7 @@ router.get("/", async (req, res) => {
       notes: r.notes,
       videoUrl: r.videoUrl,
       playerId: r.playerId,
-      playerRiotId: null,
+      playerRiotId: r.playerRiotId ?? null,
       champion: r.champion,
       opponentChampion: r.opponentChampion,
       position: r.position,

@@ -15,6 +15,9 @@ export interface Player {
   wins: number;
   losses: number;
   isActive: boolean;
+  email?: string | null;
+  notificationPreference?: string | null;
+  discordId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

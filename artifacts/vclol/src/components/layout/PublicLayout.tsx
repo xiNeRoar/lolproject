@@ -1,11 +1,16 @@
 import { Link, useLocation } from "wouter";
 import { Menu, X, Shield } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlayerId(localStorage.getItem("vclol_player_id"));
+  }, []);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -45,8 +50,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* CTA & Auth */}
             <div className="hidden md:flex items-center space-x-4">
-              {/* TODO Claude: replace localStorage check with real session */}
-              {localStorage.getItem("vclol_player_id") ? (
+              {playerId ? (
                 <Link href="/dashboard" className="text-sm font-medium text-primary hover:text-primary/80">
                   My Dashboard
                 </Link>
@@ -56,7 +60,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 </Link>
               )}
               <Link href="/register" className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
-                Join Interest List
+                Register
               </Link>
             </div>
 
@@ -92,11 +96,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 </Link>
               ))}
               <Link
-                href="/interest"
+                href="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 mt-4 rounded-md text-base font-medium bg-primary text-primary-foreground"
               >
-                Join Interest List
+                Register
               </Link>
             </div>
           </div>

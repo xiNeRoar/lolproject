@@ -263,6 +263,8 @@ export const ListRegistrationsResponseItem = zod.object({
   city: zod.string(),
   availabilityConfirmation: zod.string(),
   notes: zod.string().nullish(),
+  status: zod.string(),
+  playerId: zod.number().nullish(),
   createdAt: zod.string(),
 });
 export const ListRegistrationsResponse = zod.array(
@@ -280,6 +282,8 @@ export const CreateRegistrationBody = zod.object({
   city: zod.string(),
   availabilityConfirmation: zod.string(),
   notes: zod.string().nullish(),
+  playerId: zod.number().nullish(),
+  status: zod.string().nullish(),
 });
 
 /**
@@ -290,6 +294,28 @@ export const DeleteRegistrationParams = zod.object({
 });
 
 export const DeleteRegistrationResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Confirm a registration (admin)
+ */
+export const ConfirmRegistrationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ConfirmRegistrationResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Withdraw a registration (admin)
+ */
+export const WithdrawRegistrationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const WithdrawRegistrationResponse = zod.object({
   success: zod.boolean(),
 });
 
@@ -643,6 +669,9 @@ export const ListPlayersResponseItem = zod.object({
   wins: zod.number(),
   losses: zod.number(),
   isActive: zod.boolean(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  discordId: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -656,6 +685,8 @@ export const CreatePlayerBody = zod.object({
   discordUsername: zod.string(),
   currentElo: zod.number().nullish(),
   isActive: zod.boolean().nullish(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
 });
 
 /**
@@ -674,6 +705,9 @@ export const GetPlayerResponse = zod.object({
   wins: zod.number(),
   losses: zod.number(),
   isActive: zod.boolean(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  discordId: zod.string().nullish(),
   recentMatches: zod.array(
     zod.object({
       id: zod.number(),
@@ -741,6 +775,8 @@ export const UpdatePlayerBody = zod.object({
   discordUsername: zod.string(),
   currentElo: zod.number().nullish(),
   isActive: zod.boolean().nullish(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
 });
 
 export const UpdatePlayerResponse = zod.object({
@@ -752,6 +788,9 @@ export const UpdatePlayerResponse = zod.object({
   wins: zod.number(),
   losses: zod.number(),
   isActive: zod.boolean(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  discordId: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

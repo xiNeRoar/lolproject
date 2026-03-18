@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
+import { playersTable } from "./players";
 
 export const eventRegistrationsTable = pgTable("event_registrations", {
   id: serial("id").primaryKey(),
@@ -12,6 +13,8 @@ export const eventRegistrationsTable = pgTable("event_registrations", {
   city: text("city").notNull(),
   availabilityConfirmation: text("availability_confirmation").notNull(),
   notes: text("notes"),
+  status: text("status").notNull().default("registered"),
+  playerId: integer("player_id").references(() => playersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

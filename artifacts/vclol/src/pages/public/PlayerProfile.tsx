@@ -4,7 +4,7 @@ import { useGetPlayer, useGetEloHistory, useGetPlayerBadges } from "@workspace/a
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal } from "lucide-react";
+import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal, Crown } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { ChallengeModal } from "@/components/ChallengeModal";
 import {
@@ -149,20 +149,33 @@ export default function PlayerProfile() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {badges.map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"
-                  >
-                    <Star className="w-4 h-4 shrink-0" />
-                    <div>
-                      <div className="text-sm font-medium capitalize">{badge.badgeType.replace(/_/g, " ")}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(badge.earnedAt).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                {badges.map((badge) => {
+                  const isChampion = badge.badgeType === "season_champion";
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                        isChampion
+                          ? "bg-yellow-500/20 border-yellow-400/50 text-yellow-300 ring-1 ring-yellow-400/30"
+                          : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
+                      }`}
+                    >
+                      {isChampion ? (
+                        <Crown className="w-4 h-4 shrink-0 text-yellow-300" />
+                      ) : (
+                        <Star className="w-4 h-4 shrink-0" />
+                      )}
+                      <div>
+                        <div className={`text-sm font-medium capitalize ${isChampion ? "font-bold" : ""}`}>
+                          {badge.badgeType.replace(/_/g, " ")}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(badge.earnedAt).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
