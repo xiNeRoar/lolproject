@@ -84,10 +84,12 @@ export default function ManageEventDetail() {
   const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control, setValue: setMatchValue } = useForm();
   const watchedPlayerAId = useWatch({ control, name: "playerAId" });
   const watchedPlayerBId = useWatch({ control, name: "playerBId" });
+  const watchedWinner = useWatch({ control, name: "winner" });
   const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
   const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
   const playerAElo = playerA?.currentElo;
   const playerBElo = playerB?.currentElo;
+  const isDoubleElim = event?.format?.toLowerCase().includes("double");
 
   useEffect(() => {
     if (playerA) setMatchValue("sideAName", playerA.riotId);
@@ -98,32 +100,48 @@ export default function ManageEventDetail() {
   }, [watchedPlayerBId]);
 
   const openNewMatch = () => {
-    resetMatch({ eventId, playerAId: "", playerBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
+    resetMatch({
+      eventId, playerAId: "", playerBId: "", sideAName: "", sideBName: "",
+      winner: "A", score: "", format: "", round: "", bracketSlot: "",
+      isLosersBracket: false, seasonId: "", isPlayoff: false,
+    });
     setEditingMatchId(null);
     setMatchDialogOpen(true);
   };
 
   const openEditMatch = (match: Match) => {
-    resetMatch({ ...match, eventId: match.eventId || eventId, playerAId: match.playerAId || "", playerBId: match.playerBId || "", seasonId: match.seasonId || "" });
+    const derivedWinner = match.winnerName === match.sideAName ? "A" : "B";
+    resetMatch({
+      ...match,
+      winner: derivedWinner,
+      round: match.round != null ? String(match.round) : "",
+      eventId: match.eventId || eventId,
+      playerAId: match.playerAId || "",
+      playerBId: match.playerBId || "",
+      seasonId: match.seasonId || "",
+    });
     setEditingMatchId(match.id);
     setMatchDialogOpen(true);
   };
 
   const onMatchSubmit = (data: Record<string, unknown>) => {
+    const sideA = String(data.sideAName ?? "");
+    const sideB = String(data.sideBName ?? "");
+    const winnerName = data.winner === "B" ? sideB : sideA;
     const payload: CreateMatchRequest = {
-      matchTitle: String(data.matchTitle ?? ""),
-      sideAName: String(data.sideAName ?? ""),
-      sideBName: String(data.sideBName ?? ""),
-      winnerName: String(data.winnerName ?? ""),
+      matchTitle: `${sideA} vs ${sideB}`,
+      sideAName: sideA,
+      sideBName: sideB,
+      winnerName,
       score: data.score ? String(data.score) : null,
       format: data.format ? String(data.format) : null,
-      vodUrl: data.vodUrl ? String(data.vodUrl) : null,
+      vodUrl: null,
       eventId,
       playerAId: data.playerAId ? Number(data.playerAId) : null,
       playerBId: data.playerBId ? Number(data.playerBId) : null,
       seasonId: data.seasonId ? Number(data.seasonId) : null,
       isPlayoff: Boolean(data.isPlayoff),
-      round: data.round ? Number(data.round) : null,
+      round: data.round !== "" && data.round != null ? Number(data.round) : null,
       bracketSlot: data.bracketSlot ? Number(data.bracketSlot) : null,
       isLosersBracket: Boolean(data.isLosersBracket),
     };
@@ -360,62 +378,114 @@ export default function ManageEventDetail() {
           <Dialog open={matchDialogOpen} onOpenChange={setMatchDialogOpen}>
             <DialogHeader><DialogTitle>{editingMatchId ? "Edit Match" : "Add Match"}</DialogTitle></DialogHeader>
             <form onSubmit={handleMatchSubmit(onMatchSubmit)} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input placeholder="Match Title (e.g. Grand Finals)" {...regMatch("matchTitle", { required: true })} />
-                <Input placeholder="Format (e.g. BO3)" {...regMatch("format")} />
+
+              {/* Players — links to VCLoL accounts → auto-fills names + enables ELO update */}
+              <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Players <span className="normal-case font-normal text-muted-foreground/60 ml-1">— link VCLoL accounts to auto-fill names &amp; enable ELO update</span>
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Player A</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerAId")}>
+                      <option value="">None (manual name)</option>
+                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                    </select>
+                    {watchedPlayerAId && playerAElo !== undefined && (
+                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-primary">{playerAElo}</span></p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Player B</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
+                      <option value="">None (manual name)</option>
+                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                    </select>
+                    {watchedPlayerBId && playerBElo !== undefined && (
+                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-primary">{playerBElo}</span></p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Side A Name</label>
+                    <Input placeholder="e.g. Zed#NA1" {...regMatch("sideAName", { required: true })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Side B Name</label>
+                    <Input placeholder="e.g. Jinx#KR1" {...regMatch("sideBName", { required: true })} />
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 border p-4 rounded-md border-border/50 bg-muted/20">
-                <Input placeholder="Side A Name" {...regMatch("sideAName", { required: true })} />
-                <Input placeholder="Side B Name" {...regMatch("sideBName", { required: true })} />
-                <Input placeholder="Winner Name" className="col-span-2" {...regMatch("winnerName", { required: true })} />
-                <Input placeholder="Score (e.g. 2-1)" className="col-span-2" {...regMatch("score")} />
+
+              {/* Result */}
+              <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Result</p>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Winner</label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" value="A" {...regMatch("winner")} className="accent-primary" />
+                      <span className="text-sm font-medium">{playerA?.riotId || "Side A"}</span>
+                      {watchedWinner === "A" && <span className="text-xs text-green-400 font-semibold">wins</span>}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" value="B" {...regMatch("winner")} className="accent-primary" />
+                      <span className="text-sm font-medium">{playerB?.riotId || "Side B"}</span>
+                      {watchedWinner === "B" && <span className="text-xs text-green-400 font-semibold">wins</span>}
+                    </label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Score (optional)</label>
+                    <Input placeholder="e.g. 2-1" {...regMatch("score")} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Format (optional)</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("format")}>
+                      <option value="">Inherit from event</option>
+                      <option value="BO1">BO1</option>
+                      <option value="BO3">BO3</option>
+                      <option value="BO5">BO5</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <Input placeholder="VOD URL (Optional)" {...regMatch("vodUrl")} />
 
               {/* Bracket Position */}
-              <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">
+              <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bracket Position</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Round # <span className="text-muted-foreground/60">(1=QF, 2=SF, 3=Final)</span></label>
-                    <Input type="number" placeholder="e.g. 1" {...regMatch("round")} />
+                    <label className="text-xs text-muted-foreground mb-1 block">Round</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("round")}>
+                      <option value="">— No round</option>
+                      <option value="0">Group Stage</option>
+                      <option value="1">Quarter Finals</option>
+                      <option value="2">Semi Finals</option>
+                      <option value="3">Final</option>
+                      <option value="4">3rd Place</option>
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Bracket Slot #</label>
                     <Input type="number" placeholder="e.g. 1" {...regMatch("bracketSlot")} />
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <input type="checkbox" {...regMatch("isLosersBracket")} />
-                  Losers Bracket (Double Elimination)
-                </label>
+                {isDoubleElim && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input type="checkbox" {...regMatch("isLosersBracket")} className="accent-primary" />
+                    Losers Bracket match
+                  </label>
+                )}
               </div>
 
-              {/* ELO Tracking */}
-              <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">ELO Tracking (Optional)</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player A</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerAId")}>
-                      <option value="">None</option>
-                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
-                    </select>
-                    {watchedPlayerAId && playerAElo !== undefined && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-foreground">{playerAElo}</span></p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player B</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
-                      <option value="">None</option>
-                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
-                    </select>
-                    {watchedPlayerBId && playerBElo !== undefined && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="font-semibold text-foreground">{playerBElo}</span></p>
-                    )}
-                  </div>
-                </div>
+              {/* Ladder Link (Optional) */}
+              <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Ladder Link <span className="normal-case font-normal text-muted-foreground/60 ml-1">— optional, for ELO-tracked playoff events</span>
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Season</label>
@@ -424,9 +494,9 @@ export default function ManageEventDetail() {
                       {seasons?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
-                  <div className="flex items-end">
+                  <div className="flex items-end pb-1">
                     <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                      <input type="checkbox" {...regMatch("isPlayoff")} />
+                      <input type="checkbox" {...regMatch("isPlayoff")} className="accent-primary" />
                       Playoff Match
                     </label>
                   </div>
@@ -434,7 +504,9 @@ export default function ManageEventDetail() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={createMatch.isPending || updateMatch.isPending}>Save</Button>
+                <Button type="submit" disabled={createMatch.isPending || updateMatch.isPending}>
+                  {createMatch.isPending || updateMatch.isPending ? "Saving…" : "Save Match"}
+                </Button>
               </div>
             </form>
           </Dialog>

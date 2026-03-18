@@ -99,23 +99,35 @@ Settings   → Ladder Settings + Admin Schedule Settings
 | A3 | Event detail page `/admin/events/:id` — 4 tabs: Details \| Registrations \| Bracket \| Matches | DONE |
 | A4 | ManageMatches — event filter dropdown + Round column | DONE |
 
+### Completed (A6–A8 done, A9 pending backend)
+
+| ID | Task | Status |
+|----|------|--------|
+| A6 | Season detail page `/admin/seasons/:id` — 4 tabs (initial build) | DONE |
+| A7 | Nav restructure: Overview / Players / Ladder / Events / Content / Settings | DONE |
+| A8 | Match form player auto-fill (sideAName/sideBName from riotId) | DONE |
+
 ### Remaining Frontend (Replit)
 
 | ID | Task | Details | Status |
 |----|------|---------|--------|
-| A6 | **Season detail page** `/admin/seasons/:id` — 4 tabs | **Standings**: players sorted by ELO (ladder view for this season). **Challenges**: all challenges for this season; `accepted` + gameId submitted → "Record Result" button. **Matches**: ladder matches where `seasonId=X AND eventId=null`. **Champions**: season champion record + "Crown Champion" action | TODO |
-| A7 | **Nav final restructure** — rename sections + remove 4 standalone pages from nav | Remove standalone: Registrations, Matches, Challenges, Ladder Settings. Add: **Ladder** section (Seasons only), **Settings** section (Ladder Settings + Admin Schedule). Seasons list gets "Manage →" button linking to `/admin/seasons/:id` | TODO |
-| A8 | **Match form — Player auto-fill** | When playerA/B selected from dropdown → `sideAName`/`sideBName` auto-populate with player's riotId (readonly when player linked; editable for unregistered guest opponents) | TODO |
-| A9 | **Challenge "Record Result" flow** | Inside Season > Challenges tab: `accepted` challenges with a gameId show "Record Result" button → calls `PUT /api/challenges/:id/complete` (B3) with winner + score → match created automatically, challenge.matchId linked, status → completed | BLOCKED on B3 |
+| F1 | **Season detail — design consistency** | Align Season detail to exact same design language as Event detail: table class `bg-card border border-border/50 rounded-lg overflow-x-auto`, thead `text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50`, rows `border-b border-border/20 hover:bg-muted/20` | TODO |
+| F2 | **Season > Standings — correct data source** | Replace `useGetLadder()` (has minMatchesForDisplay=4 threshold) with `useListPlayers()` + cross-reference `useListMatches({ seasonId })` to find participants. Show all players who have any match in this season, sorted by currentElo desc. Admin view should not have the public threshold. | TODO |
+| F3 | **Season > Challenges — per-status admin actions** | Per status: `pending` → Force Accept (disabled, needs B5) + Delete; `accepted+gameId` → Record Result (disabled, needs B3) + Mark No-Show (disabled, needs B6) + Delete; `accepted` → Mark No-Show (disabled, B6) + Delete; `expired_no_show` → Assign Loss select player (disabled, B6) + Delete; `completed` → View Match link + Delete; `declined`/`disputed` → Delete. All disabled buttons show tooltip: "Requires backend update". | TODO |
+| F4 | **Event > Matches form — complete redesign** | Redesign match dialog with correct field organization: (1) Players section at TOP — Player A/B from event registrations, auto-fills sideAName/sideBName; (2) Result section — Winner as radio button (Player A/Player B, derives winnerName), Score text; (3) Match Context — Round as friendly dropdown (Group Stage/QF/SF/Final/3rd Place → mapped to 1/2/3 integers), Format optional override (default inherit event format), Bracket Slot #, Losers Bracket checkbox (shown only for Double Elim events); (4) Ladder Link (optional) — Season dropdown + isPlayoff checkbox; matchTitle auto-generated in onSubmit as "{sideAName} vs {sideBName}"; vodUrl removed (from pipeline). Payload to POST/PATCH /api/matches stays identical — no backend change. | TODO |
+| F5 | **Season > Matches — Add Match button (Ladder form)** | Inside Season > Matches tab, add "Add Match" button. Opens simplified ladder match dialog: Player A/B (all players, auto-fills side names), Winner radio button, Score (optional). matchTitle auto-generated. seasonId pre-filled from current season. No bracket fields (ladder matches don't have rounds). Note shown: "Ladder matches should ideally come from Challenges > Record Result to ensure proper challenge linking." | TODO |
+| A9 | **Challenge "Record Result" — enable buttons** | Enable disabled Record Result / Force Accept / Assign Loss buttons once Claude completes B3/B5/B6 | BLOCKED on B3, B5, B6 |
 
-### Required Backend (Claude Code) — must be done before A9
+### Required Backend (Claude Code)
 
 | ID | Task | Details | Status |
 |----|------|---------|--------|
-| B3 | `PUT /api/challenges/:id/complete` | Body: `{ winnerPlayerId: number, score: string }`. Actions: (1) look up both players from challenge record, (2) derive sideAName/sideBName from riotIds, (3) determine winner name, (4) create Match record with playerAId/playerBId/seasonId copied from challenge, (5) ELO calculated + updated (same logic as POST /matches), (6) elo_history written for both players, (7) set `challenge.matchId = newMatchId`, (8) set `challenge.status = "completed"`. Returns the created match. Add to OpenAPI spec + run codegen. | TODO |
-| B4 | `GET /api/challenges` — add `?seasonId=X` filter | Currently returns all challenges with no season filter. Add optional `seasonId` query param so Season > Challenges tab can show only relevant challenges. Update OpenAPI spec + run codegen. | TODO |
+| B3 | `PUT /api/challenges/:id/complete` | Body: `{ winnerPlayerId: number, score?: string }`. Actions: (1) look up both players from challenge, (2) sideAName/sideBName from riotIds, (3) derive winnerName, (4) create Match (playerAId/playerBId/seasonId from challenge, matchTitle auto), (5) ELO calculated + updated, (6) elo_history for both (reason: 'match'), (7) challenge.matchId = newMatchId, (8) challenge.status = 'completed'. Add to OpenAPI + codegen. | TODO |
+| B4 | `GET /api/challenges?seasonId=X` | Server-side seasonId filter. Update OpenAPI + codegen. | TODO |
+| B5 | `PUT /api/challenges/:id/force-accept` | Admin bypass — status: pending → accepted regardless of decline limits. Add to OpenAPI + codegen. | TODO |
+| B6 | `PUT /api/challenges/:id/assign-loss { loserPlayerId }` | Admin no-show assignment: (1) determine winner = other player, (2) create Match (forfeit, resultSource: 'admin_manual'), (3) ELO update + elo_history for both, (4) challenge.matchId = newMatchId, (5) challenge.status = 'completed'. Add to OpenAPI + codegen. | TODO |
 
-**Workflow:** Claude builds B3+B4 → updates OpenAPI spec → runs codegen → Replit builds A9 (Record Result button)
+**Workflow:** Claude builds B3+B4+B5+B6 → OpenAPI spec → codegen → Replit enables A9 (all disabled buttons)
 
 ### Future (blocked on Claude)
 
