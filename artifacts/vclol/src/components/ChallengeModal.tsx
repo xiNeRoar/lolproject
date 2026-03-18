@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetAdminSchedule, useCreateChallenge } from "@workspace/api-client-react";
+import { useGetAdminSchedule, useCreateChallenge, useGetPlayerH2H } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,6 +55,12 @@ export function ChallengeModal({ targetPlayer, challengerId, onClose }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
+  const { data: h2h } = useGetPlayerH2H(
+    challengerId,
+    targetPlayer?.id ?? 0,
+    { query: { enabled: !!targetPlayer && challengerId > 0 } }
+  );
+
   if (!targetPlayer) return null;
 
   const slots = generateSlots(schedule ?? undefined);
@@ -69,11 +75,24 @@ export function ChallengeModal({ targetPlayer, challengerId, onClose }: Props) {
     );
   };
 
+  const myWins = h2h ? (challengerId === h2h.playerAId ? h2h.playerAWins : h2h.playerBWins) : 0;
+  const theirWins = h2h ? (challengerId === h2h.playerAId ? h2h.playerBWins : h2h.playerAWins) : 0;
+
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogHeader>
         <DialogTitle>Challenge {targetPlayer.riotId}</DialogTitle>
       </DialogHeader>
+
+      {/* H2H record */}
+      {h2h && h2h.totalMatches > 0 && (
+        <div className="flex items-center justify-center gap-3 px-4 py-2 mb-3 rounded-lg bg-muted/20 border border-border/30 text-sm">
+          <span className="text-green-400 font-bold">{myWins}W</span>
+          <span className="text-muted-foreground text-xs">Head to Head</span>
+          <span className="text-red-400 font-bold">{theirWins}L</span>
+          <span className="text-muted-foreground text-xs">({h2h.totalMatches} total)</span>
+        </div>
+      )}
 
       {sent ? (
         <div className="text-center py-4">

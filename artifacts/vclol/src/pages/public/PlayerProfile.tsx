@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayer, useGetEloHistory, useGetPlayerBadges, useListSeasonChampions } from "@workspace/api-client-react";
+import {
+  useGetPlayer, useGetEloHistory, useGetPlayerBadges, useListSeasonChampions,
+  useGetPlayerEvents, useGetPlayerChampions,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal, Crown } from "lucide-react";
+import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal, Crown, Swords, CalendarDays } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { ChallengeModal } from "@/components/ChallengeModal";
 import {
@@ -42,6 +45,8 @@ export default function PlayerProfile() {
   const { data: eloHistory } = useGetEloHistory(player?.id ?? 0, { query: { enabled: !!player?.id } });
   const { data: badges } = useGetPlayerBadges(player?.id ?? 0, { query: { enabled: !!player?.id } });
   const { data: seasonChampions } = useListSeasonChampions({ query: { enabled: !!player?.id } });
+  const { data: playerEvents } = useGetPlayerEvents(player?.id ?? 0, { query: { enabled: !!player?.id } });
+  const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id } });
   const myChampionships = seasonChampions?.filter(c => c.playerId === player?.id) ?? [];
 
   useEffect(() => {
@@ -242,35 +247,76 @@ export default function PlayerProfile() {
           </Card>
         )}
 
-        {/* Champion Pool — grouped from player VODs */}
-        {player.vods?.some((v) => v.champion) && (
+        {/* Champion Pool — from new endpoint */}
+        {championStats && championStats.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader>
-              <CardTitle className="text-lg font-display">Champion Pool</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg font-display">
+                <Swords className="w-5 h-5 text-primary" />
+                Champion Pool
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {Object.entries(
-                  player.vods
-                    .filter((v) => v.champion)
-                    .reduce<Record<string, number>>((acc, v) => {
-                      const champ = v.champion as string;
-                      acc[champ] = (acc[champ] ?? 0) + 1;
-                      return acc;
-                    }, {})
-                )
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([champion, count]) => (
-                    <div
-                      key={champion}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
-                    >
-                      <span className="text-sm font-medium text-primary">{champion}</span>
-                      <span className="text-xs text-muted-foreground bg-muted rounded-full w-5 h-5 flex items-center justify-center">
-                        {count}
-                      </span>
+                {championStats.map(({ champion, games }) => (
+                  <div
+                    key={champion}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+                  >
+                    <span className="text-sm font-medium text-primary">{champion}</span>
+                    <span className="text-xs text-muted-foreground bg-muted rounded-full w-5 h-5 flex items-center justify-center">
+                      {games}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Events Participated */}
+        {playerEvents && playerEvents.length > 0 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg font-display">
+                <CalendarDays className="w-5 h-5 text-primary" />
+                Events
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/30">
+                {playerEvents.map((ev) => (
+                  <div key={ev.eventId} className="px-6 py-3 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      {ev.eventSlug ? (
+                        <Link href={`/events/${ev.eventSlug}`} className="text-sm font-medium hover:text-primary transition-colors truncate block">
+                          {ev.eventTitle ?? `Event #${ev.eventId}`}
+                        </Link>
+                      ) : (
+                        <span className="text-sm font-medium truncate block">{ev.eventTitle ?? `Event #${ev.eventId}`}</span>
+                      )}
+                      <div className="flex gap-2 mt-0.5 flex-wrap">
+                        {ev.eventFormat && <span className="text-xs text-muted-foreground">{ev.eventFormat}</span>}
+                        {ev.eventDate && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(ev.eventDate).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                          </span>
+                        )}
+                        {ev.registrationStatus && ev.registrationStatus !== "registered" && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">{ev.registrationStatus}</Badge>
+                        )}
+                      </div>
                     </div>
-                  ))}
+                    <div className="text-sm font-medium shrink-0 text-right">
+                      <span className="text-green-400">{ev.wins}W</span>
+                      {" / "}
+                      <span className="text-red-400">{ev.losses}L</span>
+                      {ev.matchesPlayed > 0 && (
+                        <div className="text-xs text-muted-foreground">{ev.matchesPlayed} matches</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -294,6 +340,8 @@ export default function PlayerProfile() {
                     const won = match.winnerName === (isA ? match.sideAName : match.sideBName);
                     const eloBefore = isA ? match.playerAEloBefore : match.playerBEloBefore;
                     const eloAfter = isA ? match.playerAEloAfter : match.playerBEloAfter;
+                    const opponentRiotId = isA ? match.playerBRiotId : match.playerARiotId;
+                    const opponentName = isA ? match.sideBName : match.sideAName;
                     return (
                       <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
                         <span
@@ -305,7 +353,17 @@ export default function PlayerProfile() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">
-                            {match.sideAName} <span className="text-muted-foreground text-xs">vs</span> {match.sideBName}
+                            vs{" "}
+                            {opponentRiotId ? (
+                              <span
+                                className="text-primary hover:underline"
+                                onClick={(e) => { e.preventDefault(); window.location.href = `/players/${encodeURIComponent(opponentRiotId)}`; }}
+                              >
+                                {opponentName}
+                              </span>
+                            ) : (
+                              opponentName
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {match.matchTitle}
@@ -349,6 +407,9 @@ export default function PlayerProfile() {
                             {vod.champion && <span>{vod.champion}</span>}
                             {vod.position && <span>• {vod.position}</span>}
                             {vod.patch && <span>• Patch {vod.patch}</span>}
+                            {(vod as any).matchId && (
+                              <span className="text-primary/70">• Match #{(vod as any).matchId}</span>
+                            )}
                           </div>
                         </div>
                         <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />

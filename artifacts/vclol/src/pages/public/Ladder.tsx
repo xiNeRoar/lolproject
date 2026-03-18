@@ -3,7 +3,7 @@ import { useGetLadder, useGetLadderSettings } from "@workspace/api-client-react"
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp } from "lucide-react";
+import { Trophy, TrendingUp, Clock, Swords } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { ChallengeModal } from "@/components/ChallengeModal";
@@ -29,6 +29,11 @@ function rankIcon(position: number) {
   return null;
 }
 
+function daysUntil(dateStr: string): number {
+  const diff = new Date(dateStr).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
 export default function Ladder() {
   const { data, isLoading } = useGetLadder();
   const { data: settings } = useGetLadderSettings();
@@ -42,6 +47,9 @@ export default function Ladder() {
     setMyPlayerId(id ? Number(id) : 0);
   }, []);
 
+  const playoffSize = (settings as any)?.playoffSize ?? 8;
+  const seasonDaysLeft = data?.season?.endDate ? daysUntil(data.season.endDate) : null;
+
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-4 sm:px-6 lg:px-8">
@@ -49,14 +57,23 @@ export default function Ladder() {
           <Trophy className="w-8 h-8 text-primary" />
           <h1 className="text-4xl font-display font-bold">ELO Ladder</h1>
         </div>
-        {data?.season ? (
-          <div className="text-muted-foreground mb-2 flex items-center gap-2">
-            Season: <span className="text-foreground font-medium">{data.season.name}</span>
-            <Badge variant="outline" className="text-xs">{data.season.status}</Badge>
-          </div>
-        ) : (
-          <p className="text-muted-foreground mb-2">No active season — showing all-time standings.</p>
-        )}
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          {data?.season ? (
+            <div className="text-muted-foreground flex items-center gap-2">
+              Season: <span className="text-foreground font-medium">{data.season.name}</span>
+              <Badge variant="outline" className="text-xs">{data.season.status}</Badge>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No active season — showing all-time standings.</p>
+          )}
+          {/* Season countdown */}
+          {seasonDaysLeft !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary">
+              <Clock className="w-3 h-3" />
+              {seasonDaysLeft === 0 ? "Season ends today" : `${seasonDaysLeft}d until season end`}
+            </div>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mb-10">Requires at least {settings?.minMatchesForDisplay ?? 4} matches to appear on the ladder.</p>
       </div>
 
@@ -74,76 +91,93 @@ export default function Ladder() {
           </div>
         ) : (
           <div className="space-y-3">
-            {data.entries.map((entry) => (
-              <div key={entry.id} className="relative">
-                <Link href={`/players/${encodeURIComponent(entry.riotId)}`}>
-                  <Card className="bg-card/40 border-border/40 hover:bg-card/70 hover:border-primary/30 transition-all cursor-pointer">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      {/* Rank */}
-                      <div className="w-12 text-center shrink-0">
-                        {rankIcon(entry.rank) ? (
-                          <span className="text-2xl">{rankIcon(entry.rank)}</span>
-                        ) : (
-                          <span className="text-xl font-display font-bold text-muted-foreground">
-                            #{entry.rank}
-                          </span>
-                        )}
-                      </div>
+            {data.entries.map((entry, idx) => {
+              const isPlayoffCutoff = idx === playoffSize;
+              return (
+                <div key={entry.id} className="relative">
+                  {/* Playoff zone divider */}
+                  {isPlayoffCutoff && (
+                    <div className="flex items-center gap-3 py-2 mb-1">
+                      <div className="flex-1 border-t border-dashed border-border/50" />
+                      <span className="text-xs text-muted-foreground px-2 whitespace-nowrap">— Playoff Cutoff —</span>
+                      <div className="flex-1 border-t border-dashed border-border/50" />
+                    </div>
+                  )}
+                  <Link href={`/players/${encodeURIComponent(entry.riotId)}`}>
+                    <Card className={`bg-card/40 border-border/40 hover:bg-card/70 hover:border-primary/30 transition-all cursor-pointer ${idx < playoffSize ? "border-l-2 border-l-primary/30" : ""}`}>
+                      <CardContent className="p-4 flex items-center gap-4">
+                        {/* Rank */}
+                        <div className="w-12 text-center shrink-0">
+                          {rankIcon(entry.rank) ? (
+                            <span className="text-2xl">{rankIcon(entry.rank)}</span>
+                          ) : (
+                            <span className="text-xl font-display font-bold text-muted-foreground">
+                              #{entry.rank}
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Player info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">{entry.riotId}</span>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full border font-medium ${eloBadgeColor(entry.currentElo)}`}
-                          >
-                            {rankLabel(entry.currentElo)}
-                          </span>
+                        {/* Player info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium truncate">{entry.riotId}</span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full border font-medium ${eloBadgeColor(entry.currentElo)}`}
+                            >
+                              {rankLabel(entry.currentElo)}
+                            </span>
+                            {/* Top champion badge */}
+                            {entry.topChampion && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted/40 border border-border/30 text-muted-foreground hidden sm:inline-flex items-center gap-1">
+                                <Swords className="w-2.5 h-2.5" /> {entry.topChampion}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{entry.discordUsername}</div>
                         </div>
-                        <div className="text-xs text-muted-foreground">{entry.discordUsername}</div>
-                      </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="text-center hidden sm:block">
-                          <div className="text-xs text-muted-foreground">W/L</div>
-                          <div className="text-sm font-medium">
-                            <span className="text-green-400">{entry.wins}W</span>
-                            {" / "}
-                            <span className="text-red-400">{entry.losses}L</span>
+                        {/* Stats */}
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="text-center hidden sm:block">
+                            <div className="text-xs text-muted-foreground">W/L</div>
+                            <div className="text-sm font-medium">
+                              <span className="text-green-400">{entry.wins}W</span>
+                              {" / "}
+                              <span className="text-red-400">{entry.losses}L</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-center hidden sm:block">
-                          <div className="text-xs text-muted-foreground">Win Rate</div>
-                          <div className="text-sm font-medium">{entry.winRate}%</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" /> ELO
+                          <div className="text-center hidden sm:block">
+                            <div className="text-xs text-muted-foreground">Win Rate</div>
+                            <div className="text-sm font-medium">{entry.winRate}%</div>
                           </div>
-                          <div className="text-lg font-display font-bold text-primary">
-                            {entry.currentElo}
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" /> ELO
+                            </div>
+                            <div className="text-lg font-display font-bold text-primary">
+                              {entry.currentElo}
+                            </div>
                           </div>
+                          {isLoggedIn && entry.id !== myPlayerId && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-2 shrink-0"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setChallengeTarget({ id: entry.id, riotId: entry.riotId });
+                              }}
+                            >
+                              Challenge
+                            </Button>
+                          )}
                         </div>
-                        {isLoggedIn && entry.id !== myPlayerId && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="ml-2 shrink-0"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setChallengeTarget({ id: entry.id, riotId: entry.riotId });
-                            }}
-                          >
-                            Challenge
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </div>
-            ))}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -158,6 +192,7 @@ export default function Ladder() {
               <li>• Minimum <span className="text-foreground">{settings.minMatchesForDisplay} matches</span> required to appear on the ladder</li>
               <li>• Maximum <span className="text-foreground">{settings.maxChallengesPerWeek} challenges</span> per week</li>
               <li>• Same opponent: maximum <span className="text-foreground">{settings.maxChallengesSameOpponentPerWeek}</span> time per week</li>
+              <li>• Top <span className="text-foreground">{playoffSize} players</span> qualify for season playoffs</li>
             </ul>
           ) : (
             <div className="space-y-2 animate-pulse">

@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useListVods, useListEvents } from "@workspace/api-client-react";
+import { useListVods, useListEvents, useGetLadder } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ export default function Vods() {
   const [patch, setPatch] = useState("");
   const [eloMin, setEloMin] = useState("");
   const [eloMax, setEloMax] = useState("");
+  const [playerIdFilter, setPlayerIdFilter] = useState<number | undefined>();
 
-  const hasFilters = !!(search || eventId || champion || opponentChampion || position || patch || eloMin || eloMax);
+  const hasFilters = !!(search || eventId || champion || opponentChampion || position || patch || eloMin || eloMax || playerIdFilter);
 
   const params = hasFilters
     ? {
@@ -32,11 +33,13 @@ export default function Vods() {
         patch: patch || undefined,
         eloMin: eloMin ? Number(eloMin) : undefined,
         eloMax: eloMax ? Number(eloMax) : undefined,
+        playerId: playerIdFilter,
       }
     : undefined;
 
   const { data: vods, isLoading } = useListVods(params);
   const { data: events } = useListEvents();
+  const { data: ladder } = useGetLadder();
 
   const clearFilters = () => {
     setSearch("");
@@ -47,6 +50,7 @@ export default function Vods() {
     setPatch("");
     setEloMin("");
     setEloMax("");
+    setPlayerIdFilter(undefined);
   };
 
   return (
@@ -112,7 +116,7 @@ export default function Vods() {
             />
           </div>
 
-          {/* Row 3: ELO range + clear */}
+          {/* Row 3: ELO range + player filter + clear */}
           <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
             <div className="flex gap-2 items-center">
               <Input
@@ -131,6 +135,17 @@ export default function Vods() {
                 className="bg-background w-28"
               />
             </div>
+            {/* Player filter dropdown */}
+            <select
+              className="flex h-10 w-full md:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={playerIdFilter || ""}
+              onChange={(e) => setPlayerIdFilter(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">All Players</option>
+              {ladder?.entries?.map((entry) => (
+                <option key={entry.id} value={entry.id}>{entry.riotId}</option>
+              ))}
+            </select>
             {hasFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
                 <X className="w-3 h-3 mr-1" /> Clear filters
@@ -196,6 +211,20 @@ export default function Vods() {
                     {vod.playerNames && (
                       <p className="text-sm text-muted-foreground line-clamp-1 border-t border-border/30 pt-3 mb-3">
                         <span className="font-medium text-foreground/70">Players:</span> {vod.playerNames}
+                      </p>
+                    )}
+
+                    {/* Match link */}
+                    {(vod as any).matchId && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Match:{" "}
+                        <Link
+                          href={`/matches/${(vod as any).matchId}`}
+                          className="text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          #{(vod as any).matchId}
+                        </Link>
                       </p>
                     )}
 

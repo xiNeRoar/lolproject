@@ -176,6 +176,15 @@ export default function VodDetail() {
           {vod.notes && (
             <p className="text-sm text-muted-foreground mt-2 italic">{vod.notes}</p>
           )}
+          {/* Link back to match */}
+          {(vod as any).matchId && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Match:{" "}
+              <Link href={`/matches/${(vod as any).matchId}`} className="text-primary hover:underline">
+                View Match #{(vod as any).matchId} →
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* YouTube embed (IFrame API) or fallback external link */}

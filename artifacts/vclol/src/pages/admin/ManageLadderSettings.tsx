@@ -106,7 +106,7 @@ export default function ManageLadderSettings() {
           playoffMinPlayers: Number(lForm.playoffMinPlayers),
           playoffSize: Number(lForm.playoffSize),
           playoffFormat: lForm.playoffFormat,
-        } as Parameters<typeof updateLadder.mutate>[0]["data"],
+        },
       },
       { onSuccess: () => toast({ title: "Ladder settings saved." }) }
     );
