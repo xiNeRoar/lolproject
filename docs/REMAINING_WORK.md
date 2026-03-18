@@ -4,7 +4,7 @@ All backend tasks (C1–C24 + M1–M5 + S1/S2/S3/S7) are DONE.
 
 ---
 
-## What's done (backend)
+## Backend done (Claude Code)
 
 | Task | Endpoint | Status |
 |------|----------|--------|
@@ -17,53 +17,70 @@ All backend tasks (C1–C24 + M1–M5 + S1/S2/S3/S7) are DONE.
 | S2 | `GET /api/players/:id/champions` | DONE |
 | S3 | `GET /api/ladder` returns `topChampion` per player | DONE |
 | S7 | `GET /api/players/:idA/h2h/:idB` | DONE |
+| C3 | `GET /api/players/by-id/:id` — fetch player by numeric ID | DONE |
 
-Generated hooks available: `useGetPlayerEvents`, `useGetPlayerChampions`, `useGetPlayerH2H`
+Generated hooks available: `useGetPlayerEvents`, `useGetPlayerChampions`, `useGetPlayerH2H`, `useGetPlayerById`
 
 ---
 
-## Replit frontend work remaining
+## Frontend done (Replit)
 
-All backend endpoints and generated hooks are ready. The following UI work needs to be done. How to display the data is entirely up to Replit.
+| Item | Description | Status |
+|------|-------------|--------|
+| 1 | Register.tsx Discord OAuth flow (Step 1 Discord → Step 2 Riot ID) | DONE |
+| 2 | PlayerDashboard — RoflUploadButton with patch expiry indicator | DONE |
+| 3 | ManageVods — Render Queue panel (pending/processing/failed, retry) | DONE |
+| 4 | ManageLadderSettings — 6 new fields, force-cast removed | DONE |
+| 5 | PlayerDashboard — Decline button 403-aware with quota message | DONE |
+| 6 | PlayerLogin — "Dev Login →" link for testing | DONE |
+| 7 | MatchDetail — VODs section with embed using `vods[]` from match | DONE |
+| 8 | VodDetail — link back to match via `matchId` | DONE |
+| 9 | Ladder — `topChampion` badge per player row | DONE |
+| 10 | Ladder — playoff zone visual divider at `ladderSettings.playoffSize` | DONE |
+| 11 | Ladder — season countdown (days remaining from `season.endDate`) | DONE |
+| 12 | Ladder — Challenge button per row opening ChallengeModal | DONE |
+| 13 | Player Profile — Events section via `useGetPlayerEvents` | DONE |
+| 14 | Player Profile — Champion Pool section via `useGetPlayerChampions` | DONE |
+| 15 | Player Profile — opponent names as clickable profile links | DONE |
+| 16 | ChallengeModal — H2H record via `useGetPlayerH2H` | DONE |
+| 17 | MatchDetail — Quarter/Semi/Grand Final labels from `round`/`isPlayoff` | DONE |
+| 18 | VOD Archive — player filter dropdown via `?playerId=X` | DONE |
+| 19 | PlayerDashboard skeleton fix — was caused by API server running stale build without `/by-id/:id` route; fixed by restart | DONE |
+| 20 | Nav auth state — Register/Login hidden when logged in, reactive to storage events | DONE |
+| 21 | Nav Logout button — available on every page in header (desktop + mobile) | DONE |
+| 22 | Home hero CTAs — auth-aware: logged in shows "My Dashboard" + "View Ladder" | DONE |
+| 23 | PlayerLogin — auto-redirect to /dashboard if already logged in | DONE |
+| 24 | DevLogin — lists real players from DB; logout returns to /dev-login | DONE |
 
-### From CLAUDE.md "Frontend Still Needed"
+---
 
-1. **Register.tsx** — Discord OAuth flow (Discord button as Step 1, RiotID as Step 2)
-2. **PlayerDashboard match rows** — Upload Replay (.rofl) button with patch expiry indicator
-3. **ManageVods** — Render Queue panel (pending/processing/failed jobs, retry button)
-4. **ManageLadderSettings** — The 6 new fields (decline limits, no-show expiry, playoff config) are now persisted in backend; UI just needs to remove the force-cast
-5. **PlayerDashboard pending challenges** — Decline button disabled state with quota message (backend returns 403 when limit reached)
-6. **PlayerLogin** — Add "Dev Login →" link for testing
+## Phase 2 — Needs Claude Code backend first
 
-### New data now available that UI should use
+These require new backend endpoints before Replit can build UI.
 
-7. **MatchDetail — VODs section**: `GET /matches/:id` now returns a `vods[]` array with all VODs linked to that match. UI should display them.
+| Item | What Claude needs to build | Then Replit builds |
+|------|---------------------------|-------------------|
+| P1 | `GET /api/search?q=` — global search across players/events/vods | Search bar + results page |
+| P2 | `GET /api/activity` — recent activity feed (matches, registrations, VODs) | Activity feed on Home or Dashboard |
+| P3 | `GET /api/ladder/rank-distribution` — ELO histogram data | Rank distribution chart on Ladder page |
+| P4 | Schema: `series` table + `series_matches` join — series-level grouping | Series view in MatchDetail / Ladder |
 
-8. **VOD cards — match link**: Every VOD entry now has a `matchId` field. VOD cards and VodDetail can link back to the match.
+**Workflow for Phase 2:** Claude builds backend → updates OpenAPI spec → runs codegen → Replit builds UI using generated hooks.
 
-9. **Ladder — top champion**: `GET /api/ladder` now returns `topChampion` (string, nullable) per player. Ladder rows can display it.
+---
 
-10. **Ladder — playoff zone**: Backend returns `ladderSettings.playoffSize`. UI can render a visual divider after row N.
+## Auth — Discord OAuth (future)
 
-11. **Ladder — season countdown**: Backend returns `season.endDate`. UI can show days remaining.
+Current auth is localStorage stub (`vclol_player_id`). All `// TODO Claude: replace localStorage auth` comments mark where real session auth must go.
 
-12. **Ladder — challenge button**: Each ladder row (except own) needs a Challenge button opening ChallengeModal.
+**Claude needs to build:**
+- `POST /auth/discord` → redirect to Discord OAuth
+- `GET /auth/discord/callback` → exchange code → create/find player → `req.session.playerId`
+- `GET /auth/me` → return current session player
+- `POST /auth/logout` → destroy session
 
-13. **Player Profile — events participated**: New endpoint `GET /api/players/:id/events` returns event participations with wins/losses per event. Use `useGetPlayerEvents(id)`. Profile should show an "Events" section.
-
-14. **Player Profile — champion pool**: New endpoint `GET /api/players/:id/champions` returns champion + game count sorted by frequency. Use `useGetPlayerChampions(id)`. Profile should show a "Champion Pool" section.
-
-15. **Player Profile — opponent names as links**: Backend returns `playerARiotId`/`playerBRiotId` in recent matches. Opponent names should be clickable links to their profiles.
-
-16. **H2H record**: New endpoint `GET /api/players/:idA/h2h/:idB` returns total matches, wins each, and match list. Use `useGetPlayerH2H(idA, idB)`. Show in ChallengeModal or MatchDetail.
-
-17. **MatchDetail — round/bracket context**: Backend returns `round`, `bracketSlot`, `isPlayoff`. UI should display "Quarter Final", "Semi Final", etc.
-
-18. **VOD Archive — player filter**: Backend supports `?playerId=X` on `GET /api/vods`. UI needs a player search/dropdown filter.
-
-### Phase 2 (not urgent)
-
-19. **Global search** — needs backend endpoint first (not built yet)
-20. **Recent activity feed** — needs backend endpoint first (not built yet)
-21. **Rank distribution** — needs backend endpoint first (not built yet)
-22. **Series-level match data** — needs schema work first (not built yet)
+**Then Replit replaces:**
+- `localStorage.getItem("vclol_player_id")` → `useGetAuthMe()` hook throughout
+- Nav logout button → calls `POST /auth/logout`
+- PlayerLogin Discord button → real `/auth/discord` link
+- Register flow → tied to Discord identity
