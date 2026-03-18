@@ -15,8 +15,9 @@ const DD = "https://ddragon.leagueoflegends.com";
 
 function getEventBanner(format: string): string {
   const f = format.toLowerCase();
-  if (f === "1v1") return `${DD}/cdn/img/champion/splash/Draven_0.jpg`;
+  if (f === "1v1" || f === "1v1 ladder") return `${DD}/cdn/img/champion/splash/Draven_0.jpg`;
   if (f.includes("house") || f.includes("5v5") || f.includes("team")) return `${DD}/cdn/img/champion/splash/Orianna_0.jpg`;
+  if (f.includes("elimination") || f.includes("swiss") || f.includes("robin") || f.includes("knockout")) return `${DD}/cdn/img/champion/splash/Jinx_0.jpg`;
   return `${DD}/cdn/img/champion/splash/Caitlyn_0.jpg`;
 }
 
@@ -102,8 +103,8 @@ export default function Home() {
       {/* ── Current Phase Banner ─────────────────────────── */}
       <section className="border-b border-primary/20 bg-primary/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Badge className="mb-3">Genesis Phase</Badge>
-          <h2 className="text-xl font-bold font-display mb-3">We're just getting started</h2>
+          <Badge className="mb-3">Active Competition</Badge>
+          <h2 className="text-xl font-bold font-display mb-3">Vancouver's competitive ladder is live</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
             Building Vancouver's first structured competitive LoL ladder. Register to compete, 
             build your match record, and track your ELO over time.
