@@ -190,6 +190,7 @@ export type MatchDetail = Match & {
   eventSlug?: string | null;
   playerARiotId?: string | null;
   playerBRiotId?: string | null;
+  vods?: VodEntry[];
 };
 
 export interface CreateMatchRequest {
@@ -306,7 +307,7 @@ export interface PlayerProfile {
   email?: string | null;
   notificationPreference?: string | null;
   discordId?: string | null;
-  recentMatches: Match[];
+  recentMatches: MatchDetail[];
   vods: VodEntry[];
   createdAt: string;
   updatedAt: string;
@@ -403,6 +404,7 @@ export interface CreateVodTimestampRequest {
 export interface VodDetail {
   id: number;
   eventId?: number | null;
+  matchId?: number | null;
   eventTitle?: string | null;
   title: string;
   format?: string | null;

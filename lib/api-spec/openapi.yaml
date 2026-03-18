@@ -1925,6 +1925,10 @@ components:
             playerBRiotId:
               type: string
               nullable: true
+            vods:
+              type: array
+              items:
+                $ref: "#/components/schemas/VodEntry"
 
     CreateMatchRequest:
       type: object
@@ -2288,7 +2292,7 @@ components:
         recentMatches:
           type: array
           items:
-            $ref: "#/components/schemas/Match"
+            $ref: "#/components/schemas/MatchDetail"
         vods:
           type: array
           items:
@@ -2535,6 +2539,9 @@ components:
         id:
           type: integer
         eventId:
+          type: integer
+          nullable: true
+        matchId:
           type: integer
           nullable: true
         eventTitle:

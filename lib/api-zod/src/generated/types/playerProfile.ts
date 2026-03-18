@@ -5,7 +5,7 @@
  * Vancouver Competitive LoL Project API
  * OpenAPI spec version: 0.1.0
  */
-import type { Match } from "./match";
+import type { MatchDetail } from "./matchDetail";
 import type { VodEntry } from "./vodEntry";
 
 export interface PlayerProfile {
@@ -20,7 +20,7 @@ export interface PlayerProfile {
   email?: string | null;
   notificationPreference?: string | null;
   discordId?: string | null;
-  recentMatches: Match[];
+  recentMatches: MatchDetail[];
   vods: VodEntry[];
   createdAt: string;
   updatedAt: string;

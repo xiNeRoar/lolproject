@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Match } from "./match";
+import type { VodEntry } from "./vodEntry";
 
 export type MatchDetail = Match & {
   eventSlug?: string | null;
   playerARiotId?: string | null;
   playerBRiotId?: string | null;
+  vods?: VodEntry[];
 };

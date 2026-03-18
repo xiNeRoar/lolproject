@@ -11,6 +11,7 @@ import type { VodTimestamp } from "./vodTimestamp";
 export interface VodDetail {
   id: number;
   eventId?: number | null;
+  matchId?: number | null;
   eventTitle?: string | null;
   title: string;
   format?: string | null;
