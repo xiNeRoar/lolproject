@@ -143,7 +143,7 @@ Settings   → Ladder Settings + Admin Schedule Settings
 | ID | Task | Status |
 |----|------|--------|
 | A5 | Bracket auto-generate inside Event → Bracket tab | BLOCKED on B1/B2 |
-| B1 | `POST /api/events/:id/generate-bracket` — auto-generate QF/SF/Final match records from registered players | TODO |
+| B1 | `POST /api/events/:id/generate-bracket` — auto-generate match records from **confirmed** registrations (status='confirmed'). This is the critical link between the Registrations system and the Bracket/Matches system. Seeding order: seed by currentElo descending. For Single Elimination (8 players): create QF matches (1v8, 2v7, 3v6, 4v5), SF placeholders, Final placeholder. For Double Elimination: same QF + losers bracket scaffolding. Sets match.eventId, match.round, match.bracketSlot. Should reject if bracket already exists (matches with this eventId already present) unless `?force=true`. **Design note**: Registrations and Matches are intentionally decoupled — registrations track sign-ups, matches track results. This endpoint is the one-time bridge that converts confirmed registrations into match records. After generation, admin manages the bracket via the Matches tab; withdrawing a registration post-generation does NOT affect existing match records (forfeit logic is out of scope). | TODO |
 | B2 | `GET /api/events/:id/bracket` — event matches organised by round | TODO |
 
 ---
