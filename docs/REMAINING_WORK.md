@@ -45,52 +45,89 @@ Generated hooks available: `useGetPlayerEvents`, `useGetPlayerChampions`, `useGe
 | 16 | ChallengeModal — H2H record via `useGetPlayerH2H` | DONE |
 | 17 | MatchDetail — Quarter/Semi/Grand Final labels from `round`/`isPlayoff` | DONE |
 | 18 | VOD Archive — player filter dropdown via `?playerId=X` | DONE |
-| 19 | PlayerDashboard skeleton fix — was caused by API server running stale build without `/by-id/:id` route; fixed by restart | DONE |
-| 20 | Nav auth state — Register/Login hidden when logged in, reactive to storage events | DONE |
-| 21 | Nav Logout button — available on every page in header (desktop + mobile) | DONE |
-| 22 | Home hero CTAs — auth-aware: logged in shows "My Dashboard" + "View Ladder" | DONE |
-| 23 | PlayerLogin — auto-redirect to /dashboard if already logged in | DONE |
-| 24 | DevLogin — lists real players from DB; logout returns to /dev-login | DONE |
+| 19 | PlayerDashboard skeleton fix | DONE |
+| 20 | Nav auth state — Register/Login hidden when logged in | DONE |
+| 21 | Nav Logout button — available on every page | DONE |
+| 22 | Home hero CTAs — auth-aware | DONE |
+| 23 | PlayerLogin — auto-redirect if already logged in | DONE |
+| 24 | DevLogin — lists real players from DB | DONE |
 
 ---
 
-## Admin UI Overhaul — Frontend (Replit)
+## Admin UI Overhaul
 
-The current admin is organised by database table (flat list of 9 disconnected pages). Industry standard organises by workflow. Needs a full restructure.
+### Background — Why the current state exists
 
-### Entity relationships (reference)
+The current admin has 9 flat disconnected pages (one per DB table). This is wrong.
+
+VCLoL has two independent competitive systems, each with a single container entity:
+
 ```
-Season → Matches, Challenges, Ladder Settings
-Event → Event Registrations, Matches (by round/bracket)
-Player → Matches (as A/B), Challenges, ELO History, Badges, VODs, Registrations
-Challenge → (when completed) generates a Match
-Interest Submissions → DEAD, unused, remove
+LADDER SYSTEM (Season is the container)
+  Season → Matches (ladder, eventId=null), Challenges, ELO History,
+            Player Badges, Season Champions, Ladder Settings
+
+EVENT SYSTEM (Event is the container)
+  Event → Registrations, Bracket, Matches (event, eventId=X)
+
+SHARED
+  Players (participate in both systems)
+  VODs (linked to matches or events)
+  Replays (linked to matches)
 ```
 
-### Checklist
+**Why Challenges are disconnected from Matches:**
+The PRD design intended match results to come from a **spectator bot (LCU auto-fetch)** — not admin manual entry. When the bot detects game-end, it auto-creates the Match and links `challenge.matchId`. Since the bot is not built yet, match recording is manual. The `PUT /api/challenges/:id/complete` endpoint (B3 below) is the manual bridge until the bot exists.
 
-| ID | Task | Who | Status |
-|----|------|-----|--------|
-| A1 | **Delete ManageInterests** — remove page file + nav link | Replit | DONE |
-| A2 | **Reorganise Admin nav** — group into sections: Players / Seasons / Events / Content / Settings instead of 9 flat links | Replit | DONE |
-| A3 | **Event admin — unified Tabs page** — `/admin/events/:id` with 4 tabs: Details \| Registrations \| Bracket \| Matches. ManageEvents list now has "Manage →" button per event | Replit | DONE |
-| A4 | **ManageMatches — Event filter + Round column** — dropdown to filter match list by event; Round # shown as badge in table | Replit | DONE |
-| A5 | **Bracket auto-generate** — needs Claude backend first (B1/B2); then admin can click "Generate Bracket" inside Event → Bracket tab | Replit (after B1/B2) | BLOCKED |
+### Target Admin Nav
 
-### Backend needed for A5 (Claude Code)
+```
+Overview   → Dashboard
+Players    → Player roster
+Ladder     → Seasons list → Season detail (Standings | Challenges | Matches | Champions)
+Events     → Events list  → Event detail  (Details | Registrations | Bracket | Matches)
+Content    → VOD Archive
+Settings   → Ladder Settings + Admin Schedule Settings
+```
+
+### Completed
 
 | ID | Task | Status |
 |----|------|--------|
-| B1 | `POST /api/events/:id/generate-bracket` — takes seeded player list, generates round-based match records (QF/SF/Final), assigns `round` + `bracketSlot` + `eventId` automatically | TODO |
-| B2 | `GET /api/events/:id/bracket` — returns event matches organised by round for admin bracket view; same data as public EventDetail but admin-accessible | TODO |
+| A1 | Delete ManageInterests page + nav link | DONE |
+| A2 | Reorganise nav into sections (Overview / Community / Events & Matches / Content / Settings) | DONE |
+| A3 | Event detail page `/admin/events/:id` — 4 tabs: Details \| Registrations \| Bracket \| Matches | DONE |
+| A4 | ManageMatches — event filter dropdown + Round column | DONE |
 
-**Workflow for A5:** Claude builds B1+B2 → updates OpenAPI spec → runs codegen → Replit adds "Generate Bracket" button + bracket editor inside Event Tabs (A3 → Bracket tab)
+### Remaining Frontend (Replit)
+
+| ID | Task | Details | Status |
+|----|------|---------|--------|
+| A6 | **Season detail page** `/admin/seasons/:id` — 4 tabs | **Standings**: players sorted by ELO (ladder view for this season). **Challenges**: all challenges for this season; `accepted` + gameId submitted → "Record Result" button. **Matches**: ladder matches where `seasonId=X AND eventId=null`. **Champions**: season champion record + "Crown Champion" action | TODO |
+| A7 | **Nav final restructure** — rename sections + remove 4 standalone pages from nav | Remove standalone: Registrations, Matches, Challenges, Ladder Settings. Add: **Ladder** section (Seasons only), **Settings** section (Ladder Settings + Admin Schedule). Seasons list gets "Manage →" button linking to `/admin/seasons/:id` | TODO |
+| A8 | **Match form — Player auto-fill** | When playerA/B selected from dropdown → `sideAName`/`sideBName` auto-populate with player's riotId (readonly when player linked; editable for unregistered guest opponents) | TODO |
+| A9 | **Challenge "Record Result" flow** | Inside Season > Challenges tab: `accepted` challenges with a gameId show "Record Result" button → calls `PUT /api/challenges/:id/complete` (B3) with winner + score → match created automatically, challenge.matchId linked, status → completed | BLOCKED on B3 |
+
+### Required Backend (Claude Code) — must be done before A9
+
+| ID | Task | Details | Status |
+|----|------|---------|--------|
+| B3 | `PUT /api/challenges/:id/complete` | Body: `{ winnerPlayerId: number, score: string }`. Actions: (1) look up both players from challenge record, (2) derive sideAName/sideBName from riotIds, (3) determine winner name, (4) create Match record with playerAId/playerBId/seasonId copied from challenge, (5) ELO calculated + updated (same logic as POST /matches), (6) elo_history written for both players, (7) set `challenge.matchId = newMatchId`, (8) set `challenge.status = "completed"`. Returns the created match. Add to OpenAPI spec + run codegen. | TODO |
+| B4 | `GET /api/challenges` — add `?seasonId=X` filter | Currently returns all challenges with no season filter. Add optional `seasonId` query param so Season > Challenges tab can show only relevant challenges. Update OpenAPI spec + run codegen. | TODO |
+
+**Workflow:** Claude builds B3+B4 → updates OpenAPI spec → runs codegen → Replit builds A9 (Record Result button)
+
+### Future (blocked on Claude)
+
+| ID | Task | Status |
+|----|------|--------|
+| A5 | Bracket auto-generate inside Event → Bracket tab | BLOCKED on B1/B2 |
+| B1 | `POST /api/events/:id/generate-bracket` — auto-generate QF/SF/Final match records from registered players | TODO |
+| B2 | `GET /api/events/:id/bracket` — event matches organised by round | TODO |
 
 ---
 
 ## Phase 2 — Needs Claude Code backend first
-
-These require new backend endpoints before Replit can build UI.
 
 | Item | What Claude needs to build | Then Replit builds |
 |------|---------------------------|-------------------|
@@ -99,24 +136,20 @@ These require new backend endpoints before Replit can build UI.
 | P3 | `GET /api/ladder/rank-distribution` — ELO histogram data | Rank distribution chart on Ladder page |
 | P4 | Schema: `series` table + `series_matches` join — series-level grouping | Series view in MatchDetail / Ladder |
 
-**Workflow for Phase 2:** Claude builds backend → updates OpenAPI spec → runs codegen → Replit builds UI using generated hooks.
-
 ---
 
-## Dashboard data gaps (found during PlayerDashboard redesign)
-
-During the redesign of PlayerDashboard, a thorough audit of all available API data was done. Two backend gaps were discovered. Both are optional enhancements that would improve the dashboard.
+## Dashboard data gaps
 
 | Gap | Problem | Claude fix |
 |-----|---------|-----------|
-| D1 | `GET /api/elo-history/:id` — does NOT include the player's starting ELO at registration. History starts only after the first match. The ELO chart therefore misses the initial 1000-ELO baseline and can't show the full trajectory. | When a player is registered (or on first elo_history insert), also insert an `{elo: 1000, delta: 0, reason: "registration"}` row into `elo_history` so the chart always starts at 1000. |
-| D2 | `matches` table has no champion fields — `playerAChampion` / `playerBChampion` are missing. The "Recent Results" section on Dashboard and the Player Profile page cannot show which champion was played in each match. (Champion data only exists in `vod_entries`, not in matches.) | Add `playerAChampion varchar` and `playerBChampion varchar` columns to `matches` table. Expose them in `GET /api/players/by-id/:id` → `recentMatches[]` and in `GET /api/matches/:id`. Also accept them in `PATCH /api/matches/:id` so admins can fill them in. Update OpenAPI spec + run codegen. |
+| D1 | `elo_history` missing registration baseline (starts at 1000) | Insert `{elo: 1000, delta: 0, reason: "registration"}` row on player creation |
+| D2 | `matches` table missing `playerAChampion` / `playerBChampion` columns | Add columns, expose in `GET /matches/:id` + `GET /players/by-id/:id recentMatches[]`, accept in `PATCH /matches/:id`. Update OpenAPI + codegen. |
 
 ---
 
 ## Auth — Discord OAuth (future)
 
-Current auth is localStorage stub (`vclol_player_id`). All `// TODO Claude: replace localStorage auth` comments mark where real session auth must go.
+Current auth is localStorage stub (`vclol_player_id`).
 
 **Claude needs to build:**
 - `POST /auth/discord` → redirect to Discord OAuth

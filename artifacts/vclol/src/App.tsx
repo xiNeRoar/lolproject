@@ -32,6 +32,7 @@ import ManageMatches from "@/pages/admin/ManageMatches";
 import ManageVods from "@/pages/admin/ManageVods";
 import ManagePlayers from "@/pages/admin/ManagePlayers";
 import ManageSeasons from "@/pages/admin/ManageSeasons";
+import ManageSeasonDetail from "@/pages/admin/ManageSeasonDetail";
 import ManageChallenges from "@/pages/admin/ManageChallenges";
 import ManageLadderSettings from "@/pages/admin/ManageLadderSettings";
 
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/admin/vods" component={ManageVods} />
       <Route path="/admin/players" component={ManagePlayers} />
       <Route path="/admin/seasons" component={ManageSeasons} />
+      <Route path="/admin/seasons/:id" component={ManageSeasonDetail} />
       <Route path="/admin/challenges" component={ManageChallenges} />
       <Route path="/admin/ladder-settings" component={ManageLadderSettings} />
       

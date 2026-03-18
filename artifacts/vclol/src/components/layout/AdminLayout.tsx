@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Calendar, ClipboardList, Swords, Video, LogOut, Trophy, UserCheck, Zap, Settings } from "lucide-react";
+import { LayoutDashboard, Calendar, Video, LogOut, Trophy, UserCheck, Settings } from "lucide-react";
 import { useAdminMe, useAdminLogout } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
@@ -11,19 +11,21 @@ const navSections = [
     ],
   },
   {
-    label: "Community",
+    label: "Players",
     items: [
       { href: "/admin/players", label: "Players", icon: UserCheck },
+    ],
+  },
+  {
+    label: "Ladder",
+    items: [
       { href: "/admin/seasons", label: "Seasons", icon: Trophy },
     ],
   },
   {
-    label: "Events & Matches",
+    label: "Events",
     items: [
       { href: "/admin/events", label: "Events", icon: Calendar },
-      { href: "/admin/registrations", label: "Registrations", icon: ClipboardList },
-      { href: "/admin/matches", label: "Matches", icon: Swords },
-      { href: "/admin/challenges", label: "Challenges", icon: Zap },
     ],
   },
   {

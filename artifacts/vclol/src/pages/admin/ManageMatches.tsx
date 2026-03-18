@@ -33,13 +33,23 @@ export default function ManageMatches() {
   const updateMut = useUpdateMatch();
   const deleteMut = useDeleteMatch();
 
-  const { register, handleSubmit, reset, control } = useForm();
+  const { register, handleSubmit, reset, control, setValue } = useForm();
 
   const watchedPlayerAId = useWatch({ control, name: "playerAId" });
   const watchedPlayerBId = useWatch({ control, name: "playerBId" });
 
-  const playerAElo = players?.find((p) => p.id === Number(watchedPlayerAId))?.currentElo;
-  const playerBElo = players?.find((p) => p.id === Number(watchedPlayerBId))?.currentElo;
+  const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
+  const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
+  const playerAElo = playerA?.currentElo;
+  const playerBElo = playerB?.currentElo;
+
+  useEffect(() => {
+    if (playerA) setValue("sideAName", playerA.riotId);
+  }, [watchedPlayerAId]);
+
+  useEffect(() => {
+    if (playerB) setValue("sideBName", playerB.riotId);
+  }, [watchedPlayerBId]);
 
   useEffect(() => {
     const params = new URLSearchParams(search);

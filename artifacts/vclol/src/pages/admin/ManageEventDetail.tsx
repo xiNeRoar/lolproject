@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, CheckCircle, XCircle, Trash2, Edit, Plus, Users, Swords, Trophy, ClipboardList } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
@@ -81,11 +81,21 @@ export default function ManageEventDetail() {
 
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
-  const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control } = useForm();
+  const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control, setValue: setMatchValue } = useForm();
   const watchedPlayerAId = useWatch({ control, name: "playerAId" });
   const watchedPlayerBId = useWatch({ control, name: "playerBId" });
-  const playerAElo = players?.find((p) => p.id === Number(watchedPlayerAId))?.currentElo;
-  const playerBElo = players?.find((p) => p.id === Number(watchedPlayerBId))?.currentElo;
+  const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
+  const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
+  const playerAElo = playerA?.currentElo;
+  const playerBElo = playerB?.currentElo;
+
+  useEffect(() => {
+    if (playerA) setMatchValue("sideAName", playerA.riotId);
+  }, [watchedPlayerAId]);
+
+  useEffect(() => {
+    if (playerB) setMatchValue("sideBName", playerB.riotId);
+  }, [watchedPlayerBId]);
 
   const openNewMatch = () => {
     resetMatch({ eventId, playerAId: "", playerBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });

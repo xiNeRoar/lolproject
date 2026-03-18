@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Play, CheckCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Play, CheckCircle, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 function statusBadge(status: string) {
   if (status === "active") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>;
@@ -26,6 +27,7 @@ function statusBadge(status: string) {
 export default function ManageSeasons() {
   const { data: seasons, isLoading } = useListSeasons();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -140,6 +142,14 @@ export default function ManageSeasons() {
                   <td className="px-6 py-4">{statusBadge(season.status)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary hover:text-primary hover:bg-primary/10 gap-1 mr-1"
+                        onClick={() => navigate(`/admin/seasons/${season.id}`)}
+                      >
+                        Manage <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
                       {/* Activate — shown for upcoming/completed seasons */}
                       {season.status !== "active" && (
                         <Button
