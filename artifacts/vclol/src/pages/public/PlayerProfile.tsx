@@ -7,7 +7,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy, ExternalLink, Video, Medal, Crown, Swords, CalendarDays } from "lucide-react";
+import { TrendingUp, Trophy, ExternalLink, Crown, Swords } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { ChallengeModal } from "@/components/ChallengeModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -204,11 +204,8 @@ export default function PlayerProfile() {
         {/* ── BADGES ───────────────────────────────────────────────────── */}
         {badges && badges.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-display">
-                <Medal className="w-5 h-5 text-yellow-400" />
-                Badges
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Badges</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -229,11 +226,8 @@ export default function PlayerProfile() {
         {/* ── ELO HISTORY CHART ────────────────────────────────────────── */}
         {eloChartData.length > 1 && (
           <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-display">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                ELO History
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">ELO History</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
@@ -268,11 +262,8 @@ export default function PlayerProfile() {
         {/* ── CHAMPION POOL ─────────────────────────────────────────────── */}
         {championStats && championStats.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-display">
-                <Swords className="w-5 h-5 text-primary" />
-                Champion Pool
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Champion Pool</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-5">
@@ -309,11 +300,8 @@ export default function PlayerProfile() {
         {/* ── EVENTS ────────────────────────────────────────────────────── */}
         {playerEvents && playerEvents.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-display">
-                <CalendarDays className="w-5 h-5 text-primary" />
-                Events
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Events</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/30">
@@ -354,8 +342,8 @@ export default function PlayerProfile() {
         {/* ── RECENT MATCHES + VODS ────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-lg font-display">Recent Matches</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Recent Matches</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.recentMatches?.length ? (
@@ -406,10 +394,8 @@ export default function PlayerProfile() {
           </Card>
 
           <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-lg font-display flex items-center gap-2">
-                <Video className="w-4 h-4" /> VODs
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">VODs</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.vods?.length ? (
