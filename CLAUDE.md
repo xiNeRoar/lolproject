@@ -8,7 +8,10 @@ Read this file completely before every session. Every decision here is final unl
 
 Vancouver Competitive LoL Project. Grassroots competitive LoL platform for serious local players. Core: ELO Ladder (primary) + VOD Library (learning/discovery) + Challenge System. Events are secondary. Long-term vision: city-by-city competitive ladder network as a pro discovery pipeline.
 
-Full PRD: `/docs/PRD.md` (copy of vclol_prd_final.md in repo root)
+Full PRD: `/docs/PRD.md`
+Remaining work breakdown (post C1–C24): `/docs/REMAINING_WORK.md`
+
+**STATUS:** All C1–C24 backend tasks are DONE and pushed. See REMAINING_WORK.md for what's left.
 
 ---
 
