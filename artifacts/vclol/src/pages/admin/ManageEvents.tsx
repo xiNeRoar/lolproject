@@ -1,4 +1,5 @@
 import AdminLayout from "@/components/layout/AdminLayout";
+import { EVENT_FORMAT_OPTIONS } from "@/lib/tournament-formats";
 import { useListEvents, useCreateEvent, useUpdateEvent, useDeleteEvent, useListRegistrations } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,13 +158,9 @@ export default function ManageEvents() {
           <div className="grid grid-cols-2 gap-4">
              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...register("format", { required: true })}>
                <option value="">Select Format</option>
-               <option value="Single Elimination">Single Elimination</option>
-               <option value="Double Elimination">Double Elimination</option>
-               <option value="Round Robin">Round Robin</option>
-               <option value="Swiss">Swiss</option>
-               <option value="Group Stage + Knockout">Group Stage + Knockout</option>
-               <option value="In-house">In-house</option>
-               <option value="1v1 Ladder">1v1 Ladder</option>
+               {EVENT_FORMAT_OPTIONS.map((fmt) => (
+                 <option key={fmt} value={fmt}>{fmt}</option>
+               ))}
              </select>
              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...register("registrationStatus")}>
                <option value="open">Open</option>

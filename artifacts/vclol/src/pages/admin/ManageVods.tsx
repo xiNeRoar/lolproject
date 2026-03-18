@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Clock, Film, X, Wand2 } from "lucide-react";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -111,10 +111,15 @@ export default function ManageVods() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const matchIdFilter = useMemo(() => {
+  const [matchIdFilter, setMatchIdFilter] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("matchId");
-  }, [location]);
+  });
+
+  const clearMatchFilter = useCallback(() => {
+    window.history.replaceState({}, "", "/admin/vods");
+    setMatchIdFilter(null);
+  }, []);
 
   const displayedVods = useMemo(() => {
     if (!vods) return [];
@@ -211,7 +216,7 @@ export default function ManageVods() {
           </div>
           <button
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => navigate("/admin/vods")}
+            onClick={clearMatchFilter}
           >
             <X className="w-3.5 h-3.5" /> Clear filter
           </button>

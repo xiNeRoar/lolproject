@@ -1,4 +1,5 @@
 import AdminLayout from "@/components/layout/AdminLayout";
+import { EVENT_FORMAT_OPTIONS, getScoreOptions } from "@/lib/tournament-formats";
 import {
   useListEvents,
   useUpdateEvent,
@@ -95,6 +96,8 @@ export default function ManageEventDetail() {
   const watchedPlayerAId = useWatch({ control, name: "playerAId" });
   const watchedPlayerBId = useWatch({ control, name: "playerBId" });
   const watchedWinner = useWatch({ control, name: "winner" });
+  const watchedMatchFormat = useWatch({ control, name: "format" });
+  const scoreOptions = getScoreOptions(watchedMatchFormat || "BO1");
   const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
   const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
   const playerAElo = playerA?.currentElo;
@@ -266,13 +269,9 @@ export default function ManageEventDetail() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...regEvent("format", { required: true })}>
-                  <option value="Single Elimination">Single Elimination</option>
-                  <option value="Double Elimination">Double Elimination</option>
-                  <option value="Round Robin">Round Robin</option>
-                  <option value="Swiss">Swiss</option>
-                  <option value="Group Stage + Knockout">Group Stage + Knockout</option>
-                  <option value="In-house">In-house</option>
-                  <option value="1v1 Ladder">1v1 Ladder</option>
+                  {EVENT_FORMAT_OPTIONS.map((fmt) => (
+                    <option key={fmt} value={fmt}>{fmt}</option>
+                  ))}
                 </select>
                 {formatChanged && eventMatches.length > 0 && (
                   <p className="text-xs text-yellow-400 flex items-start gap-1">
@@ -526,8 +525,13 @@ export default function ManageEventDetail() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Score (optional)</label>
-                    <Input placeholder="e.g. 2-1" {...regMatch("score")} />
+                    <label className="text-xs text-muted-foreground mb-1 block">Score</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("score")}>
+                      <option value="">— No score</option>
+                      {scoreOptions.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Format (optional)</label>

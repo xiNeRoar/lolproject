@@ -2,17 +2,15 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import {
   useListSeasons,
   useCreateSeason,
-  useUpdateSeason,
   useDeleteSeason,
   useActivateSeason,
   useCompleteSeason,
-  type Season,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Play, CheckCircle, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Play, CheckCircle, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,10 +27,8 @@ export default function ManageSeasons() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
   const createMut = useCreateSeason();
-  const updateMut = useUpdateSeason();
   const deleteMut = useDeleteSeason();
   const activateMut = useActivateSeason();
   const completeMut = useCompleteSeason();
@@ -47,13 +43,6 @@ export default function ManageSeasons() {
 
   const openNew = () => {
     reset({ name: "", startDate: "", endDate: "", eloResetFactor: "0.50" });
-    setEditingId(null);
-    setIsOpen(true);
-  };
-
-  const openEdit = (season: Season) => {
-    reset({ ...season });
-    setEditingId(season.id);
     setIsOpen(true);
   };
 
@@ -63,18 +52,10 @@ export default function ManageSeasons() {
       startDate: data.startDate as string,
       endDate: data.endDate as string,
       eloResetFactor: (data.eloResetFactor as string) || "0.50",
-      status: (data.status as string) || undefined,
     };
-
-    if (editingId) {
-      updateMut.mutate({ id: editingId, data: payload }, {
-        onSuccess: () => { setIsOpen(false); invalidate(); },
-      });
-    } else {
-      createMut.mutate({ data: payload }, {
-        onSuccess: () => { setIsOpen(false); invalidate(); },
-      });
-    }
+    createMut.mutate({ data: payload }, {
+      onSuccess: () => { setIsOpen(false); invalidate(); },
+    });
   };
 
   const handleActivate = (id: number, name: string) => {
@@ -174,9 +155,6 @@ export default function ManageSeasons() {
                           <CheckCircle className="w-4 h-4 text-yellow-400" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(season)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -196,7 +174,7 @@ export default function ManageSeasons() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogHeader>
-          <DialogTitle>{editingId ? "Edit Season" : "New Season"}</DialogTitle>
+          <DialogTitle>New Season</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <Input placeholder="Season Name (e.g. Spring 2025)" {...register("name", { required: true })} />
@@ -236,7 +214,7 @@ export default function ManageSeasons() {
             </select>
           </div>
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>Save</Button>
+            <Button type="submit" disabled={createMut.isPending}>Save</Button>
           </div>
         </form>
       </Dialog>

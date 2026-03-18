@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { PLAYOFF_FORMAT_OPTIONS } from "@/lib/tournament-formats";
 import {
   useGetLadderSettings,
   useUpdateLadderSettings,
@@ -218,8 +219,9 @@ export default function ManageLadderSettings() {
                     onChange={(e) => setLForm((f) => ({ ...f, playoffFormat: e.target.value }))}
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option value="single_elimination">Single Elimination</option>
-                    <option value="double_elimination">Double Elimination</option>
+                    {PLAYOFF_FORMAT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
                 <Button

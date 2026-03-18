@@ -1,6 +1,7 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import {
   useListSeasons,
+  useUpdateSeason,
   useListPlayers,
   useListChallenges,
   useDeleteChallenge,
@@ -12,20 +13,21 @@ import {
   type CreateMatchRequest,
   type Match,
 } from "@workspace/api-client-react";
+import { MATCH_FORMAT_OPTIONS, getScoreOptions } from "@/lib/tournament-formats";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowLeft, Trophy, Zap, Swords, Star, ClipboardCheck,
-  UserX, ShieldAlert, ExternalLink, Plus, Info, Edit, Trash2, Film,
+  UserX, ShieldAlert, ExternalLink, Plus, Info, Edit, Trash2, Film, Settings,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 
-type Tab = "standings" | "challenges" | "matches" | "champions";
+type Tab = "details" | "standings" | "challenges" | "matches" | "champions";
 
 const ROUND_OPTIONS = [
   { label: "—  (no round)", value: "" },
@@ -84,14 +86,33 @@ export default function ManageSeasonDetail() {
   const deleteMatch = useDeleteMatch();
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
+  const updateSeason = useUpdateSeason();
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
+  const [seasonSaving, setSeasonSaving] = useState(false);
+  const [seasonEditForm, setSeasonEditForm] = useState({
+    name: "", startDate: "", endDate: "", eloResetFactor: "0.50", status: "upcoming",
+  });
 
   // ── Match form (Add Match dialog) ───────────────────────────
   const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control: matchControl, setValue: setMatchVal } = useForm();
   const watchedPlayerAId = useWatch({ control: matchControl, name: "playerAId" });
   const watchedPlayerBId = useWatch({ control: matchControl, name: "playerBId" });
+  const watchedMatchFormat = useWatch({ control: matchControl, name: "format" });
+  const scoreOptions = getScoreOptions(watchedMatchFormat || "BO1");
   const matchPlayerA = allPlayers?.find((p) => p.id === Number(watchedPlayerAId));
   const matchPlayerB = allPlayers?.find((p) => p.id === Number(watchedPlayerBId));
+
+  useEffect(() => {
+    if (season) {
+      setSeasonEditForm({
+        name: season.name,
+        startDate: season.startDate,
+        endDate: season.endDate,
+        eloResetFactor: season.eloResetFactor,
+        status: season.status,
+      });
+    }
+  }, [season?.id]);
 
   useEffect(() => {
     if (matchPlayerA) setMatchVal("sideAName", matchPlayerA.riotId);
@@ -102,7 +123,7 @@ export default function ManageSeasonDetail() {
   }, [watchedPlayerBId]);
 
   const openNewMatch = () => {
-    resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", score: "" });
+    resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", format: "BO1", score: "" });
     setEditingMatchId(null);
     setMatchDialogOpen(true);
   };
@@ -115,6 +136,7 @@ export default function ManageSeasonDetail() {
       sideAName: m.sideAName,
       sideBName: m.sideBName,
       winner,
+      format: m.format || "BO1",
       score: m.score ?? "",
     });
     setEditingMatchId(m.id);
@@ -137,7 +159,7 @@ export default function ManageSeasonDetail() {
       sideBName: sideB,
       winnerName,
       score: data.score ? String(data.score) : null,
-      format: "BO1",
+      format: data.format ? String(data.format) : "BO1",
       vodUrl: null,
       eventId: null,
       playerAId: data.playerAId ? Number(data.playerAId) : null,
@@ -198,6 +220,7 @@ export default function ManageSeasonDetail() {
   );
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
+    { id: "details", label: "Details", icon: <Settings className="w-4 h-4" /> },
     { id: "standings", label: "Standings", icon: <Trophy className="w-4 h-4" /> },
     { id: "challenges", label: "Challenges", icon: <Zap className="w-4 h-4" />, count: seasonChallenges.length },
     { id: "matches", label: "Matches", icon: <Swords className="w-4 h-4" />, count: ladderMatches.length },
@@ -249,6 +272,95 @@ export default function ManageSeasonDetail() {
           </button>
         ))}
       </div>
+
+      {/* ── DETAILS TAB ───────────────────────────────────────── */}
+      {tab === "details" && (
+        <div className="max-w-lg">
+          <p className="text-sm text-muted-foreground mb-6">Edit season settings. Changes take effect immediately on save.</p>
+          <div className="bg-card border border-border/50 rounded-lg p-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium block mb-1">Season Name</label>
+              <Input
+                value={seasonEditForm.name}
+                onChange={(e) => setSeasonEditForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Spring 2025"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
+                <Input
+                  type="date"
+                  value={seasonEditForm.startDate}
+                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, startDate: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">End Date</label>
+                <Input
+                  type="date"
+                  value={seasonEditForm.endDate}
+                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, endDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1">ELO Reset Factor</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                value={seasonEditForm.eloResetFactor}
+                onChange={(e) => setSeasonEditForm((f) => ({ ...f, eloResetFactor: e.target.value }))}
+                placeholder="0.50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">0.50 = compress halfway to 1000. 0 = full reset. 1 = no reset.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1">Status</label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={seasonEditForm.status}
+                onChange={(e) => setSeasonEditForm((f) => ({ ...f, status: e.target.value }))}
+              >
+                <option value="upcoming">Upcoming</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div className="pt-2">
+              <Button
+                onClick={() => {
+                  setSeasonSaving(true);
+                  updateSeason.mutate(
+                    {
+                      id: seasonId,
+                      data: {
+                        name: seasonEditForm.name,
+                        startDate: seasonEditForm.startDate,
+                        endDate: seasonEditForm.endDate,
+                        eloResetFactor: seasonEditForm.eloResetFactor,
+                        status: seasonEditForm.status,
+                      },
+                    },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
+                        setSeasonSaving(false);
+                      },
+                      onError: () => setSeasonSaving(false),
+                    }
+                  );
+                }}
+                disabled={updateSeason.isPending || seasonSaving}
+              >
+                {updateSeason.isPending ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── STANDINGS TAB ─────────────────────────────────────── */}
       {tab === "standings" && (
@@ -569,9 +681,24 @@ export default function ManageSeasonDetail() {
                     </label>
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Score (optional, e.g. "2-1")</label>
-                  <Input placeholder="e.g. 1-0" {...regMatch("score")} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Format</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("format")}>
+                      {MATCH_FORMAT_OPTIONS.map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Score</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("score")}>
+                      <option value="">— No score</option>
+                      {scoreOptions.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
