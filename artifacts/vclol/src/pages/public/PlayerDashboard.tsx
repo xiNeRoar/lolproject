@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 function eloBadgeColor(elo: number) {
@@ -161,6 +161,44 @@ function DashboardContent({ pid }: { pid: number }) {
     date: new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
     elo: e.elo,
   }));
+
+  const { data: notifications, refetch: refetchNotifs } = useQuery<Array<{
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+    isRead: boolean | null;
+    createdAt: string;
+  }>>({
+    queryKey: ["/api/notifications", pid],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+
+  const markRead = useMutation({
+    mutationFn: (notifId: number) => fetch(`/api/notifications/${notifId}/read`, { method: "PUT" }),
+    onSuccess: () => refetchNotifs(),
+  });
+
+  const unreadCount = (notifications ?? []).filter((n) => !n.isRead).length;
+
+  function notifIcon(type: string) {
+    if (type === "challenge_received") return { icon: "⚔", color: "text-blue-400" };
+    if (type === "challenge_accepted") return { icon: "✓", color: "text-green-400" };
+    if (type === "challenge_declined") return { icon: "✕", color: "text-red-400" };
+    if (type === "challenge_auto_accepted") return { icon: "⚡", color: "text-blue-400" };
+    if (type === "match_result") return { icon: "🏆", color: "text-yellow-400" };
+    if (type === "no_show_flagged") return { icon: "⚠", color: "text-yellow-400" };
+    if (type === "season_completed") return { icon: "🏆", color: "text-yellow-400" };
+    if (type === "badge_earned") return { icon: "🎖", color: "text-yellow-400" };
+    if (type === "event_registration_confirmed") return { icon: "✓", color: "text-green-400" };
+    if (type === "event_registration_declined") return { icon: "✕", color: "text-red-400" };
+    return { icon: "🔔", color: "text-muted-foreground" };
+  }
 
   const handleSaveNotif = () => {
     if (!notifPref) return;
@@ -368,6 +406,51 @@ function DashboardContent({ pid }: { pid: number }) {
                     <span>{meta.emoji}</span>
                     <span className="font-medium">{meta.label}</span>
                   </span>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Notifications Feed */}
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Notifications</CardTitle>
+            {unreadCount > 0 && (
+              <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{unreadCount}</span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!notifications || notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+          ) : (
+            <div className="space-y-1">
+              {notifications.slice(0, 10).map((n) => {
+                const { icon, color } = notifIcon(n.type);
+                const timeAgo = (() => {
+                  const diff = Date.now() - new Date(n.createdAt).getTime();
+                  const mins = Math.floor(diff / 60000);
+                  if (mins < 60) return `${mins}m ago`;
+                  const hrs = Math.floor(mins / 60);
+                  if (hrs < 24) return `${hrs}h ago`;
+                  return `${Math.floor(hrs / 24)}d ago`;
+                })();
+                return (
+                  <div
+                    key={n.id}
+                    className={`flex items-start gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${n.isRead ? "opacity-60" : "bg-muted/40 cursor-pointer hover:bg-muted/60"}`}
+                    onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
+                  >
+                    <span className={`text-base leading-5 flex-shrink-0 ${color}`}>{icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{n.title}</div>
+                      <div className="text-muted-foreground text-xs">{n.message}</div>
+                    </div>
+                    <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">{timeAgo}</span>
+                  </div>
                 );
               })}
             </div>

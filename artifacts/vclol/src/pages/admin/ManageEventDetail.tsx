@@ -75,9 +75,11 @@ export default function ManageEventDetail() {
   const invalidateRegs = () => queryClient.invalidateQueries({ queryKey: ["/api/registrations"] });
   const invalidateMatches = () => queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
 
-  const { register: regEvent, handleSubmit: handleEventSubmit, reset: resetEvent } = useForm({
+  const { register: regEvent, handleSubmit: handleEventSubmit, reset: resetEvent, watch: watchEvent } = useForm({
     values: event ?? undefined,
   });
+  const watchedEventFormat = watchEvent("format");
+  const formatChanged = !!(watchedEventFormat && event?.format && watchedEventFormat !== event.format);
 
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
@@ -254,15 +256,23 @@ export default function ManageEventDetail() {
               <Input type="date" {...regEvent("eventDate", { required: true })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...regEvent("format", { required: true })}>
-                <option value="Single Elimination">Single Elimination</option>
-                <option value="Double Elimination">Double Elimination</option>
-                <option value="Round Robin">Round Robin</option>
-                <option value="Swiss">Swiss</option>
-                <option value="Group Stage + Knockout">Group Stage + Knockout</option>
-                <option value="In-house">In-house</option>
-                <option value="1v1 Ladder">1v1 Ladder</option>
-              </select>
+              <div className="space-y-1">
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...regEvent("format", { required: true })}>
+                  <option value="Single Elimination">Single Elimination</option>
+                  <option value="Double Elimination">Double Elimination</option>
+                  <option value="Round Robin">Round Robin</option>
+                  <option value="Swiss">Swiss</option>
+                  <option value="Group Stage + Knockout">Group Stage + Knockout</option>
+                  <option value="In-house">In-house</option>
+                  <option value="1v1 Ladder">1v1 Ladder</option>
+                </select>
+                {formatChanged && eventMatches.length > 0 && (
+                  <p className="text-xs text-yellow-400 flex items-start gap-1">
+                    <span className="mt-px">⚠</span>
+                    <span>{eventMatches.length} match{eventMatches.length !== 1 ? "es" : ""} entered — changing format affects round validation and bracket display.</span>
+                  </p>
+                )}
+              </div>
               <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" {...regEvent("registrationStatus")}>
                 <option value="open">Open</option>
                 <option value="upcoming">Upcoming</option>
@@ -284,6 +294,30 @@ export default function ManageEventDetail() {
 
       {/* ── REGISTRATIONS TAB ─────────────────────────────────── */}
       {tab === "registrations" && (
+        <div className="space-y-4">
+        {/* F10: Participant count hint for elimination formats */}
+        {event && (event.format === "Single Elimination" || event.format === "Double Elimination") && (() => {
+          const confirmedCount = (regs ?? []).filter(r => r.status === "confirmed").length;
+          const totalCount = regs?.length ?? 0;
+          const isPowerOf2 = confirmedCount >= 4 && (confirmedCount & (confirmedCount - 1)) === 0;
+          const nextPower = confirmedCount < 4 ? 4 : confirmedCount < 8 ? 8 : confirmedCount < 16 ? 16 : 32;
+          return (
+            <div className={`p-3 rounded-md border text-sm flex items-start gap-2 ${isPowerOf2 ? "bg-green-500/10 border-green-500/30" : "bg-muted/30 border-border/40"}`}>
+              <span className="text-base leading-5">{isPowerOf2 ? "✓" : "ℹ"}</span>
+              <div>
+                <span className="font-medium">{confirmedCount} confirmed</span>
+                <span className="text-muted-foreground"> of {totalCount} registered. </span>
+                {confirmedCount === 0 ? (
+                  <span className="text-muted-foreground">Confirm players to begin bracket planning.</span>
+                ) : isPowerOf2 ? (
+                  <span className="text-green-400">Perfect bracket size for {event.format}.</span>
+                ) : (
+                  <span className="text-yellow-400">{event.format} works best with 4, 8, or 16 confirmed players — next ideal count is {nextPower}.</span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
         <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
@@ -337,6 +371,7 @@ export default function ManageEventDetail() {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       )}
 
