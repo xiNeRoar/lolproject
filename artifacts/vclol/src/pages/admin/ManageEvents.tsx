@@ -79,27 +79,71 @@ export default function ManageEvents() {
         <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> New Event</Button>
       </div>
 
-      <div className="grid gap-4">
-        {isLoading ? "Loading..." : events?.map(event => (
-          <div key={event.id} className="bg-card border border-border/50 p-6 rounded-lg flex justify-between items-center">
-            <div>
-              <h3 className="text-xl font-bold">{event.title} <span className="text-sm font-normal text-muted-foreground ml-2">({event.slug})</span></h3>
-              <p className="text-sm text-muted-foreground mt-1">{formatDate(event.eventDate)} • {event.format} • Status: {event.registrationStatus}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  {regCountByEvent[event.id] ?? 0} registration{(regCountByEvent[event.id] ?? 0) !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}`)}>
-                <Settings2 className="w-4 h-4 mr-1.5" /> Manage
-              </Button>
-              <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(event.id)}><Trash2 className="w-4 h-4" /></Button>
-            </div>
-          </div>
-        ))}
+      <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
+        <table className="w-full text-sm text-left">
+          <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+            <tr>
+              <th className="px-6 py-3">Event</th>
+              <th className="px-6 py-3 hidden sm:table-cell">Date</th>
+              <th className="px-6 py-3 hidden md:table-cell">Format</th>
+              <th className="px-6 py-3 hidden sm:table-cell">Status</th>
+              <th className="px-6 py-3 hidden lg:table-cell">Registrations</th>
+              <th className="px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={6} className="px-6 py-4 text-center text-muted-foreground">Loading…</td></tr>
+            ) : !events?.length ? (
+              <tr><td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">No events yet. Create your first event.</td></tr>
+            ) : events.map(event => {
+              const regCount = regCountByEvent[event.id] ?? 0;
+              const statusColor =
+                event.registrationStatus === "open" ? "text-green-400" :
+                event.registrationStatus === "closed" ? "text-red-400" :
+                event.registrationStatus === "invite-only" ? "text-yellow-400" :
+                "text-muted-foreground";
+              return (
+                <tr key={event.id} className="border-b border-border/20 hover:bg-muted/20">
+                  <td className="px-6 py-4">
+                    <div className="font-medium">{event.title}</div>
+                    <div className="text-xs text-muted-foreground">{event.slug}</div>
+                  </td>
+                  <td className="px-6 py-4 text-muted-foreground hidden sm:table-cell">{formatDate(event.eventDate)}</td>
+                  <td className="px-6 py-4 text-muted-foreground hidden md:table-cell">{event.format}</td>
+                  <td className="px-6 py-4 hidden sm:table-cell">
+                    <span className={`text-xs font-medium capitalize ${statusColor}`}>
+                      {event.registrationStatus}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 hidden lg:table-cell">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{regCount} reg{regCount !== 1 ? "s" : ""}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" className="text-xs gap-1.5"
+                        onClick={() => navigate(`/admin/events/${event.id}`)}>
+                        <Settings2 className="w-3.5 h-3.5" /> Manage
+                      </Button>
+                      <Button variant="ghost" size="icon"
+                        onClick={() => openEdit(event)}
+                        title="Edit event details">
+                        <Settings2 className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon"
+                        onClick={() => handleDelete(event.id)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

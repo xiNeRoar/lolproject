@@ -409,11 +409,25 @@ export default function ManageEventDetail() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Side A Name</label>
-                    <Input placeholder="e.g. Zed#NA1" {...regMatch("sideAName", { required: true })} />
+                    {watchedPlayerAId ? (
+                      <div className="flex h-10 w-full items-center gap-2 rounded-md border border-border/30 bg-muted/40 px-3 text-sm">
+                        <span className="font-medium text-foreground">{playerA?.riotId}</span>
+                        <span className="text-xs text-muted-foreground">(auto-filled)</span>
+                      </div>
+                    ) : (
+                      <Input placeholder="e.g. Zed#NA1" {...regMatch("sideAName", { required: true })} />
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Side B Name</label>
-                    <Input placeholder="e.g. Jinx#KR1" {...regMatch("sideBName", { required: true })} />
+                    {watchedPlayerBId ? (
+                      <div className="flex h-10 w-full items-center gap-2 rounded-md border border-border/30 bg-muted/40 px-3 text-sm">
+                        <span className="font-medium text-foreground">{playerB?.riotId}</span>
+                        <span className="text-xs text-muted-foreground">(auto-filled)</span>
+                      </div>
+                    ) : (
+                      <Input placeholder="e.g. Jinx#KR1" {...regMatch("sideBName", { required: true })} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -469,8 +483,11 @@ export default function ManageEventDetail() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Bracket Slot #</label>
-                    <Input type="number" placeholder="e.g. 1" {...regMatch("bracketSlot")} />
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Bracket Slot #
+                      <span className="ml-1 text-muted-foreground/60 normal-case font-normal">(position within round: 1=top)</span>
+                    </label>
+                    <Input type="number" min="1" placeholder="e.g. 1" {...regMatch("bracketSlot")} />
                   </div>
                 </div>
                 {isDoubleElim && (
@@ -481,10 +498,10 @@ export default function ManageEventDetail() {
                 )}
               </div>
 
-              {/* Ladder Link (Optional) */}
+              {/* Playoff Link — only for season playoff events */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Ladder Link <span className="normal-case font-normal text-muted-foreground/60 ml-1">— optional, for ELO-tracked playoff events</span>
+                  Playoff Link <span className="normal-case font-normal text-muted-foreground/60 ml-1">— only for season playoff events that affect ELO. Leave blank for standalone tournaments.</span>
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
