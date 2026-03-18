@@ -7,7 +7,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy, ExternalLink, Video, Star, Medal, Crown, Swords, CalendarDays } from "lucide-react";
+import { TrendingUp, Trophy, ExternalLink, Video, Medal, Crown, Swords, CalendarDays } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { ChallengeModal } from "@/components/ChallengeModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -36,6 +36,14 @@ const RANKS = [
   { name: "Unranked", min: 0,    color: "#64748B", border: "border-border/40",      bg: "bg-muted/10",       text: "text-muted-foreground" },
 ];
 const getRank = (elo: number) => RANKS.find((r) => elo >= r.min) ?? RANKS[RANKS.length - 1];
+
+const BADGE_META: Record<string, { emoji: string; label: string }> = {
+  season_champion: { emoji: "🏆", label: "Season Champion" },
+  first_blood:     { emoji: "⚡", label: "First Blood"     },
+  win_streak:      { emoji: "🔥", label: "Win Streak"      },
+  veteran:         { emoji: "💪", label: "Veteran"         },
+  climber:         { emoji: "📈", label: "Climber"         },
+};
 
 function eloDelta(before: number | null | undefined, after: number | null | undefined) {
   if (before == null || after == null) return null;
@@ -200,32 +208,14 @@ export default function PlayerProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {badges.map((badge) => {
-                  const isChampion = badge.badgeType === "season_champion";
+              <div className="flex flex-wrap gap-2">
+                {badges.map((b) => {
+                  const meta = BADGE_META[b.badgeType] ?? { emoji: "🎖️", label: b.badgeType };
                   return (
-                    <div
-                      key={badge.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                        isChampion
-                          ? "bg-yellow-500/15 border-yellow-400/40 text-yellow-300 ring-1 ring-yellow-400/20"
-                          : "bg-card/60 border-border/40 text-muted-foreground"
-                      }`}
-                    >
-                      {isChampion ? (
-                        <Crown className="w-4 h-4 shrink-0 text-yellow-300" />
-                      ) : (
-                        <Star className="w-4 h-4 shrink-0" />
-                      )}
-                      <div>
-                        <div className={`text-sm font-medium capitalize ${isChampion ? "font-bold text-yellow-300" : ""}`}>
-                          {badge.badgeType.replace(/_/g, " ")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(badge.earnedAt).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
-                        </div>
-                      </div>
-                    </div>
+                    <span key={b.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border/40 text-sm">
+                      <span>{meta.emoji}</span>
+                      <span className="font-medium">{meta.label}</span>
+                    </span>
                   );
                 })}
               </div>
