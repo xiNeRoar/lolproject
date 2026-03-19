@@ -191,6 +191,9 @@ export default function TeamProfile() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {m.playerId === team.captainPlayerId && (
+                        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Captain</Badge>
+                      )}
                       {m.role && (
                         <Badge variant="outline" className="text-xs">{m.role}</Badge>
                       )}

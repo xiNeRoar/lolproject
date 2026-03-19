@@ -31,9 +31,9 @@ export function softResetElo(currentElo: number, factor: number = 0.5): number {
 export const LADDER_MIN_MATCHES = 4;
 
 /**
- * Playoff qualification: top N players by ELO at season end.
- * Uses 8 when playerCount >= 16, otherwise 4.
+ * Playoff qualification: top N teams by ELO at season end.
+ * Uses 8 when teamCount >= 16, otherwise 4.
  */
-export function getPlayoffSize(playerCount: number): number {
-  return playerCount >= 16 ? 8 : 4;
+export function getPlayoffSize(teamCount: number): number {
+  return teamCount >= 16 ? 8 : 4;
 }

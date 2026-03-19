@@ -142,7 +142,7 @@ export default function EventDetail() {
                       To register for this event, you must be a registered VCLoL player.
                     </p>
                     <Link href="/register">
-                      <Button className="w-full">Register as Player →</Button>
+                      <Button className="w-full">Add Bot to Discord →</Button>
                     </Link>
                     <p className="text-xs text-muted-foreground text-center">
                       Already registered? Contact admin via Discord to be added to this event.

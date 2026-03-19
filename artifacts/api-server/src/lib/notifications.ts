@@ -3,14 +3,12 @@ import { notificationsTable, playersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 type NotificationType =
-  | "challenge_received"
-  | "challenge_accepted"
-  | "challenge_declined"
-  | "challenge_auto_accepted"
   | "match_result"
   | "no_show_flagged"
   | "season_completed"
-  | "badge_earned";
+  | "badge_earned"
+  | "event_registration_confirmed"
+  | "event_registration_declined";
 
 /**
  * Send a notification to a player.

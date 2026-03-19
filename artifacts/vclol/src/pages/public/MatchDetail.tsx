@@ -98,6 +98,12 @@ export default function MatchDetail() {
                 <Badge variant="outline" className="hover:border-primary/50 cursor-pointer">{match.eventTitle}</Badge>
               </Link>
             )}
+            {match.gameVersion && <Badge variant="outline" className="text-xs">Patch {match.gameVersion}</Badge>}
+            {match.gameDuration != null && match.gameDuration > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {Math.floor(match.gameDuration / 60000)}:{String(Math.floor((match.gameDuration % 60000) / 1000)).padStart(2, "0")}
+              </Badge>
+            )}
           </div>
         </div>
 

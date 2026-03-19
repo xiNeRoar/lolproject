@@ -5,7 +5,6 @@ export const EVENT_FORMAT_OPTIONS = [
   "Swiss",
   "Group Stage + Knockout",
   "In-house",
-  "1v1 Ladder",
 ] as const;
 
 export type EventFormat = (typeof EVENT_FORMAT_OPTIONS)[number];
@@ -17,7 +16,6 @@ export const PLAYOFF_FORMAT_OPTIONS = [
   { value: "swiss", label: "Swiss" },
   { value: "group_stage_knockout", label: "Group Stage + Knockout" },
   { value: "in_house", label: "In-house" },
-  { value: "1v1_ladder", label: "1v1 Ladder" },
 ] as const;
 
 export const MATCH_FORMAT_OPTIONS = ["BO1", "BO3", "BO5"] as const;

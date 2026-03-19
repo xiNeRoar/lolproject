@@ -168,20 +168,17 @@ export default function VodDetail() {
               >
                 {vod.playerRiotId}
               </Link>
-              {vod.playerEloAtTime != null && (
-                <span className="text-xs ml-2">({vod.playerEloAtTime} ELO at time)</span>
-              )}
             </p>
           )}
           {vod.notes && (
             <p className="text-sm text-muted-foreground mt-2 italic">{vod.notes}</p>
           )}
           {/* Link back to match */}
-          {(vod as any).matchId && (
+          {vod.matchId && (
             <p className="text-sm text-muted-foreground mt-2">
               Match:{" "}
-              <Link href={`/matches/${(vod as any).matchId}`} className="text-primary hover:underline">
-                View Match #{(vod as any).matchId} →
+              <Link href={`/matches/${vod.matchId}`} className="text-primary hover:underline">
+                View Match #{vod.matchId} →
               </Link>
             </p>
           )}
@@ -263,9 +260,6 @@ export default function VodDetail() {
                             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
                               {related.champion}{related.opponentChampion ? ` vs ${related.opponentChampion}` : ""}
                             </span>
-                          )}
-                          {related.playerEloAtTime != null && (
-                            <span className="text-xs text-muted-foreground">ELO {related.playerEloAtTime}</span>
                           )}
                         </div>
                       </div>

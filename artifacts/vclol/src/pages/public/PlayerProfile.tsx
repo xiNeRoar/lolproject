@@ -17,7 +17,8 @@ export default function PlayerProfile() {
   const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id } });
   const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id } });
 
-  const myChampionships = seasonChamps?.filter((c) => c.teamId && player?.id) ?? [];
+  const playerTeamIds = new Set((player?.teams ?? []).map((t) => t.teamId));
+  const myChampionships = seasonChamps?.filter((c) => playerTeamIds.has(c.teamId)) ?? [];
 
   if (isLoading) {
     return (
@@ -238,9 +239,15 @@ export default function PlayerProfile() {
               ) : (
                 <div className="divide-y divide-border/30">
                   {player.recentMatches.map((match) => {
-                    const won = match.winnerName === match.sideAName || match.winnerName === match.sideBName;
+                    const isOnTeamA = playerTeamIds.has(match.teamAId ?? -1);
+                    const isOnTeamB = playerTeamIds.has(match.teamBId ?? -1);
+                    const playerSideName = isOnTeamA ? match.sideAName : isOnTeamB ? match.sideBName : null;
+                    const won = playerSideName ? match.winnerName === playerSideName : false;
                     return (
                       <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
+                        <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                          {won ? "W" : "L"}
+                        </span>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{match.matchTitle}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1.5">

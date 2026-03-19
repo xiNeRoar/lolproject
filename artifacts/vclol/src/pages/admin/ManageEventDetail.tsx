@@ -104,7 +104,7 @@ export default function ManageEventDetail() {
 
   const roundOptions = useMemo(() => {
     const fmt = event?.format ?? "";
-    if (fmt === "In-house" || fmt === "1v1 Ladder") return null;
+    if (fmt === "In-house") return null;
     if (fmt === "Round Robin") return [{ label: "Group Stage", value: "0" }];
     if (fmt === "Swiss") return Array.from({ length: 8 }, (_, i) => ({ label: `Round ${i + 1}`, value: String(i + 1) }));
     if (fmt === "Group Stage + Knockout") return [

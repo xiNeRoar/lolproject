@@ -92,10 +92,27 @@ function DashboardContent({ pid }: { pid: number }) {
           <CardTitle className="text-base">My Teams</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Teams are managed through Discord. Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/register-team</code> to
-            create a team, or ask a captain to add you with <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/add @you</code>.
-          </p>
+          {player.teams && player.teams.length > 0 ? (
+            <div className="space-y-2">
+              {player.teams.map((t) => (
+                <Link key={t.teamId} href={`/teams/${t.teamId}`} className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:border-primary/40 transition-colors">
+                  <div>
+                    <span className="text-sm font-medium">{t.teamName}</span>
+                    <span className="text-xs text-muted-foreground ml-2">[{t.teamTag}]</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {t.role && <Badge variant="outline" className="text-xs">{t.role}</Badge>}
+                    <Badge variant={t.status === "active" ? "default" : "secondary"} className="text-xs capitalize">{t.status}</Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Teams are managed through Discord. Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/register-team</code> to
+              create a team, or ask a captain to add you with <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/add @you</code>.
+            </p>
+          )}
         </CardContent>
       </Card>
 

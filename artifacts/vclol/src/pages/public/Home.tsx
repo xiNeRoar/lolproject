@@ -126,8 +126,8 @@ export default function Home() {
           <Badge className="mb-3">Active Competition</Badge>
           <h2 className="text-xl font-bold font-display mb-3">Vancouver's competitive ladder is live</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
-            Building Vancouver's first structured competitive LoL ladder. Register to compete, 
-            build your match record, and track your ELO over time.
+            Building Vancouver's first structured competitive LoL ladder. Register your team to compete, 
+            build your team's match record, and track your team's ELO over time.
           </p>
         </div>
       </section>
@@ -140,7 +140,7 @@ export default function Home() {
               {
                 icon: Trophy,
                 title: "Competitive Local Play",
-                desc: "Structured events beyond solo queue. 1v1s, 5v5s, and organized in-houses designed for serious improvement.",
+                desc: "Structured 5v5 events beyond solo queue. Team scrims and organized in-houses designed for serious improvement.",
                 delay: 0,
               },
               {

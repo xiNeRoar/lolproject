@@ -174,7 +174,6 @@ export default function ManageVods() {
       patch: data.patch ? String(data.patch) : null,
       eventId: data.eventId ? Number(data.eventId) : null,
       playerId: data.playerId ? Number(data.playerId) : null,
-      playerEloAtTime: data.playerEloAtTime ? Number(data.playerEloAtTime) : null,
     };
     if (editingId) {
       updateMut.mutate(
@@ -338,10 +337,6 @@ export default function ManageVods() {
                   <option value="">None</option>
                   {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Player ELO at Time</label>
-                <Input type="number" placeholder="e.g. 1150" {...register("playerEloAtTime")} />
               </div>
             </div>
           </div>
