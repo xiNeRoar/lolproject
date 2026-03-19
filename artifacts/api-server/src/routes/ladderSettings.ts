@@ -1,22 +1,18 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { ladderSettingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
+
+// ── Formatter ────────────────────────────────────────────────
 
 function formatSettings(s: typeof ladderSettingsTable.$inferSelect) {
   return {
     id: s.id,
     kFactor: s.kFactor,
     minMatchesForDisplay: s.minMatchesForDisplay,
-    maxChallengesPerWeek: s.maxChallengesPerWeek,
-    maxChallengesSameOpponentPerWeek: s.maxChallengesSameOpponentPerWeek,
-    challengeExpiryHours: s.challengeExpiryHours,
-    maxDeclinesPerWeek: s.maxDeclinesPerWeek,
-    maxDeclinesSameOpponentPerWeek: s.maxDeclinesSameOpponentPerWeek,
-    noShowExpiryDays: s.noShowExpiryDays,
-    playoffMinPlayers: s.playoffMinPlayers,
     playoffSize: s.playoffSize,
     playoffFormat: s.playoffFormat,
     defaultMatchFormat: s.defaultMatchFormat,
@@ -24,13 +20,18 @@ function formatSettings(s: typeof ladderSettingsTable.$inferSelect) {
   };
 }
 
+// ── Helpers ──────────────────────────────────────────────────
+
 async function getOrCreateSettings() {
   const rows = await db.select().from(ladderSettingsTable).limit(1);
-  if (rows.length > 0) return rows[0];
-  const inserted = await db.insert(ladderSettingsTable).values({}).returning();
-  return inserted[0];
+  if (rows.length > 0) return rows[0]!;
+  const [inserted] = await db.insert(ladderSettingsTable).values({}).returning();
+  return inserted!;
 }
 
+// ── Routes ───────────────────────────────────────────────────
+
+// GET /ladder-settings
 router.get("/", async (_req, res) => {
   try {
     const settings = await getOrCreateSettings();
@@ -40,54 +41,52 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// PUT /ladder-settings — admin only
 router.put("/", requireAdmin, async (req, res) => {
   try {
     const settings = await getOrCreateSettings();
-    const {
-      kFactor, minMatchesForDisplay, maxChallengesPerWeek, maxChallengesSameOpponentPerWeek,
-      challengeExpiryHours, maxDeclinesPerWeek, maxDeclinesSameOpponentPerWeek,
-      noShowExpiryDays, playoffMinPlayers, playoffSize, playoffFormat, defaultMatchFormat,
-    } = req.body as {
-      kFactor?: number;
-      minMatchesForDisplay?: number;
-      maxChallengesPerWeek?: number;
-      maxChallengesSameOpponentPerWeek?: number;
-      challengeExpiryHours?: number;
-      maxDeclinesPerWeek?: number;
-      maxDeclinesSameOpponentPerWeek?: number;
-      noShowExpiryDays?: number;
-      playoffMinPlayers?: number;
-      playoffSize?: number;
-      playoffFormat?: string;
-      defaultMatchFormat?: string;
-    };
+
+    const { kFactor, minMatchesForDisplay, playoffSize, playoffFormat, defaultMatchFormat } =
+      req.body as {
+        kFactor?: number;
+        minMatchesForDisplay?: number;
+        playoffSize?: number;
+        playoffFormat?: string;
+        defaultMatchFormat?: string;
+      };
+
     const VALID_FORMATS = ["BO1", "BO3", "BO5"];
     if (defaultMatchFormat !== undefined && !VALID_FORMATS.includes(defaultMatchFormat)) {
-      res.status(400).json({ error: `Invalid defaultMatchFormat. Must be one of: ${VALID_FORMATS.join(", ")}` });
+      res.status(400).json({
+        error: `Invalid defaultMatchFormat. Must be one of: ${VALID_FORMATS.join(", ")}`,
+      });
       return;
     }
 
-    const { eq } = await import("drizzle-orm");
-    const updated = await db
+    const VALID_PLAYOFF_FORMATS = ["single_elimination", "double_elimination"];
+    if (playoffFormat !== undefined && !VALID_PLAYOFF_FORMATS.includes(playoffFormat)) {
+      res.status(400).json({
+        error: `Invalid playoffFormat. Must be one of: ${VALID_PLAYOFF_FORMATS.join(", ")}`,
+      });
+      return;
+    }
+
+    const updates: Partial<typeof ladderSettingsTable.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    if (kFactor !== undefined) updates.kFactor = kFactor;
+    if (minMatchesForDisplay !== undefined) updates.minMatchesForDisplay = minMatchesForDisplay;
+    if (playoffSize !== undefined) updates.playoffSize = playoffSize;
+    if (playoffFormat !== undefined) updates.playoffFormat = playoffFormat;
+    if (defaultMatchFormat !== undefined) updates.defaultMatchFormat = defaultMatchFormat;
+
+    const [updated] = await db
       .update(ladderSettingsTable)
-      .set({
-        ...(kFactor !== undefined && { kFactor }),
-        ...(minMatchesForDisplay !== undefined && { minMatchesForDisplay }),
-        ...(maxChallengesPerWeek !== undefined && { maxChallengesPerWeek }),
-        ...(maxChallengesSameOpponentPerWeek !== undefined && { maxChallengesSameOpponentPerWeek }),
-        ...(challengeExpiryHours !== undefined && { challengeExpiryHours }),
-        ...(maxDeclinesPerWeek !== undefined && { maxDeclinesPerWeek }),
-        ...(maxDeclinesSameOpponentPerWeek !== undefined && { maxDeclinesSameOpponentPerWeek }),
-        ...(noShowExpiryDays !== undefined && { noShowExpiryDays }),
-        ...(playoffMinPlayers !== undefined && { playoffMinPlayers }),
-        ...(playoffSize !== undefined && { playoffSize }),
-        ...(playoffFormat !== undefined && { playoffFormat }),
-        ...(defaultMatchFormat !== undefined && { defaultMatchFormat }),
-        updatedAt: new Date(),
-      })
+      .set(updates)
       .where(eq(ladderSettingsTable.id, settings.id))
       .returning();
-    res.json(formatSettings(updated[0]));
+
+    res.json(formatSettings(updated!));
   } catch (err) {
     res.status(500).json({ error: "Failed to update ladder settings" });
   }

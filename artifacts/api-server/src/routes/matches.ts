@@ -1,400 +1,606 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable, vodEntriesTable, seasonsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  matchesTable,
+  matchPlayersTable,
+  teamsTable,
+  eventsTable,
+  vodEntriesTable,
+  ladderSettingsTable,
+  eloHistoryTable,
+  playersTable,
+} from "@workspace/db";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges } from "../lib/badges";
 
 const router = Router();
 
+// ── Helpers ──────────────────────────────────────────────────
+
+/** Returns true if the match is publicly visible at the current time. */
+function isVisible(m: typeof matchesTable.$inferSelect): boolean {
+  if (!m.visibleAfter) {
+    // Default: visible 7 days after creation
+    return Date.now() >= m.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000;
+  }
+  return Date.now() >= m.visibleAfter.getTime();
+}
+
+// ── Formatters ───────────────────────────────────────────────
+
 function formatMatch(
-  row: typeof matchesTable.$inferSelect,
-  eventTitle: string | null
+  m: typeof matchesTable.$inferSelect,
+  extra: {
+    teamAName?: string | null;
+    teamBName?: string | null;
+    teamATag?: string | null;
+    teamBTag?: string | null;
+    eventTitle?: string | null;
+    eventSlug?: string | null;
+  } = {}
 ) {
   return {
-    id: row.id,
-    eventId: row.eventId,
-    eventTitle,
-    matchTitle: row.matchTitle,
-    sideAName: row.sideAName,
-    sideBName: row.sideBName,
-    winnerName: row.winnerName,
-    score: row.score,
-    format: row.format,
-    vodUrl: row.vodUrl,
-    playerAId: row.playerAId,
-    playerBId: row.playerBId,
-    playerAEloBefore: row.playerAEloBefore,
-    playerAEloAfter: row.playerAEloAfter,
-    playerBEloBefore: row.playerBEloBefore,
-    playerBEloAfter: row.playerBEloAfter,
-    seasonId: row.seasonId,
-    isPlayoff: row.isPlayoff ?? false,
-    round: row.round,
-    bracketSlot: row.bracketSlot,
-    nextMatchId: row.nextMatchId,
-    isLosersBracket: row.isLosersBracket ?? false,
-    groupId: row.groupId,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    id: m.id,
+    teamAId: m.teamAId ?? null,
+    teamBId: m.teamBId ?? null,
+    teamAName: extra.teamAName ?? null,
+    teamBName: extra.teamBName ?? null,
+    teamATag: extra.teamATag ?? null,
+    teamBTag: extra.teamBTag ?? null,
+    sideAName: m.sideAName,
+    sideBName: m.sideBName,
+    matchTitle: m.matchTitle,
+    winnerName: m.winnerName,
+    score: m.score ?? null,
+    format: m.format ?? null,
+    teamAEloBefore: m.teamAEloBefore ?? null,
+    teamAEloAfter: m.teamAEloAfter ?? null,
+    teamBEloBefore: m.teamBEloBefore ?? null,
+    teamBEloAfter: m.teamBEloAfter ?? null,
+    gameId: m.gameId ?? null,
+    gameDuration: m.gameDuration ?? null,
+    gameVersion: m.gameVersion ?? null,
+    resultSource: m.resultSource,
+    visibleAfter: m.visibleAfter?.toISOString() ?? null,
+    seasonId: m.seasonId ?? null,
+    eventId: m.eventId ?? null,
+    eventTitle: extra.eventTitle ?? null,
+    eventSlug: extra.eventSlug ?? null,
+    isPlayoff: m.isPlayoff,
+    round: m.round ?? null,
+    bracketSlot: m.bracketSlot ?? null,
+    nextMatchId: m.nextMatchId ?? null,
+    isLosersBracket: m.isLosersBracket ?? null,
+    groupId: m.groupId ?? null,
+    createdAt: m.createdAt.toISOString(),
+    updatedAt: m.updatedAt.toISOString(),
   };
 }
 
-router.get("/", async (req, res) => {
-  const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : null;
-  const format = req.query.format as string | undefined;
-  const search = req.query.search as string | undefined;
-  const seasonId = req.query.seasonId ? parseInt(req.query.seasonId as string) : null;
-  const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null;
-
-  let rows = await db
-    .select({
-      id: matchesTable.id,
-      eventId: matchesTable.eventId,
-      matchTitle: matchesTable.matchTitle,
-      sideAName: matchesTable.sideAName,
-      sideBName: matchesTable.sideBName,
-      winnerName: matchesTable.winnerName,
-      score: matchesTable.score,
-      format: matchesTable.format,
-      vodUrl: matchesTable.vodUrl,
-      playerAId: matchesTable.playerAId,
-      playerBId: matchesTable.playerBId,
-      playerAEloBefore: matchesTable.playerAEloBefore,
-      playerAEloAfter: matchesTable.playerAEloAfter,
-      playerBEloBefore: matchesTable.playerBEloBefore,
-      playerBEloAfter: matchesTable.playerBEloAfter,
-      seasonId: matchesTable.seasonId,
-      isPlayoff: matchesTable.isPlayoff,
-      round: matchesTable.round,
-      bracketSlot: matchesTable.bracketSlot,
-      isLosersBracket: matchesTable.isLosersBracket,
-      createdAt: matchesTable.createdAt,
-      updatedAt: matchesTable.updatedAt,
-      eventTitle: eventsTable.title,
-    })
-    .from(matchesTable)
-    .leftJoin(eventsTable, eq(matchesTable.eventId, eventsTable.id))
-    .orderBy(matchesTable.createdAt);
-
-  if (eventId) rows = rows.filter((r) => r.eventId === eventId);
-  if (format) rows = rows.filter((r) => r.format === format);
-  if (seasonId) rows = rows.filter((r) => r.seasonId === seasonId);
-  if (playerId) {
-    rows = rows.filter(
-      (r) => r.playerAId === playerId || r.playerBId === playerId
-    );
-  }
-  if (search) {
-    const s = search.toLowerCase();
-    rows = rows.filter(
-      (r) =>
-        r.matchTitle.toLowerCase().includes(s) ||
-        r.sideAName.toLowerCase().includes(s) ||
-        r.sideBName.toLowerCase().includes(s) ||
-        r.winnerName.toLowerCase().includes(s)
-    );
-  }
-
-  res.json(
-    rows.map((r) => ({
-      id: r.id,
-      eventId: r.eventId,
-      eventTitle: r.eventTitle ?? null,
-      matchTitle: r.matchTitle,
-      sideAName: r.sideAName,
-      sideBName: r.sideBName,
-      winnerName: r.winnerName,
-      score: r.score,
-      format: r.format,
-      vodUrl: r.vodUrl,
-      playerAId: r.playerAId,
-      playerBId: r.playerBId,
-      playerAEloBefore: r.playerAEloBefore,
-      playerAEloAfter: r.playerAEloAfter,
-      playerBEloBefore: r.playerBEloBefore,
-      playerBEloAfter: r.playerBEloAfter,
-      seasonId: r.seasonId,
-      isPlayoff: r.isPlayoff ?? false,
-      round: r.round ?? null,
-      bracketSlot: r.bracketSlot ?? null,
-      isLosersBracket: r.isLosersBracket ?? false,
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-    }))
-  );
-});
-
-router.post("/", requireAdmin, async (req, res) => {
-  const {
-    eventId, matchTitle, sideAName, sideBName, winnerName,
-    score, format, vodUrl, playerAId, playerBId, seasonId, isPlayoff,
-    round, bracketSlot, isLosersBracket,
-  } = req.body as {
-    eventId?: number | null;
-    matchTitle?: string;
-    sideAName?: string;
-    sideBName?: string;
-    winnerName?: string;
-    score?: string | null;
-    format?: string | null;
-    vodUrl?: string | null;
-    playerAId?: number | null;
-    playerBId?: number | null;
-    seasonId?: number | null;
-    isPlayoff?: boolean | null;
-    round?: number | null;
-    bracketSlot?: number | null;
-    isLosersBracket?: boolean | null;
+function formatMatchPlayer(
+  mp: typeof matchPlayersTable.$inferSelect,
+  playerRiotId?: string | null
+) {
+  return {
+    id: mp.id,
+    matchId: mp.matchId,
+    playerId: mp.playerId ?? null,
+    playerRiotId: playerRiotId ?? null,
+    teamSide: mp.teamSide,
+    champion: mp.champion ?? null,
+    teamPosition: mp.teamPosition ?? null,
+    kills: mp.kills,
+    deaths: mp.deaths,
+    assists: mp.assists,
+    cs: mp.cs,
+    neutralCs: mp.neutralCs,
+    gold: mp.gold,
+    damageToChampions: mp.damageToChampions,
+    visionScore: mp.visionScore,
+    level: mp.level ?? null,
+    win: mp.win,
+    item0: mp.item0 ?? null,
+    item1: mp.item1 ?? null,
+    item2: mp.item2 ?? null,
+    item3: mp.item3 ?? null,
+    item4: mp.item4 ?? null,
+    item5: mp.item5 ?? null,
+    item6: mp.item6 ?? null,
+    summonerSpell1: mp.summonerSpell1 ?? null,
+    summonerSpell2: mp.summonerSpell2 ?? null,
+    createdAt: mp.createdAt.toISOString(),
   };
+}
 
-  if (!matchTitle || !sideAName || !sideBName || !winnerName) {
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
+/** Apply ELO update for both teams inside a transaction. */
+async function applyTeamElo(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  matchId: number,
+  teamAId: number,
+  teamBId: number,
+  winnerName: string,
+  sideAName: string,
+  kFactor: number
+): Promise<{ teamABefore: number; teamAAfter: number; teamBBefore: number; teamBAfter: number }> {
+  const [teamA] = await tx.select().from(teamsTable).where(eq(teamsTable.id, teamAId));
+  const [teamB] = await tx.select().from(teamsTable).where(eq(teamsTable.id, teamBId));
 
-  const VALID_FORMATS = ["BO1", "BO3", "BO5"];
+  if (!teamA || !teamB) throw new Error("Team not found for ELO update");
 
-  let resolvedFormat = format || null;
-  if (!resolvedFormat) {
-    if (seasonId) {
-      const [season] = await db.select().from(seasonsTable).where(eq(seasonsTable.id, Number(seasonId)));
-      if (season?.defaultMatchFormat) resolvedFormat = season.defaultMatchFormat;
-    }
-    if (!resolvedFormat) {
-      const [settings] = await db.select().from(ladderSettingsTable).limit(1);
-      resolvedFormat = settings?.defaultMatchFormat ?? "BO1";
-    }
-  }
+  const teamAWon = winnerName === sideAName;
+  const teamABefore = teamA.teamElo;
+  const teamBBefore = teamB.teamElo;
+  const teamAAfter = calculateElo(teamABefore, teamBBefore, teamAWon, kFactor);
+  const teamBAfter = calculateElo(teamBBefore, teamABefore, !teamAWon, kFactor);
 
-  if (resolvedFormat && !VALID_FORMATS.includes(resolvedFormat)) {
-    res.status(400).json({ error: `Invalid format. Must be one of: ${VALID_FORMATS.join(", ")}` });
-    return;
-  }
-
-  // Compute ELO deltas if both players are linked
-  let playerAEloBefore: number | null = null;
-  let playerAEloAfter: number | null = null;
-  let playerBEloBefore: number | null = null;
-  let playerBEloAfter: number | null = null;
-  let playerA: typeof playersTable.$inferSelect | null = null;
-  let playerB: typeof playersTable.$inferSelect | null = null;
-
-  if (playerAId && playerBId) {
-    const [pA] = await db.select().from(playersTable).where(eq(playersTable.id, Number(playerAId)));
-    const [pB] = await db.select().from(playersTable).where(eq(playersTable.id, Number(playerBId)));
-
-    if (pA && pB) {
-      playerA = pA;
-      playerB = pB;
-      playerAEloBefore = pA.currentElo;
-      playerBEloBefore = pB.currentElo;
-
-      // C10: Read K-factor from ladderSettings instead of using hardcoded value
-      const [settings] = await db.select().from(ladderSettingsTable).limit(1);
-      const kFactor = settings?.kFactor ?? 32;
-
-      const playerAWon = winnerName === sideAName;
-      playerAEloAfter = calculateElo(pA.currentElo, pB.currentElo, playerAWon, kFactor);
-      playerBEloAfter = calculateElo(pB.currentElo, pA.currentElo, !playerAWon, kFactor);
-    }
-  }
-
-  // Wrap match insert + ELO player updates in a transaction for data integrity
-  const row = await db.transaction(async (tx) => {
-    const [inserted] = await tx
-      .insert(matchesTable)
-      .values({
-        eventId: eventId ? Number(eventId) : null,
-        matchTitle,
-        sideAName,
-        sideBName,
-        winnerName,
-        score: score || null,
-        format: resolvedFormat,
-        vodUrl: vodUrl || null,
-        playerAId: playerAId ? Number(playerAId) : null,
-        playerBId: playerBId ? Number(playerBId) : null,
-        playerAEloBefore,
-        playerAEloAfter,
-        playerBEloBefore,
-        playerBEloAfter,
-        seasonId: seasonId ? Number(seasonId) : null,
-        isPlayoff: isPlayoff || false,
-        round: round ? Number(round) : null,
-        bracketSlot: bracketSlot ? Number(bracketSlot) : null,
-        isLosersBracket: isLosersBracket || false,
-      })
-      .returning();
-
-    // Update player ELO + record outcome atomically with match insert
-    if (playerA && playerB && playerAEloAfter !== null && playerBEloAfter !== null) {
-      const playerAWon = winnerName === sideAName;
-
-      await tx.update(playersTable).set({
-        currentElo: playerAEloAfter,
-        peakElo: Math.max(playerA.peakElo, playerAEloAfter),
-        wins: playerA.wins + (playerAWon ? 1 : 0),
-        losses: playerA.losses + (playerAWon ? 0 : 1),
-        updatedAt: new Date(),
-      }).where(eq(playersTable.id, playerA.id));
-
-      await tx.update(playersTable).set({
-        currentElo: playerBEloAfter,
-        peakElo: Math.max(playerB.peakElo, playerBEloAfter),
-        wins: playerB.wins + (playerAWon ? 0 : 1),
-        losses: playerB.losses + (playerAWon ? 1 : 0),
-        updatedAt: new Date(),
-      }).where(eq(playersTable.id, playerB.id));
-
-      // C7: Write elo_history for both players
-      await tx.insert(eloHistoryTable).values({
-        playerId: playerA.id,
-        elo: playerAEloAfter,
-        delta: playerAEloAfter - playerA.currentElo,
-        matchId: inserted!.id,
-        reason: "match",
-      });
-      await tx.insert(eloHistoryTable).values({
-        playerId: playerB.id,
-        elo: playerBEloAfter,
-        delta: playerBEloAfter - playerB.currentElo,
-        matchId: inserted!.id,
-        reason: "match",
-      });
-    }
-
-    return inserted!;
-  });
-
-  // C23: Auto-award badges after match
-  if (playerA && playerB) {
-    checkMatchBadges(playerA.id, playerB.id).catch((err) =>
-      console.error("[badges] Error checking match badges:", err)
-    );
-  }
-
-  const event = eventId
-    ? (await db.select().from(eventsTable).where(eq(eventsTable.id, Number(eventId))))[0]
-    : null;
-
-  res.status(201).json(formatMatch(row, event?.title ?? null));
-});
-
-router.get("/:id", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  const [row] = await db
-    .select({
-      match: matchesTable,
-      eventTitle: eventsTable.title,
-      eventSlug: eventsTable.slug,
-    })
-    .from(matchesTable)
-    .leftJoin(eventsTable, eq(matchesTable.eventId, eventsTable.id))
-    .where(eq(matchesTable.id, id));
-
-  if (!row) { res.status(404).json({ error: "Not found" }); return; }
-
-  const { match, eventTitle, eventSlug } = row;
-
-  let playerARiotId: string | null = null;
-  let playerBRiotId: string | null = null;
-
-  if (match.playerAId) {
-    const [pA] = await db.select({ riotId: playersTable.riotId }).from(playersTable).where(eq(playersTable.id, match.playerAId));
-    playerARiotId = pA?.riotId ?? null;
-  }
-  if (match.playerBId) {
-    const [pB] = await db.select({ riotId: playersTable.riotId }).from(playersTable).where(eq(playersTable.id, match.playerBId));
-    playerBRiotId = pB?.riotId ?? null;
-  }
-
-  // M2: Fetch related VODs for this match
-  const matchVods = await db
-    .select()
-    .from(vodEntriesTable)
-    .where(eq(vodEntriesTable.matchId, id));
-
-  res.json({
-    ...formatMatch(match, eventTitle ?? null),
-    eventSlug: eventSlug ?? null,
-    playerARiotId,
-    playerBRiotId,
-    vods: matchVods.map((v) => ({
-      id: v.id,
-      title: v.title,
-      videoUrl: v.videoUrl,
-      playerId: v.playerId,
-      champion: v.champion,
-      opponentChampion: v.opponentChampion,
-      position: v.position,
-      createdAt: v.createdAt.toISOString(),
-    })),
-  });
-});
-
-router.put("/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  const {
-    eventId, matchTitle, sideAName, sideBName, winnerName,
-    score, format, vodUrl, seasonId, isPlayoff,
-    round, bracketSlot, isLosersBracket,
-  } = req.body as {
-    eventId?: number | null;
-    matchTitle?: string;
-    sideAName?: string;
-    sideBName?: string;
-    winnerName?: string;
-    score?: string | null;
-    format?: string | null;
-    vodUrl?: string | null;
-    seasonId?: number | null;
-    isPlayoff?: boolean | null;
-    round?: number | null;
-    bracketSlot?: number | null;
-    isLosersBracket?: boolean | null;
-  };
-
-  const [row] = await db
-    .update(matchesTable)
+  // Update Team A
+  await tx
+    .update(teamsTable)
     .set({
-      eventId: eventId !== undefined ? (eventId ? Number(eventId) : null) : undefined,
+      teamElo: teamAAfter,
+      peakElo: Math.max(teamA.peakElo, teamAAfter),
+      wins: teamAWon ? teamA.wins + 1 : teamA.wins,
+      losses: teamAWon ? teamA.losses : teamA.losses + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(teamsTable.id, teamAId));
+
+  // Update Team B
+  await tx
+    .update(teamsTable)
+    .set({
+      teamElo: teamBAfter,
+      peakElo: Math.max(teamB.peakElo, teamBAfter),
+      wins: !teamAWon ? teamB.wins + 1 : teamB.wins,
+      losses: !teamAWon ? teamB.losses : teamB.losses + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(teamsTable.id, teamBId));
+
+  // Write elo_history for both teams
+  await tx.insert(eloHistoryTable).values([
+    {
+      teamId: teamAId,
+      elo: teamAAfter,
+      delta: teamAAfter - teamABefore,
+      matchId,
+      reason: "match",
+    },
+    {
+      teamId: teamBId,
+      elo: teamBAfter,
+      delta: teamBAfter - teamBBefore,
+      matchId,
+      reason: "match",
+    },
+  ]);
+
+  return { teamABefore, teamAAfter, teamBBefore, teamBAfter };
+}
+
+// ── Routes ───────────────────────────────────────────────────
+
+// GET /matches — list matches with optional filters
+router.get("/", async (req, res) => {
+  try {
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : null;
+    const seasonId = req.query.seasonId ? parseInt(req.query.seasonId as string) : null;
+    const teamId = req.query.teamId ? parseInt(req.query.teamId as string) : null;
+    const search = req.query.search as string | undefined;
+
+    let rows = await db
+      .select({
+        match: matchesTable,
+        teamAName: { name: teamsTable.name, tag: teamsTable.tag },
+        eventTitle: eventsTable.title,
+      })
+      .from(matchesTable)
+      .leftJoin(teamsTable, eq(matchesTable.teamAId, teamsTable.id))
+      .leftJoin(eventsTable, eq(matchesTable.eventId, eventsTable.id))
+      .orderBy(desc(matchesTable.createdAt));
+
+    // In-memory filters for teamB and search (avoids complex joins)
+    let filtered = rows;
+    if (eventId) filtered = filtered.filter((r) => r.match.eventId === eventId);
+    if (seasonId) filtered = filtered.filter((r) => r.match.seasonId === seasonId);
+    if (teamId)
+      filtered = filtered.filter(
+        (r) => r.match.teamAId === teamId || r.match.teamBId === teamId
+      );
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          r.match.matchTitle.toLowerCase().includes(s) ||
+          r.match.sideAName.toLowerCase().includes(s) ||
+          r.match.sideBName.toLowerCase().includes(s)
+      );
+    }
+
+    // Fetch Team B names separately (inArray avoids complex self-join on teams)
+    const teamBIds = [...new Set(filtered.map((r) => r.match.teamBId).filter(Boolean))] as number[];
+    const teamBMap: Record<number, { name: string; tag: string }> = {};
+    if (teamBIds.length > 0) {
+      const teamBRows = await db
+        .select()
+        .from(teamsTable)
+        .where(inArray(teamsTable.id, teamBIds));
+      for (const t of teamBRows) teamBMap[t.id] = { name: t.name, tag: t.tag };
+    }
+
+    res.json(
+      filtered.map((r) => ({
+        ...formatMatch(r.match, {
+          teamAName: r.teamAName?.name ?? null,
+          teamATag: r.teamAName?.tag ?? null,
+          teamBName: teamBMap[r.match.teamBId ?? -1]?.name ?? null,
+          teamBTag: teamBMap[r.match.teamBId ?? -1]?.tag ?? null,
+          eventTitle: r.eventTitle ?? null,
+        }),
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch matches" });
+  }
+});
+
+// POST /matches — create match manually (admin), applies team ELO if both teams given
+router.post("/", requireAdmin, async (req, res) => {
+  try {
+    const {
+      teamAId,
+      teamBId,
       matchTitle,
       sideAName,
       sideBName,
       winnerName,
-      score: score !== undefined ? (score || null) : undefined,
-      format: format !== undefined ? (format || null) : undefined,
-      vodUrl: vodUrl !== undefined ? (vodUrl || null) : undefined,
-      seasonId: seasonId !== undefined ? (seasonId ? Number(seasonId) : null) : undefined,
-      isPlayoff: isPlayoff !== undefined ? (isPlayoff || false) : undefined,
-      round: round !== undefined ? (round ? Number(round) : null) : undefined,
-      bracketSlot: bracketSlot !== undefined ? (bracketSlot ? Number(bracketSlot) : null) : undefined,
-      isLosersBracket: isLosersBracket !== undefined ? (isLosersBracket || false) : undefined,
-      updatedAt: new Date(),
-    })
-    .where(eq(matchesTable.id, id))
-    .returning();
+      score,
+      format,
+      resultSource,
+      eventId,
+      seasonId,
+      isPlayoff,
+      round,
+      bracketSlot,
+      isLosersBracket,
+    } = req.body as {
+      teamAId?: number | null;
+      teamBId?: number | null;
+      matchTitle?: string;
+      sideAName?: string;
+      sideBName?: string;
+      winnerName?: string;
+      score?: string | null;
+      format?: string | null;
+      resultSource?: string | null;
+      eventId?: number | null;
+      seasonId?: number | null;
+      isPlayoff?: boolean | null;
+      round?: number | null;
+      bracketSlot?: number | null;
+      isLosersBracket?: boolean | null;
+    };
 
-  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    if (!matchTitle || !sideAName || !sideBName || !winnerName) {
+      res.status(400).json({ error: "matchTitle, sideAName, sideBName, and winnerName are required" });
+      return;
+    }
 
-  const event = row.eventId
-    ? (await db.select().from(eventsTable).where(eq(eventsTable.id, row.eventId)))[0]
-    : null;
+    const [settings] = await db.select().from(ladderSettingsTable).limit(1);
+    const kFactor = settings?.kFactor ?? 32;
 
-  res.json(formatMatch(row, event?.title ?? null));
+    let createdMatchId: number;
+    let eloSnapshot = {
+      teamAEloBefore: null as number | null,
+      teamAEloAfter: null as number | null,
+      teamBEloBefore: null as number | null,
+      teamBEloAfter: null as number | null,
+    };
+
+    await db.transaction(async (tx) => {
+      // Insert match first (without ELO fields)
+      const [match] = await tx
+        .insert(matchesTable)
+        .values({
+          teamAId: teamAId ? Number(teamAId) : null,
+          teamBId: teamBId ? Number(teamBId) : null,
+          matchTitle,
+          sideAName,
+          sideBName,
+          winnerName,
+          score: score ?? null,
+          format: format ?? null,
+          resultSource: resultSource ?? "admin_manual",
+          eventId: eventId ? Number(eventId) : null,
+          seasonId: seasonId ? Number(seasonId) : null,
+          isPlayoff: isPlayoff ?? false,
+          round: round ?? null,
+          bracketSlot: bracketSlot ?? null,
+          isLosersBracket: isLosersBracket ?? false,
+        })
+        .returning();
+
+      createdMatchId = match!.id;
+
+      // Apply ELO only when both teams are known
+      if (teamAId && teamBId) {
+        const elo = await applyTeamElo(
+          tx,
+          createdMatchId,
+          Number(teamAId),
+          Number(teamBId),
+          winnerName,
+          sideAName,
+          kFactor
+        );
+        eloSnapshot = {
+          teamAEloBefore: elo.teamABefore,
+          teamAEloAfter: elo.teamAAfter,
+          teamBEloBefore: elo.teamBBefore,
+          teamBEloAfter: elo.teamBAfter,
+        };
+
+        // Back-fill ELO snapshot on the match row
+        await tx
+          .update(matchesTable)
+          .set(eloSnapshot)
+          .where(eq(matchesTable.id, createdMatchId));
+      }
+    });
+
+    // Fire badge checks async (non-blocking)
+    checkMatchBadges(createdMatchId!).catch((err) =>
+      console.error("[badges] Error checking match badges:", err)
+    );
+
+    const [created] = await db.select().from(matchesTable).where(eq(matchesTable.id, createdMatchId!));
+    res.status(201).json(formatMatch(created!));
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "A match with this gameId already exists" });
+      return;
+    }
+    res.status(500).json({ error: "Failed to create match" });
+  }
 });
 
+// GET /matches/:id — match detail with match_players and vods
+router.get("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, id));
+    if (!match) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    // Enrich team names
+    const teamA = match.teamAId
+      ? (await db.select().from(teamsTable).where(eq(teamsTable.id, match.teamAId)))[0]
+      : null;
+    const teamB = match.teamBId
+      ? (await db.select().from(teamsTable).where(eq(teamsTable.id, match.teamBId)))[0]
+      : null;
+
+    const event = match.eventId
+      ? (await db.select().from(eventsTable).where(eq(eventsTable.id, match.eventId)))[0]
+      : null;
+
+    // match_players with player riotId
+    const mpRows = await db
+      .select({
+        mp: matchPlayersTable,
+        playerRiotId: playersTable.riotId,
+      })
+      .from(matchPlayersTable)
+      .leftJoin(playersTable, eq(matchPlayersTable.playerId, playersTable.id))
+      .where(eq(matchPlayersTable.matchId, id))
+      .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
+
+    const vods = await db
+      .select()
+      .from(vodEntriesTable)
+      .where(eq(vodEntriesTable.matchId, id));
+
+    res.json({
+      ...formatMatch(match, {
+        teamAName: teamA?.name ?? null,
+        teamATag: teamA?.tag ?? null,
+        teamBName: teamB?.name ?? null,
+        teamBTag: teamB?.tag ?? null,
+        eventTitle: event?.title ?? null,
+        eventSlug: event?.slug ?? null,
+      }),
+      matchPlayers: mpRows.map((r) =>
+        formatMatchPlayer(r.mp, r.playerRiotId ?? null)
+      ),
+      vods: vods.map((v) => ({
+        id: v.id,
+        matchId: v.matchId ?? null,
+        title: v.title,
+        videoUrl: v.videoUrl,
+        champion: v.champion ?? null,
+        createdAt: v.createdAt.toISOString(),
+        updatedAt: v.updatedAt.toISOString(),
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch match" });
+  }
+});
+
+// PUT /matches/:id — update match (admin)
+router.put("/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const {
+      teamAId,
+      teamBId,
+      matchTitle,
+      sideAName,
+      sideBName,
+      winnerName,
+      score,
+      format,
+      resultSource,
+      eventId,
+      seasonId,
+      isPlayoff,
+      round,
+      bracketSlot,
+      isLosersBracket,
+    } = req.body as Partial<typeof matchesTable.$inferInsert>;
+
+    const updates: Partial<typeof matchesTable.$inferInsert> = { updatedAt: new Date() };
+    if (teamAId !== undefined) updates.teamAId = teamAId;
+    if (teamBId !== undefined) updates.teamBId = teamBId;
+    if (matchTitle !== undefined) updates.matchTitle = matchTitle;
+    if (sideAName !== undefined) updates.sideAName = sideAName;
+    if (sideBName !== undefined) updates.sideBName = sideBName;
+    if (winnerName !== undefined) updates.winnerName = winnerName;
+    if (score !== undefined) updates.score = score;
+    if (format !== undefined) updates.format = format;
+    if (resultSource !== undefined) updates.resultSource = resultSource;
+    if (eventId !== undefined) updates.eventId = eventId;
+    if (seasonId !== undefined) updates.seasonId = seasonId;
+    if (isPlayoff !== undefined) updates.isPlayoff = isPlayoff;
+    if (round !== undefined) updates.round = round;
+    if (bracketSlot !== undefined) updates.bracketSlot = bracketSlot;
+    if (isLosersBracket !== undefined) updates.isLosersBracket = isLosersBracket;
+
+    const [row] = await db
+      .update(matchesTable)
+      .set(updates)
+      .where(eq(matchesTable.id, id))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+    res.json(formatMatch(row));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update match" });
+  }
+});
+
+// DELETE /matches/:id — delete match (admin)
 router.delete("/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  await db.delete(matchesTable).where(eq(matchesTable.id, id));
-  res.json({ success: true });
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    await db.delete(matchesTable).where(eq(matchesTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete match" });
+  }
+});
+
+// GET /matches/:id/players — per-player stats
+router.get("/:id/players", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        mp: matchPlayersTable,
+        playerRiotId: playersTable.riotId,
+      })
+      .from(matchPlayersTable)
+      .leftJoin(playersTable, eq(matchPlayersTable.playerId, playersTable.id))
+      .where(eq(matchPlayersTable.matchId, id))
+      .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
+
+    res.json(rows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch match players" });
+  }
+});
+
+// PUT /matches/:id/visibility — set match visibility (captain or admin)
+router.put("/:id/visibility", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const { visibility } = req.body as { visibility?: "public" | "private" | "default" };
+    if (!visibility || !["public", "private", "default"].includes(visibility)) {
+      res.status(400).json({ error: "visibility must be 'public', 'private', or 'default'" });
+      return;
+    }
+
+    const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, id));
+    if (!match) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    // Check authorization: must be admin or captain of one of the teams
+    const isAdmin = !!req.session.adminId;
+    if (!isAdmin) {
+      const playerId = req.session.playerId;
+      if (!playerId) {
+        res.status(403).json({ error: "Not authorized" });
+        return;
+      }
+      const isCaptainA = match.teamAId
+        ? (await db.select().from(teamsTable).where(
+            and(eq(teamsTable.id, match.teamAId), eq(teamsTable.captainPlayerId, playerId))
+          )).length > 0
+        : false;
+      const isCaptainB = match.teamBId
+        ? (await db.select().from(teamsTable).where(
+            and(eq(teamsTable.id, match.teamBId), eq(teamsTable.captainPlayerId, playerId))
+          )).length > 0
+        : false;
+
+      if (!isCaptainA && !isCaptainB) {
+        res.status(403).json({ error: "Only team captains can change match visibility" });
+        return;
+      }
+    }
+
+    // Map visibility enum to DB value
+    let visibleAfter: Date | null;
+    if (visibility === "public") {
+      visibleAfter = new Date(0); // epoch = always visible
+    } else if (visibility === "private") {
+      visibleAfter = new Date("9999-01-01"); // far future = never visible
+    } else {
+      visibleAfter = null; // default = 7 days from createdAt
+    }
+
+    await db
+      .update(matchesTable)
+      .set({ visibleAfter, updatedAt: new Date() })
+      .where(eq(matchesTable.id, id));
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update match visibility" });
+  }
 });
 
 export default router;

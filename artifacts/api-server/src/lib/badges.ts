@@ -1,16 +1,27 @@
 import { db } from "@workspace/db";
-import { playerBadgesTable, matchesTable, playersTable } from "@workspace/db";
-import { eq, or, and, count } from "drizzle-orm";
+import { playerBadgesTable, matchPlayersTable } from "@workspace/db";
+import { eq, and, count, desc } from "drizzle-orm";
+
+// ── Internal helpers ─────────────────────────────────────────
 
 async function hasBadge(playerId: number, badgeType: string): Promise<boolean> {
   const [existing] = await db
     .select({ value: count() })
     .from(playerBadgesTable)
-    .where(and(eq(playerBadgesTable.playerId, playerId), eq(playerBadgesTable.badgeType, badgeType)));
+    .where(
+      and(
+        eq(playerBadgesTable.playerId, playerId),
+        eq(playerBadgesTable.badgeType, badgeType)
+      )
+    );
   return (existing?.value ?? 0) > 0;
 }
 
-async function awardBadge(playerId: number, badgeType: string, seasonId?: number | null) {
+async function awardBadge(
+  playerId: number,
+  badgeType: string,
+  seasonId?: number | null
+): Promise<void> {
   if (await hasBadge(playerId, badgeType)) return;
   await db.insert(playerBadgesTable).values({
     playerId,
@@ -20,57 +31,49 @@ async function awardBadge(playerId: number, badgeType: string, seasonId?: number
   console.log(`[badges] Awarded '${badgeType}' to player ${playerId}`);
 }
 
+// ── Public API ───────────────────────────────────────────────
+
 /**
- * Check and award badges after a match is created.
- * Called with the winning and losing player IDs after ELO update.
+ * Check and award badges after a match is recorded.
+ * Called with the matchId after match_players have been inserted.
+ * All stats come from match_players — never from stale player.wins/losses.
  */
-export async function checkMatchBadges(playerAId: number, playerBId: number) {
-  for (const pid of [playerAId, playerBId]) {
-    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, pid));
-    if (!player) continue;
+export async function checkMatchBadges(matchId: number): Promise<void> {
+  // Get all players in this match
+  const participants = await db
+    .select({ playerId: matchPlayersTable.playerId })
+    .from(matchPlayersTable)
+    .where(eq(matchPlayersTable.matchId, matchId));
 
-    const totalMatches = player.wins + player.losses;
+  const playerIds = [...new Set(
+    participants.map((p) => p.playerId).filter((id): id is number => id !== null)
+  )];
 
-    // first_blood: player's first ever match
-    if (totalMatches === 1) {
-      await awardBadge(pid, "first_blood");
+  for (const playerId of playerIds) {
+    // All match_player rows for this player (lifetime stats)
+    const allEntries = await db
+      .select({ win: matchPlayersTable.win })
+      .from(matchPlayersTable)
+      .where(eq(matchPlayersTable.playerId, playerId))
+      .orderBy(desc(matchPlayersTable.createdAt));
+
+    const totalGames = allEntries.length;
+
+    // first_blood: very first match ever played
+    if (totalGames === 1) {
+      await awardBadge(playerId, "first_blood");
     }
 
-    // veteran: 20+ total matches
-    if (totalMatches >= 20) {
-      await awardBadge(pid, "veteran");
+    // veteran: 20+ total games across all teams
+    if (totalGames >= 20) {
+      await awardBadge(playerId, "veteran");
     }
 
-    // win_streak: 3+ consecutive wins
-    if (player.wins >= 3) {
-      // Check last 3 matches for this player — all wins
-      const recentAsA = await db
-        .select({ winnerName: matchesTable.winnerName, sideAName: matchesTable.sideAName })
-        .from(matchesTable)
-        .where(eq(matchesTable.playerAId, pid))
-        .orderBy(matchesTable.createdAt)
-        .limit(3);
-
-      const recentAsB = await db
-        .select({ winnerName: matchesTable.winnerName, sideBName: matchesTable.sideBName })
-        .from(matchesTable)
-        .where(eq(matchesTable.playerBId, pid))
-        .orderBy(matchesTable.createdAt)
-        .limit(3);
-
-      // Combine, sort by most recent, take 3
-      const allRecent = [
-        ...recentAsA.map((m) => m.winnerName === m.sideAName),
-        ...recentAsB.map((m) => m.winnerName === m.sideBName),
-      ];
-
-      // Simple check: if wins >= 3, check if the last 3 results are all wins
-      // This is a simplified version — for accuracy we'd need to sort by createdAt
-      if (allRecent.length >= 3) {
-        const lastThree = allRecent.slice(-3);
-        if (lastThree.every(Boolean)) {
-          await awardBadge(pid, "win_streak");
-        }
+    // win_streak: last 3 matches are all wins
+    if (totalGames >= 3) {
+      const lastThree = allEntries.slice(0, 3);
+      if (lastThree.every((e) => e.win)) {
+        await awardBadge(playerId, "win_streak");
       }
     }
   }
@@ -78,21 +81,30 @@ export async function checkMatchBadges(playerAId: number, playerBId: number) {
 
 /**
  * Check and award badges after season completion.
- * Called with seasonId and champion playerId.
+ * Called with the seasonId and the winning teamId.
+ * climber badge is currently team-scoped — individual climber badges
+ * can be added in a future phase when per-player ELO is tracked.
  */
 export async function checkSeasonBadges(
   seasonId: number,
-  championId: number,
-  players: { id: number; currentElo: number; startElo?: number }[]
-) {
-  // season_champion badge
-  await awardBadge(championId, "season_champion", seasonId);
+  championTeamId: number
+): Promise<void> {
+  // season_champion: award to all active members of the champion team
+  // Imported inline to avoid circular deps; team_members is in schema
+  const { teamMembersTable } = await import("@workspace/db");
+  const { eq: eqI } = await import("drizzle-orm");
 
-  // climber: 200+ ELO gain in season (approximate — compare current vs base 1000)
-  for (const p of players) {
-    const eloGain = p.currentElo - (p.startElo ?? 1000);
-    if (eloGain >= 200) {
-      await awardBadge(p.id, "climber", seasonId);
-    }
+  const members = await db
+    .select({ playerId: teamMembersTable.playerId })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eqI(teamMembersTable.teamId, championTeamId),
+        eqI(teamMembersTable.status, "active")
+      )
+    );
+
+  for (const m of members) {
+    await awardBadge(m.playerId, "season_champion", seasonId);
   }
 }

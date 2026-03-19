@@ -1,0 +1,81 @@
+Replit Prompt
+
+你收到一個 zip 檔案（vclol-phase1_5-routes.zip），入面係 backend 全部重寫嘅 route files。你嘅工作係將呢啲 files deploy 入 repo 正確位置。
+
+解壓後嘅 files
+routes/
+├── admin.ts
+├── auth.ts
+├── eloHistory.ts
+├── events.ts
+├── index.ts              ← 新 routes/index.ts（route 登記）
+├── index_server.ts       ← 呢個係新嘅 src/index.ts 內容
+├── ladder.ts
+├── ladderSettings.ts
+├── lib/
+│   └── badges.ts
+├── matches.ts
+├── players.ts
+├── registrations.ts
+├── replays.ts
+├── seasonChampions.ts
+├── seasons.ts
+├── seed.ts               ← 呢個係新嘅 scripts/src/seed.ts
+├── teams.ts              ← 全新 file
+└── vods.ts
+
+你要做嘅動作（順序跟住）
+Step 1 — 複製 route files
+將 routes/*.ts（除咗 index_server.ts 同 seed.ts）全部複製去：
+artifacts/api-server/src/routes/
+Step 2 — 複製 badges lib
+將 routes/lib/badges.ts 複製去：
+artifacts/api-server/src/lib/badges.ts
+（覆蓋舊 file）
+Step 3 — 替換 server entry
+將 routes/index_server.ts 嘅內容覆蓋去：
+artifacts/api-server/src/index.ts
+（唔係 routes/index.ts，係 src/index.ts — server 入口）
+Step 4 — 替換 seed script
+將 routes/seed.ts 複製去：
+scripts/src/seed.ts
+Step 5 — 手動刪除以下 files（呢啲係舊 1v1 系統，必須刪除）
+artifacts/api-server/src/routes/challenges.ts
+artifacts/api-server/src/routes/matchmakingQueue.ts
+artifacts/api-server/src/routes/interests.ts
+artifacts/api-server/src/routes/adminSchedule.ts
+artifacts/api-server/src/schedulers/noShowExpiry.ts
+Step 6 — Commit 同 push variant branch
+Commit message：[HANDOFF-REPLIT] Phase 1.5 done — 5v5 backend routes complete
+
+你唔需要做嘅嘢
+
+唔需要改任何 lib/db/src/schema/ files（已由 Claude 完成）
+唔需要改任何 lib/api-spec/openapi.yaml（已由 Claude 完成）
+唔需要重跑 codegen（generated hooks 已係最新版本）
+唔需要改任何 src/pages/ 或 src/components/ files（呢啲係你下一步 Phase 3-6 嘅工作）
+
+
+完成後確認
+artifacts/api-server/src/routes/ 應該包含以下 files（無多無少）：
+admin.ts, auth.ts, eloHistory.ts, events.ts, health.ts,
+index.ts, ladder.ts, ladderSettings.ts, matches.ts,
+notifications.ts, playerBadges.ts, players.ts,
+registrations.ts, replays.ts, seasonChampions.ts,
+seasons.ts, teams.ts, vods.ts, vodTimestamps.ts
+challenges.ts、matchmakingQueue.ts、interests.ts、adminSchedule.ts 呢4個 files 唔應該存在。
+
+下一步（你嘅 Phase 3-6 工作）
+完成上面 deploy 之後，你負責 frontend 更新。詳情見 docs/MIGRATION_PLAN.md（Phase 3-6 section）同 replit.md。主要工作：
+
+新增 /teams 同 /teams/:id 頁面（Team leaderboard + Team Profile）
+重寫 Ladder.tsx → team leaderboard（用 useGetLadder()，entries 係 name/tag/teamElo）
+重寫 MatchDetail.tsx → 10人 stats table（用 useGetMatchPlayers()）
+重寫 PlayerDashboard.tsx → 移除 challenge 系統、ELO display
+重寫 PlayerProfile.tsx → 改用 aggregateStats from match_players
+刪除 ChallengeModal.tsx
+Dashboard.tsx → stats.interests 改做 stats.teams
+ManageLadderSettings.tsx → 移除 7個 challenge fields + schedule section
+ManageMatches.tsx / ManageSeasonDetail.tsx / ManageEventDetail.tsx → 用 team dropdowns
+
+所有新 hooks 已可用：useListTeams、useGetTeam、useGetMatchPlayers、useUpdateMatchVisibility、useGetTeamEloHistory、useGetPlayerChampions 等。

@@ -1,37 +1,41 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { replaySubmissionsTable, vodEntriesTable, matchesTable, playersTable } from "@workspace/db";
+import { replaySubmissionsTable, vodEntriesTable, matchesTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
+// ── Formatter ────────────────────────────────────────────────
+
 function formatReplay(r: typeof replaySubmissionsTable.$inferSelect) {
   return {
     id: r.id,
-    matchId: r.matchId,
-    playerId: r.playerId,
-    roflFilePath: r.roflFilePath,
-    fileSizeBytes: r.fileSizeBytes,
+    matchId: r.matchId ?? null,
+    playerId: r.playerId ?? null,
+    roflFilePath: r.roflFilePath ?? null,
+    fileSizeBytes: r.fileSizeBytes ?? null,
     status: r.status,
     renderMode: r.renderMode,
-    youtubeUrlA: r.youtubeUrlA,
-    youtubeUrlB: r.youtubeUrlB,
-    errorMessage: r.errorMessage,
+    youtubeUrlA: r.youtubeUrlA ?? null,
+    youtubeUrlB: r.youtubeUrlB ?? null,
+    errorMessage: r.errorMessage ?? null,
     submittedAt: r.submittedAt.toISOString(),
     processedAt: r.processedAt?.toISOString() ?? null,
   };
 }
 
-// POST / — submit a replay
+// ── Routes ───────────────────────────────────────────────────
+
+// POST /replays — submit a replay reference (bot or dashboard)
 router.post("/", async (req, res) => {
   try {
     const { matchId, playerId, roflFilePath, fileSizeBytes, renderMode } = req.body as {
-      matchId: number;
+      matchId?: number;
       playerId?: number | null;
       roflFilePath?: string | null;
       fileSizeBytes?: number | null;
-      renderMode: string;
+      renderMode?: string;
     };
 
     if (!matchId || !renderMode) {
@@ -42,7 +46,7 @@ router.post("/", async (req, res) => {
     const [row] = await db
       .insert(replaySubmissionsTable)
       .values({
-        matchId,
+        matchId: Number(matchId),
         playerId: playerId ?? null,
         roflFilePath: roflFilePath ?? null,
         fileSizeBytes: fileSizeBytes ?? null,
@@ -56,7 +60,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// GET /queue — admin: list all queue entries
+// GET /replays/queue — admin: all queue entries ordered by submission time
 router.get("/queue", requireAdmin, async (_req, res) => {
   try {
     const rows = await db
@@ -69,7 +73,7 @@ router.get("/queue", requireAdmin, async (_req, res) => {
   }
 });
 
-// GET /queue/next — render machine: get next pending job
+// GET /replays/queue/next — render machine: next pending job (no auth; machine token TBD)
 router.get("/queue/next", async (_req, res) => {
   try {
     const [row] = await db
@@ -89,18 +93,26 @@ router.get("/queue/next", async (_req, res) => {
   }
 });
 
-// PATCH /:id — render machine: update status
+// PATCH /replays/:id — render machine: update status and/or youtube URLs
 router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id as string);
-    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
 
     const { status, youtubeUrlA, youtubeUrlB, errorMessage } = req.body as {
-      status: string;
+      status?: string;
       youtubeUrlA?: string | null;
       youtubeUrlB?: string | null;
       errorMessage?: string | null;
     };
+
+    if (!status) {
+      res.status(400).json({ error: "status is required" });
+      return;
+    }
 
     const updates: Partial<typeof replaySubmissionsTable.$inferInsert> = { status };
     if (youtubeUrlA !== undefined) updates.youtubeUrlA = youtubeUrlA;
@@ -114,36 +126,49 @@ router.patch("/:id", async (req, res) => {
       .where(eq(replaySubmissionsTable.id, id))
       .returning();
 
-    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    if (!row) {
+      res.status(404).json({ error: "Replay not found" });
+      return;
+    }
 
-    // C18: Auto-create VOD entries when render is complete
+    // Auto-create VOD entries when render completes with YouTube URLs
+    // 5v5 model: create 2 team-perspective VODs (no per-player POV at this stage)
     if (status === "done" && row.matchId && (youtubeUrlA || youtubeUrlB)) {
-      const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, row.matchId));
+      const [match] = await db
+        .select()
+        .from(matchesTable)
+        .where(eq(matchesTable.id, row.matchId));
+
       if (match) {
-        const playerAName = match.sideAName;
-        const playerBName = match.sideBName;
+        const vods: typeof vodEntriesTable.$inferInsert[] = [];
 
         if (youtubeUrlA) {
-          await db.insert(vodEntriesTable).values({
-            eventId: match.eventId,
+          vods.push({
+            eventId: match.eventId ?? null,
             matchId: match.id,
-            title: `${playerAName} vs ${playerBName} — POV A`,
-            format: match.format || "1v1",
-            playerNames: `${playerAName}, ${playerBName}`,
+            title: `${match.sideAName} vs ${match.sideBName} — Spectator Cam`,
+            format: match.format ?? null,
+            playerNames: `${match.sideAName}, ${match.sideBName}`,
             videoUrl: youtubeUrlA,
-            playerId: match.playerAId,
+            playerId: null, // 5v5: not POV-specific
           });
         }
+
         if (youtubeUrlB) {
-          await db.insert(vodEntriesTable).values({
-            eventId: match.eventId,
+          // youtubeUrlB reserved for future per-player POV requests
+          vods.push({
+            eventId: match.eventId ?? null,
             matchId: match.id,
-            title: `${playerBName} vs ${playerAName} — POV B`,
-            format: match.format || "1v1",
-            playerNames: `${playerAName}, ${playerBName}`,
+            title: `${match.sideBName} vs ${match.sideAName} — POV`,
+            format: match.format ?? null,
+            playerNames: `${match.sideAName}, ${match.sideBName}`,
             videoUrl: youtubeUrlB,
-            playerId: match.playerBId,
+            playerId: null,
           });
+        }
+
+        if (vods.length > 0) {
+          await db.insert(vodEntriesTable).values(vods);
         }
       }
     }

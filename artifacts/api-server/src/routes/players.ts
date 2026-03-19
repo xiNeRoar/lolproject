@@ -1,153 +1,207 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { playersTable, matchesTable, vodEntriesTable, eventRegistrationsTable, eventsTable } from "@workspace/db";
-import { eq, desc, or, inArray, and, count, sql } from "drizzle-orm";
+import {
+  playersTable,
+  teamMembersTable,
+  teamsTable,
+  matchPlayersTable,
+  matchesTable,
+  vodEntriesTable,
+  eventRegistrationsTable,
+  eventsTable,
+} from "@workspace/db";
+import { eq, desc, and, count, avg, sum, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
+
+// ── Formatters ───────────────────────────────────────────────
 
 function formatPlayer(p: typeof playersTable.$inferSelect) {
   return {
     id: p.id,
     riotId: p.riotId,
     discordUsername: p.discordUsername,
-    currentElo: p.currentElo,
-    peakElo: p.peakElo,
-    wins: p.wins,
-    losses: p.losses,
+    discordId: p.discordId ?? null,
+    puuid: p.puuid ?? null,
+    primaryRole: p.primaryRole ?? null,
+    secondaryRole: p.secondaryRole ?? null,
     isActive: p.isActive,
     email: p.email ?? null,
     notificationPreference: p.notificationPreference,
-    discordId: p.discordId ?? null,
+    registrationStatus: p.registrationStatus,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
 }
 
-function formatMatch(m: typeof matchesTable.$inferSelect) {
-  return {
-    id: m.id,
-    eventId: m.eventId,
-    eventTitle: null as string | null,
-    matchTitle: m.matchTitle,
-    sideAName: m.sideAName,
-    sideBName: m.sideBName,
-    winnerName: m.winnerName,
-    score: m.score,
-    format: m.format,
-    vodUrl: m.vodUrl,
-    playerAId: m.playerAId,
-    playerBId: m.playerBId,
-    playerAEloBefore: m.playerAEloBefore,
-    playerAEloAfter: m.playerAEloAfter,
-    playerBEloBefore: m.playerBEloBefore,
-    playerBEloAfter: m.playerBEloAfter,
-    seasonId: m.seasonId,
-    isPlayoff: m.isPlayoff ?? false,
-    createdAt: m.createdAt.toISOString(),
-    updatedAt: m.updatedAt.toISOString(),
-  };
-}
+async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
+  // Team memberships
+  const memberRows = await db
+    .select({
+      teamId: teamMembersTable.teamId,
+      role: teamMembersTable.role,
+      status: teamMembersTable.status,
+      teamName: teamsTable.name,
+      teamTag: teamsTable.tag,
+    })
+    .from(teamMembersTable)
+    .leftJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+    .where(eq(teamMembersTable.playerId, player.id));
 
-function formatVod(v: typeof vodEntriesTable.$inferSelect) {
-  return {
+  const teams = memberRows.map((r) => ({
+    teamId: r.teamId,
+    teamName: r.teamName ?? "",
+    teamTag: r.teamTag ?? "",
+    role: r.role ?? null,
+    status: r.status,
+  }));
+
+  // Aggregate stats from match_players
+  const [stats] = await db
+    .select({
+      totalGames: count(),
+      wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} THEN 1 ELSE 0 END`),
+      avgKills: avg(matchPlayersTable.kills),
+      avgDeaths: avg(matchPlayersTable.deaths),
+      avgAssists: avg(matchPlayersTable.assists),
+      avgCs: avg(matchPlayersTable.cs),
+    })
+    .from(matchPlayersTable)
+    .where(eq(matchPlayersTable.playerId, player.id));
+
+  const totalGames = Number(stats?.totalGames ?? 0);
+  const wins = Number(stats?.wins ?? 0);
+
+  // Top champions (up to 5)
+  const champRows = await db
+    .select({
+      champion: matchPlayersTable.champion,
+      games: count(),
+      wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} THEN 1 ELSE 0 END`),
+    })
+    .from(matchPlayersTable)
+    .where(and(eq(matchPlayersTable.playerId, player.id), sql`${matchPlayersTable.champion} IS NOT NULL`))
+    .groupBy(matchPlayersTable.champion)
+    .orderBy(desc(count()))
+    .limit(5);
+
+  const topChampions = champRows.map((c) => ({
+    champion: c.champion!,
+    games: Number(c.games),
+    wins: Number(c.wins ?? 0),
+    avgKda: 0, // computed below if needed, omitted for perf
+  }));
+
+  const aggregateStats = {
+    totalGames,
+    wins,
+    losses: totalGames - wins,
+    avgKills: Number(Number(stats?.avgKills ?? 0).toFixed(2)),
+    avgDeaths: Number(Number(stats?.avgDeaths ?? 0).toFixed(2)),
+    avgAssists: Number(Number(stats?.avgAssists ?? 0).toFixed(2)),
+    avgCs: Number(Number(stats?.avgCs ?? 0).toFixed(1)),
+    topChampions,
+  };
+
+  // Recent matches (last 10 via match_players)
+  const recentMpRows = await db
+    .select({ match: matchesTable })
+    .from(matchPlayersTable)
+    .leftJoin(matchesTable, eq(matchPlayersTable.matchId, matchesTable.id))
+    .where(eq(matchPlayersTable.playerId, player.id))
+    .orderBy(desc(matchesTable.createdAt))
+    .limit(10);
+
+  const recentMatches = recentMpRows
+    .filter((r) => r.match !== null)
+    .map((r) => ({
+      id: r.match!.id,
+      teamAId: r.match!.teamAId ?? null,
+      teamBId: r.match!.teamBId ?? null,
+      sideAName: r.match!.sideAName,
+      sideBName: r.match!.sideBName,
+      matchTitle: r.match!.matchTitle,
+      winnerName: r.match!.winnerName,
+      score: r.match!.score ?? null,
+      format: r.match!.format ?? null,
+      teamAEloBefore: r.match!.teamAEloBefore ?? null,
+      teamAEloAfter: r.match!.teamAEloAfter ?? null,
+      teamBEloBefore: r.match!.teamBEloBefore ?? null,
+      teamBEloAfter: r.match!.teamBEloAfter ?? null,
+      gameId: r.match!.gameId ?? null,
+      resultSource: r.match!.resultSource,
+      seasonId: r.match!.seasonId ?? null,
+      eventId: r.match!.eventId ?? null,
+      isPlayoff: r.match!.isPlayoff,
+      createdAt: r.match!.createdAt.toISOString(),
+      updatedAt: r.match!.updatedAt.toISOString(),
+    }));
+
+  // VODs linked to this player
+  const vodRows = await db
+    .select()
+    .from(vodEntriesTable)
+    .where(eq(vodEntriesTable.playerId, player.id))
+    .orderBy(desc(vodEntriesTable.createdAt))
+    .limit(20);
+
+  const vods = vodRows.map((v) => ({
     id: v.id,
-    eventId: v.eventId,
     matchId: v.matchId ?? null,
-    eventTitle: null as string | null,
+    eventId: v.eventId ?? null,
     title: v.title,
-    format: v.format,
-    playerNames: v.playerNames,
-    roleTag: v.roleTag,
-    notes: v.notes,
     videoUrl: v.videoUrl,
-    playerId: v.playerId,
-    playerRiotId: null as string | null,
-    champion: v.champion,
-    opponentChampion: v.opponentChampion,
-    position: v.position,
-    patch: v.patch,
-    playerEloAtTime: v.playerEloAtTime,
+    champion: v.champion ?? null,
+    position: v.position ?? null,
+    patch: v.patch ?? null,
     createdAt: v.createdAt.toISOString(),
     updatedAt: v.updatedAt.toISOString(),
+  }));
+
+  return {
+    id: player.id,
+    riotId: player.riotId,
+    discordUsername: player.discordUsername,
+    puuid: player.puuid ?? null,
+    primaryRole: player.primaryRole ?? null,
+    secondaryRole: player.secondaryRole ?? null,
+    isActive: player.isActive,
+    teams,
+    aggregateStats,
+    recentMatches,
+    vods,
+    createdAt: player.createdAt.toISOString(),
+    updatedAt: player.updatedAt.toISOString(),
   };
 }
 
-// C14: Enrich matches with player riotIds
-async function enrichMatchesWithRiotIds(matches: (typeof matchesTable.$inferSelect)[]) {
-  const playerIds = new Set<number>();
-  for (const m of matches) {
-    if (m.playerAId) playerIds.add(m.playerAId);
-    if (m.playerBId) playerIds.add(m.playerBId);
+// ── Routes ───────────────────────────────────────────────────
+
+// GET /players — list all players (admin)
+router.get("/", async (_req, res) => {
+  try {
+    const rows = await db.select().from(playersTable).orderBy(playersTable.riotId);
+    res.json(rows.map(formatPlayer));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch players" });
   }
-  if (playerIds.size === 0) return matches.map((m) => ({ ...formatMatch(m), playerARiotId: null, playerBRiotId: null }));
+});
 
-  const players = await db
-    .select({ id: playersTable.id, riotId: playersTable.riotId })
-    .from(playersTable)
-    .where(inArray(playersTable.id, [...playerIds]));
-  const riotIdMap = Object.fromEntries(players.map((p) => [p.id, p.riotId]));
-
-  return matches.map((m) => ({
-    ...formatMatch(m),
-    playerARiotId: m.playerAId ? (riotIdMap[m.playerAId] ?? null) : null,
-    playerBRiotId: m.playerBId ? (riotIdMap[m.playerBId] ?? null) : null,
-  }));
-}
-
-// POST /register — public: player self-registration
+// POST /players/register — register a new player (bot or OAuth)
+// Must be registered BEFORE /:riotId to avoid Express path collision
 router.post("/register", async (req, res) => {
   try {
-    const { riotId, discordId, discordUsername, email, notificationPreference } = req.body as {
+    const { riotId, discordId, discordUsername, puuid, email } = req.body as {
       riotId?: string;
       discordId?: string;
       discordUsername?: string;
-      email?: string;
-      notificationPreference?: string;
+      puuid?: string | null;
+      email?: string | null;
     };
 
     if (!riotId || !discordId || !discordUsername) {
       res.status(400).json({ error: "riotId, discordId, and discordUsername are required" });
-      return;
-    }
-
-    // C21: Validate RiotID exists via Riot ACCOUNT-V1 API
-    const RIOT_API_KEY = process.env.RIOT_API_KEY;
-    if (RIOT_API_KEY) {
-      const parts = riotId.split("#");
-      if (parts.length !== 2 || !parts[0] || !parts[1]) {
-        res.status(400).json({ error: "RiotID must be in format Name#Tag" });
-        return;
-      }
-      const [gameName, tagLine] = parts;
-      try {
-        const riotRes = await fetch(
-          `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
-          { headers: { "X-Riot-Token": RIOT_API_KEY } }
-        );
-        if (riotRes.status === 404) {
-          res.status(400).json({ error: "RiotID does not exist" });
-          return;
-        }
-        if (!riotRes.ok) {
-          console.error("[riot-api] Validation failed:", riotRes.status);
-        }
-      } catch (err) {
-        console.error("[riot-api] Network error:", err);
-      }
-    }
-
-    // Check duplicate riotId
-    const [existingRiot] = await db.select().from(playersTable).where(eq(playersTable.riotId, riotId));
-    if (existingRiot) {
-      res.status(409).json({ error: "A player with this Riot ID already exists" });
-      return;
-    }
-
-    // Check duplicate discordId
-    const [existingDiscord] = await db.select().from(playersTable).where(eq(playersTable.discordId, discordId));
-    if (existingDiscord) {
-      res.status(409).json({ error: "A player with this Discord account already exists" });
       return;
     }
 
@@ -157,388 +211,336 @@ router.post("/register", async (req, res) => {
         riotId,
         discordId,
         discordUsername,
-        currentElo: 1000,
-        peakElo: 1000,
-        wins: 0,
-        losses: 0,
-        isActive: true,
-        email: email || null,
-        notificationPreference: notificationPreference || "web",
+        puuid: puuid ?? null,
+        email: email ?? null,
+        registrationStatus: "active",
       })
       .returning();
 
-    // Set player session
-    req.session.playerId = row!.id;
-    req.session.playerRiotId = row!.riotId;
+    // Set session if called from web OAuth flow
+    if (req.session) {
+      req.session.playerId = row!.id;
+      req.session.playerRiotId = row!.riotId;
+      req.session.discordUsername = row!.discordUsername;
+    }
 
     res.status(201).json(formatPlayer(row!));
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "A player with this riotId or discordId already exists" });
+      return;
+    }
     res.status(500).json({ error: "Failed to register player" });
   }
 });
 
-// GET /public-list — public: minimal player list for dev login (id, riotId, discordUsername, elo, W/L)
-router.get("/public-list", async (_req, res) => {
-  const rows = await db
-    .select({
-      id: playersTable.id,
-      riotId: playersTable.riotId,
-      discordUsername: playersTable.discordUsername,
-      currentElo: playersTable.currentElo,
-      wins: playersTable.wins,
-      losses: playersTable.losses,
-    })
-    .from(playersTable)
-    .where(eq(playersTable.isActive, true))
-    .orderBy(desc(playersTable.currentElo));
-  res.json(rows);
-});
-
-// GET / — admin: list all players ordered by currentElo desc
-router.get("/", requireAdmin, async (_req, res) => {
-  const rows = await db
-    .select()
-    .from(playersTable)
-    .orderBy(desc(playersTable.currentElo));
-  res.json(rows.map(formatPlayer));
-});
-
-// POST / — admin: create player, reject duplicate riotId with 409
+// POST /players — create player (admin)
 router.post("/", requireAdmin, async (req, res) => {
-  const { riotId, discordUsername, currentElo, isActive, email, notificationPreference } = req.body as {
-    riotId?: string;
-    discordUsername?: string;
-    currentElo?: number;
-    isActive?: boolean;
-    email?: string;
-    notificationPreference?: string;
-  };
-
-  if (!riotId || !discordUsername) {
-    res.status(400).json({ error: "riotId and discordUsername are required" });
-    return;
-  }
-
-  // Reject duplicate riotId — each player must have a unique Riot ID
-  const [existing] = await db.select().from(playersTable).where(eq(playersTable.riotId, riotId));
-  if (existing) {
-    res.status(409).json({ error: "A player with this Riot ID already exists" });
-    return;
-  }
-
-  const startingElo = typeof currentElo === "number" ? currentElo : 1000;
-
-  const [row] = await db
-    .insert(playersTable)
-    .values({
+  try {
+    const {
       riotId,
       discordUsername,
-      currentElo: startingElo,
-      peakElo: startingElo,
-      wins: 0,
-      losses: 0,
-      isActive: isActive !== false,
-      email: email || null,
-      notificationPreference: notificationPreference || "web",
-    })
-    .returning();
+      discordId,
+      puuid,
+      primaryRole,
+      secondaryRole,
+      isActive,
+      email,
+      notificationPreference,
+      registrationStatus,
+    } = req.body as {
+      riotId?: string;
+      discordUsername?: string;
+      discordId?: string | null;
+      puuid?: string | null;
+      primaryRole?: string | null;
+      secondaryRole?: string | null;
+      isActive?: boolean | null;
+      email?: string | null;
+      notificationPreference?: string | null;
+      registrationStatus?: string | null;
+    };
 
-  res.status(201).json(formatPlayer(row!));
+    if (!riotId || !discordUsername) {
+      res.status(400).json({ error: "riotId and discordUsername are required" });
+      return;
+    }
+
+    const [row] = await db
+      .insert(playersTable)
+      .values({
+        riotId,
+        discordUsername,
+        discordId: discordId ?? null,
+        puuid: puuid ?? null,
+        primaryRole: primaryRole ?? null,
+        secondaryRole: secondaryRole ?? null,
+        isActive: isActive ?? true,
+        email: email ?? null,
+        notificationPreference: notificationPreference ?? "web",
+        registrationStatus: registrationStatus ?? "active",
+      })
+      .returning();
+
+    res.status(201).json(formatPlayer(row!));
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "A player with this riotId already exists" });
+      return;
+    }
+    res.status(500).json({ error: "Failed to create player" });
+  }
 });
 
-// S1: GET /:id/events — player's event participation + placement
-router.get("/:id/events", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+// GET /players/by-id/:id — get player profile by numeric ID
+// Must be registered BEFORE /:riotId to avoid Express path collision
+router.get("/by-id/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, id));
+    if (!player) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(await buildPlayerProfile(player));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch player" });
+  }
+});
 
-  const regs = await db
-    .select({
-      eventId: eventRegistrationsTable.eventId,
-      status: eventRegistrationsTable.status,
-      eventTitle: eventsTable.title,
-      eventSlug: eventsTable.slug,
-      eventDate: eventsTable.eventDate,
-      eventFormat: eventsTable.format,
-    })
-    .from(eventRegistrationsTable)
-    .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
-    .where(eq(eventRegistrationsTable.playerId, id));
-
-  // For each event, figure out placement from matches
-  const result = [];
-  for (const reg of regs) {
-    if (!reg.eventId) continue;
-    // Count wins and losses in this event
-    const eventMatches = await db
+// GET /players/:riotId — get player profile by Riot ID
+router.get("/:riotId", async (req, res) => {
+  try {
+    const { riotId } = req.params;
+    const [player] = await db
       .select()
-      .from(matchesTable)
+      .from(playersTable)
+      .where(eq(playersTable.riotId, riotId!));
+    if (!player) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(await buildPlayerProfile(player));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch player" });
+  }
+});
+
+// PUT /players/:id/edit — admin update
+router.put("/:id/edit", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const {
+      riotId,
+      discordUsername,
+      discordId,
+      puuid,
+      primaryRole,
+      secondaryRole,
+      isActive,
+      email,
+      notificationPreference,
+      registrationStatus,
+    } = req.body as Partial<typeof playersTable.$inferInsert>;
+
+    const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
+    if (riotId !== undefined) updates.riotId = riotId;
+    if (discordUsername !== undefined) updates.discordUsername = discordUsername;
+    if (discordId !== undefined) updates.discordId = discordId;
+    if (puuid !== undefined) updates.puuid = puuid;
+    if (primaryRole !== undefined) updates.primaryRole = primaryRole;
+    if (secondaryRole !== undefined) updates.secondaryRole = secondaryRole;
+    if (isActive !== undefined) updates.isActive = isActive;
+    if (email !== undefined) updates.email = email;
+    if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
+    if (registrationStatus !== undefined) updates.registrationStatus = registrationStatus;
+
+    const [row] = await db
+      .update(playersTable)
+      .set(updates)
+      .where(eq(playersTable.id, id))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(formatPlayer(row));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update player" });
+  }
+});
+
+// DELETE /players/:id/delete — admin delete
+router.delete("/:id/delete", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    await db.delete(playersTable).where(eq(playersTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete player" });
+  }
+});
+
+// PUT /players/:id/profile — player self-update (own account only)
+router.put("/:id/profile", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    if (req.session.playerId !== id) {
+      res.status(403).json({ error: "Not authorized to update this profile" });
+      return;
+    }
+
+    const { email, notificationPreference, primaryRole, secondaryRole } = req.body as {
+      email?: string | null;
+      notificationPreference?: string | null;
+      primaryRole?: string | null;
+      secondaryRole?: string | null;
+    };
+
+    const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
+    if (email !== undefined) updates.email = email;
+    if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
+    if (primaryRole !== undefined) updates.primaryRole = primaryRole;
+    if (secondaryRole !== undefined) updates.secondaryRole = secondaryRole;
+
+    const [row] = await db
+      .update(playersTable)
+      .set(updates)
+      .where(eq(playersTable.id, id))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    res.json(formatPlayer(row));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update player profile" });
+  }
+});
+
+// GET /players/:id/events — events a player participated in
+router.get("/:id/events", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    // Registrations this player has
+    const regRows = await db
+      .select({
+        eventId: eventRegistrationsTable.eventId,
+        eventTitle: eventsTable.title,
+        eventSlug: eventsTable.slug,
+        eventDate: eventsTable.eventDate,
+        eventFormat: eventsTable.format,
+      })
+      .from(eventRegistrationsTable)
+      .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
+      .where(eq(eventRegistrationsTable.playerId, id));
+
+    // For each event, count matches played via match_players
+    const results = await Promise.all(
+      regRows.map(async (r) => {
+        const mpRows = await db
+          .select({
+            win: matchPlayersTable.win,
+          })
+          .from(matchPlayersTable)
+          .leftJoin(matchesTable, eq(matchPlayersTable.matchId, matchesTable.id))
+          .where(
+            and(
+              eq(matchPlayersTable.playerId, id),
+              eq(matchesTable.eventId, r.eventId)
+            )
+          );
+
+        const matchesPlayed = mpRows.length;
+        const wins = mpRows.filter((m) => m.win).length;
+
+        return {
+          eventId: r.eventId,
+          eventTitle: r.eventTitle ?? null,
+          eventSlug: r.eventSlug ?? null,
+          eventDate: r.eventDate ?? null,
+          eventFormat: r.eventFormat ?? null,
+          matchesPlayed,
+          wins,
+          losses: matchesPlayed - wins,
+        };
+      })
+    );
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch player events" });
+  }
+});
+
+// GET /players/:id/champions — champion pool stats from match_players
+router.get("/:id/champions", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        champion: matchPlayersTable.champion,
+        games: count(),
+        wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} THEN 1 ELSE 0 END`),
+        avgKda: avg(
+          sql<number>`CASE WHEN ${matchPlayersTable.deaths} = 0
+            THEN (${matchPlayersTable.kills} + ${matchPlayersTable.assists})::float
+            ELSE (${matchPlayersTable.kills} + ${matchPlayersTable.assists})::float / ${matchPlayersTable.deaths}
+          END`
+        ),
+      })
+      .from(matchPlayersTable)
       .where(
         and(
-          eq(matchesTable.eventId, reg.eventId),
-          or(eq(matchesTable.playerAId, id), eq(matchesTable.playerBId, id))
+          eq(matchPlayersTable.playerId, id),
+          sql`${matchPlayersTable.champion} IS NOT NULL`
         )
-      );
-    const wins = eventMatches.filter((m) =>
-      (m.playerAId === id && m.winnerName === m.sideAName) ||
-      (m.playerBId === id && m.winnerName === m.sideBName)
-    ).length;
-    const losses = eventMatches.length - wins;
-
-    result.push({
-      eventId: reg.eventId,
-      eventTitle: reg.eventTitle,
-      eventSlug: reg.eventSlug,
-      eventDate: reg.eventDate,
-      eventFormat: reg.eventFormat,
-      registrationStatus: reg.status,
-      matchesPlayed: eventMatches.length,
-      wins,
-      losses,
-    });
-  }
-
-  res.json(result);
-});
-
-// S2: GET /:id/champions — player's champion pool from VOD metadata
-router.get("/:id/champions", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  const vods = await db
-    .select({
-      champion: vodEntriesTable.champion,
-    })
-    .from(vodEntriesTable)
-    .where(eq(vodEntriesTable.playerId, id));
-
-  // Aggregate champion counts
-  const champMap: Record<string, number> = {};
-  for (const v of vods) {
-    if (v.champion) {
-      champMap[v.champion] = (champMap[v.champion] || 0) + 1;
-    }
-  }
-
-  const champions = Object.entries(champMap)
-    .map(([champion, games]) => ({ champion, games }))
-    .sort((a, b) => b.games - a.games);
-
-  res.json(champions);
-});
-
-// S7: GET /:idA/h2h/:idB — head-to-head record between two players
-router.get("/:idA/h2h/:idB", async (req, res) => {
-  const idA = parseInt(req.params.idA as string);
-  const idB = parseInt(req.params.idB as string);
-  if (isNaN(idA) || isNaN(idB)) { res.status(400).json({ error: "Invalid ids" }); return; }
-
-  const matches = await db
-    .select()
-    .from(matchesTable)
-    .where(
-      or(
-        and(eq(matchesTable.playerAId, idA), eq(matchesTable.playerBId, idB)),
-        and(eq(matchesTable.playerAId, idB), eq(matchesTable.playerBId, idA))
       )
-    )
-    .orderBy(desc(matchesTable.createdAt));
+      .groupBy(matchPlayersTable.champion)
+      .orderBy(desc(count()))
+      .limit(20);
 
-  let winsA = 0;
-  let winsB = 0;
-  for (const m of matches) {
-    const aIsPlayerA = m.playerAId === idA;
-    const aWon = aIsPlayerA
-      ? m.winnerName === m.sideAName
-      : m.winnerName === m.sideBName;
-    if (aWon) winsA++;
-    else winsB++;
+    res.json(
+      rows.map((r) => ({
+        champion: r.champion!,
+        games: Number(r.games),
+        wins: Number(r.wins ?? 0),
+        avgKda: Number(Number(r.avgKda ?? 0).toFixed(2)),
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch champion stats" });
   }
-
-  res.json({
-    playerAId: idA,
-    playerBId: idB,
-    totalMatches: matches.length,
-    playerAWins: winsA,
-    playerBWins: winsB,
-    matches: matches.map((m) => ({
-      id: m.id,
-      matchTitle: m.matchTitle,
-      sideAName: m.sideAName,
-      sideBName: m.sideBName,
-      winnerName: m.winnerName,
-      score: m.score,
-      createdAt: m.createdAt.toISOString(),
-    })),
-  });
-});
-
-// GET /by-id/:id — public: fetch player profile by numeric ID (registered before /:riotId)
-router.get("/by-id/:id", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.id, id));
-
-  if (!player) { res.status(404).json({ error: "Player not found" }); return; }
-
-  const matchesAsA = await db
-    .select()
-    .from(matchesTable)
-    .where(eq(matchesTable.playerAId, player.id))
-    .orderBy(desc(matchesTable.createdAt))
-    .limit(10);
-
-  const matchesAsB = await db
-    .select()
-    .from(matchesTable)
-    .where(eq(matchesTable.playerBId, player.id))
-    .orderBy(desc(matchesTable.createdAt))
-    .limit(10);
-
-  const recentMatches = [...matchesAsA, ...matchesAsB]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 10);
-
-  const vods = await db
-    .select()
-    .from(vodEntriesTable)
-    .where(eq(vodEntriesTable.playerId, player.id))
-    .orderBy(desc(vodEntriesTable.createdAt))
-    .limit(20);
-
-  res.json({
-    ...formatPlayer(player),
-    recentMatches: await enrichMatchesWithRiotIds(recentMatches),
-    vods: vods.map(formatVod),
-  });
-});
-
-// PUT /:id/profile — player self-update (own account only)
-router.put("/:id/profile", async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  if (!req.session.playerId) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-
-  if (req.session.playerId !== id) {
-    res.status(403).json({ error: "Cannot edit another player's profile" });
-    return;
-  }
-
-  const { email, notificationPreference } = req.body as {
-    email?: string | null;
-    notificationPreference?: string | null;
-  };
-
-  const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
-  if (email !== undefined) updates.email = email || null;
-  if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference || "web";
-
-  const [row] = await db
-    .update(playersTable)
-    .set(updates)
-    .where(eq(playersTable.id, id))
-    .returning();
-
-  if (!row) { res.status(404).json({ error: "Player not found" }); return; }
-  res.json(formatPlayer(row));
-});
-
-// GET /:riotId — public: fetch player profile by Riot ID, include recent matches + VODs
-router.get("/:riotId", async (req, res) => {
-  const riotId = req.params.riotId as string;
-
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.riotId, riotId));
-
-  if (!player) { res.status(404).json({ error: "Player not found" }); return; }
-
-  // Fetch all matches involving this player, combine and take the 10 most recent
-  const matchesAsA = await db
-    .select()
-    .from(matchesTable)
-    .where(eq(matchesTable.playerAId, player.id))
-    .orderBy(desc(matchesTable.createdAt))
-    .limit(10);
-
-  const matchesAsB = await db
-    .select()
-    .from(matchesTable)
-    .where(eq(matchesTable.playerBId, player.id))
-    .orderBy(desc(matchesTable.createdAt))
-    .limit(10);
-
-  const recentMatches = [...matchesAsA, ...matchesAsB]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 10);
-
-  const vods = await db
-    .select()
-    .from(vodEntriesTable)
-    .where(eq(vodEntriesTable.playerId, player.id))
-    .orderBy(desc(vodEntriesTable.createdAt))
-    .limit(20);
-
-  res.json({
-    ...formatPlayer(player),
-    recentMatches: await enrichMatchesWithRiotIds(recentMatches),
-    vods: vods.map(formatVod),
-  });
-});
-
-// PUT /:id/edit — admin: update player
-router.put("/:id/edit", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-
-  const { riotId, discordUsername, currentElo, peakElo, wins, losses, isActive, email, notificationPreference } = req.body as {
-    riotId?: string;
-    discordUsername?: string;
-    currentElo?: number;
-    peakElo?: number;
-    wins?: number;
-    losses?: number;
-    isActive?: boolean;
-    email?: string;
-    notificationPreference?: string;
-  };
-
-  const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
-  if (riotId !== undefined) updates.riotId = riotId;
-  if (discordUsername !== undefined) updates.discordUsername = discordUsername;
-  if (typeof currentElo === "number") updates.currentElo = currentElo;
-  if (typeof peakElo === "number") updates.peakElo = peakElo;
-  if (typeof wins === "number") updates.wins = wins;
-  if (typeof losses === "number") updates.losses = losses;
-  if (isActive !== undefined) updates.isActive = isActive;
-  if (email !== undefined) updates.email = email || null;
-  if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
-
-  const [row] = await db
-    .update(playersTable)
-    .set(updates)
-    .where(eq(playersTable.id, id))
-    .returning();
-
-  if (!row) { res.status(404).json({ error: "Player not found" }); return; }
-  res.json(formatPlayer(row));
-});
-
-// DELETE /:id/delete — admin: delete player
-router.delete("/:id/delete", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id as string);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  await db.delete(playersTable).where(eq(playersTable.id, id));
-  res.json({ success: true });
 });
 
 export default router;

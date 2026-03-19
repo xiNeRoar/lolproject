@@ -3,13 +3,15 @@ import {
   adminUsersTable,
   eventsTable,
   matchesTable,
+  matchPlayersTable,
   vodEntriesTable,
   playersTable,
+  teamsTable,
+  teamMembersTable,
   seasonsTable,
   ladderSettingsTable,
   eloHistoryTable,
   seasonChampionsTable,
-  challengesTable,
   eventRegistrationsTable,
   playerBadgesTable,
 } from "@workspace/db";
@@ -23,29 +25,31 @@ function hashPassword(password: string): string {
 }
 
 async function seed() {
-  console.log("Seeding database (full reset)...");
+  console.log("Seeding database (5v5 model — full reset)...");
 
-  // Truncate all tables in correct FK order
+  // Truncate all tables in FK-safe order (most dependent first)
   await db.execute(sql`TRUNCATE
-    elo_history, season_champions, player_badges, vod_entries, vod_timestamps,
-    event_registrations, challenges, matchmaking_queue, matches,
+    elo_history, season_champions, player_badges,
+    match_players, vod_entries, vod_timestamps,
+    event_registrations, matches,
+    team_members, teams,
     replay_submissions, notifications,
-    players, seasons, events, interest_submissions,
-    ladder_settings, admin_schedule_settings, admin_users
+    players, seasons, events,
+    ladder_settings, admin_users
     CASCADE`);
 
-  // Admin
+  // ── Admin ──────────────────────────────────────────────────
   await db.insert(adminUsersTable).values({
     email: "admin@vclol.gg",
     passwordHash: hashPassword("admin123"),
   });
   console.log("Created admin: admin@vclol.gg / admin123");
 
-  // Ladder Settings
+  // ── Ladder Settings ────────────────────────────────────────
   await db.insert(ladderSettingsTable).values({});
   console.log("Created default ladder settings");
 
-  // Season
+  // ── Season ─────────────────────────────────────────────────
   const [season] = await db.insert(seasonsTable).values({
     name: "Season 1 — Spring 2026",
     status: "active",
@@ -55,20 +59,20 @@ async function seed() {
   }).returning();
   console.log("Created Season 1");
 
-  // Players (12 players — enough for a realistic ladder)
+  // ── Players (10 — enough for 2 full teams + extras) ────────
   const playerData = [
-    { riotId: "xiNe#NA1", discordUsername: "xine", discordId: "100001", currentElo: 1280, wins: 8, losses: 3 },
-    { riotId: "TwitchArcher#NA1", discordUsername: "twitcharcher", discordId: "100002", currentElo: 1220, wins: 7, losses: 4 },
-    { riotId: "VoidWalker#NA1", discordUsername: "voidwalker", discordId: "100003", currentElo: 1180, wins: 6, losses: 4 },
-    { riotId: "SteelMind#NA1", discordUsername: "steelmind", discordId: "100004", currentElo: 1150, wins: 6, losses: 5 },
-    { riotId: "CloudRift#NA1", discordUsername: "cloudrift", discordId: "100005", currentElo: 1120, wins: 5, losses: 4 },
-    { riotId: "NightBlade#NA1", discordUsername: "nightblade", discordId: "100006", currentElo: 1090, wins: 5, losses: 5 },
-    { riotId: "IronFlux#NA1", discordUsername: "ironflux", discordId: "100007", currentElo: 1060, wins: 4, losses: 5 },
-    { riotId: "PhantomGap#NA1", discordUsername: "phantomgap", discordId: "100008", currentElo: 1030, wins: 4, losses: 6 },
-    { riotId: "ZenithPulse#NA1", discordUsername: "zenithpulse", discordId: "100009", currentElo: 1000, wins: 3, losses: 5 },
-    { riotId: "BlazeKing#NA1", discordUsername: "blazeking", discordId: "100010", currentElo: 970, wins: 3, losses: 6 },
-    { riotId: "FrostByte#NA1", discordUsername: "frostbyte", discordId: "100011", currentElo: 940, wins: 2, losses: 6 },
-    { riotId: "DarkTide#NA1", discordUsername: "darktide", discordId: "100012", currentElo: 910, wins: 1, losses: 7 },
+    // Team Alpha members
+    { riotId: "xiNe#NA1",         discordUsername: "xine",         discordId: "100001", primaryRole: "mid" },
+    { riotId: "TwitchArcher#NA1", discordUsername: "twitcharcher", discordId: "100002", primaryRole: "adc" },
+    { riotId: "VoidWalker#NA1",   discordUsername: "voidwalker",   discordId: "100003", primaryRole: "jg" },
+    { riotId: "SteelMind#NA1",    discordUsername: "steelmind",    discordId: "100004", primaryRole: "top" },
+    { riotId: "CloudRift#NA1",    discordUsername: "cloudrift",    discordId: "100005", primaryRole: "sup" },
+    // Team Beta members
+    { riotId: "NightBlade#NA1",   discordUsername: "nightblade",   discordId: "100006", primaryRole: "mid" },
+    { riotId: "IronFlux#NA1",     discordUsername: "ironflux",     discordId: "100007", primaryRole: "adc" },
+    { riotId: "PhantomGap#NA1",   discordUsername: "phantomgap",   discordId: "100008", primaryRole: "jg" },
+    { riotId: "ZenithPulse#NA1",  discordUsername: "zenithpulse",  discordId: "100009", primaryRole: "top" },
+    { riotId: "BlazeKing#NA1",    discordUsername: "blazeking",    discordId: "100010", primaryRole: "sup" },
   ];
 
   const players: (typeof playersTable.$inferSelect)[] = [];
@@ -77,173 +81,211 @@ async function seed() {
       riotId: p.riotId,
       discordUsername: p.discordUsername,
       discordId: p.discordId,
-      currentElo: p.currentElo,
-      peakElo: p.currentElo + 30,
-      wins: p.wins,
-      losses: p.losses,
+      primaryRole: p.primaryRole,
       isActive: true,
     }).returning();
     players.push(row!);
   }
   console.log(`Created ${players.length} players`);
 
-  // Events
-  const [event1] = await db.insert(eventsTable).values({
-    title: "VCLoL 1v1 Open — March 2026",
-    slug: "vclol-1v1-open-march-2026",
-    format: "1v1",
-    eventDate: "2026-03-29",
-    registrationStatus: "open",
-    shortDescription: "Our first lightweight 1v1 test event. Open to all Vancouver / Lower Mainland players.",
-    fullDescription: "Inaugural test event — lightweight 1v1 format to gather first match records. No prize pool. Competitive environment for local players to get real games and be recorded.",
-    rulesSummary: "Standard Summoner's Rift 1v1. Mid lane only. First blood / first tower / 100 CS. Best of 3. Vancouver / Lower Mainland connection required.",
+  // ── Teams ──────────────────────────────────────────────────
+  const [teamAlpha] = await db.insert(teamsTable).values({
+    name: "Team Alpha",
+    tag: "ALPH",
+    captainPlayerId: players[0]!.id,
+    teamElo: 1120,
+    peakElo: 1150,
+    wins: 3,
+    losses: 1,
+    isActive: true,
   }).returning();
 
-  const [event2] = await db.insert(eventsTable).values({
-    title: "VCLoL In-House — April 2026",
-    slug: "vclol-in-house-april-2026",
-    format: "In-house",
-    eventDate: "2026-04-19",
-    registrationStatus: "upcoming",
-    shortDescription: "Casual in-house 5v5 for registered members. Format TBD based on player count.",
-    fullDescription: "If enough interest, first in-house 5v5 event. Format confirmed based on player count.",
-    rulesSummary: "TBD pending player count.",
+  const [teamBeta] = await db.insert(teamsTable).values({
+    name: "Team Beta",
+    tag: "BETA",
+    captainPlayerId: players[5]!.id,
+    teamElo: 980,
+    peakElo: 1010,
+    wins: 1,
+    losses: 3,
+    isActive: true,
   }).returning();
-  console.log("Created 2 events");
 
-  // Event registrations
-  for (const p of players.slice(0, 8)) {
-    await db.insert(eventRegistrationsTable).values({
-      eventId: event1!.id,
-      riotId: p.riotId,
-      discordUsername: p.discordUsername,
-      currentRank: "Unranked",
-      city: "Vancouver",
-      availabilityConfirmation: "yes",
-      status: "confirmed",
-      playerId: p.id,
+  console.log("Created 2 teams: Team Alpha, Team Beta");
+
+  // ── Team Members ───────────────────────────────────────────
+  const roleOrder = ["top", "jg", "mid", "adc", "sup"] as const;
+  for (let i = 0; i < 5; i++) {
+    await db.insert(teamMembersTable).values({
+      teamId: teamAlpha!.id,
+      playerId: players[i]!.id,
+      role: roleOrder[i],
+      status: "active",
+    });
+    await db.insert(teamMembersTable).values({
+      teamId: teamBeta!.id,
+      playerId: players[i + 5]!.id,
+      role: roleOrder[i],
+      status: "active",
     });
   }
-  console.log("Created 8 event registrations");
+  console.log("Created 10 team memberships");
 
-  // Matches (10 matches with ELO tracking)
-  const matchups = [
-    { a: 0, b: 1, winner: "a", score: "2-1", title: "Quarterfinal 1" },
-    { a: 2, b: 3, winner: "a", score: "2-0", title: "Quarterfinal 2" },
-    { a: 4, b: 5, winner: "b", score: "1-2", title: "Quarterfinal 3" },
-    { a: 6, b: 7, winner: "a", score: "2-1", title: "Quarterfinal 4" },
-    { a: 0, b: 2, winner: "a", score: "2-0", title: "Semifinal 1" },
-    { a: 5, b: 6, winner: "a", score: "2-1", title: "Semifinal 2" },
-    { a: 0, b: 5, winner: "a", score: "2-0", title: "Grand Final" },
-    { a: 1, b: 3, winner: "b", score: "0-2", title: "Ladder Match 1" },
-    { a: 8, b: 9, winner: "a", score: "2-1", title: "Ladder Match 2" },
-    { a: 10, b: 11, winner: "a", score: "2-0", title: "Ladder Match 3" },
+  // ── Events ─────────────────────────────────────────────────
+  const [event1] = await db.insert(eventsTable).values({
+    title: "VCLoL 5v5 Spring Open — March 2026",
+    slug: "vclol-5v5-spring-open-march-2026",
+    format: "Single Elimination",
+    eventDate: "2026-03-29",
+    registrationStatus: "open",
+    shortDescription: "First 5v5 team scrim tournament. Open to all registered teams.",
+    fullDescription: "Inaugural 5v5 team tournament. Teams play best-of-1 in bracket format.",
+    rulesSummary: "Standard Summoner's Rift 5v5. Draft pick. Best of 1. All matches recorded.",
+  }).returning();
+
+  console.log("Created 1 event");
+
+  // Event registrations (team-based)
+  await db.insert(eventRegistrationsTable).values({
+    eventId: event1!.id,
+    teamId: teamAlpha!.id,
+    riotId: players[0]!.riotId,
+    discordUsername: players[0]!.discordUsername,
+    currentRank: "Unranked",
+    city: "Vancouver",
+    availabilityConfirmation: "yes",
+    status: "confirmed",
+    playerId: players[0]!.id,
+  });
+  await db.insert(eventRegistrationsTable).values({
+    eventId: event1!.id,
+    teamId: teamBeta!.id,
+    riotId: players[5]!.riotId,
+    discordUsername: players[5]!.discordUsername,
+    currentRank: "Unranked",
+    city: "Vancouver",
+    availabilityConfirmation: "yes",
+    status: "confirmed",
+    playerId: players[5]!.id,
+  });
+  console.log("Created 2 event registrations");
+
+  // ── Matches (4 matches: Alpha wins 3, Beta wins 1) ─────────
+  type MatchSeed = { winnerTeam: "A" | "B"; title: string; isEvent: boolean };
+  const matchSeeds: MatchSeed[] = [
+    { winnerTeam: "A", title: "Scrim #1",    isEvent: false },
+    { winnerTeam: "A", title: "Scrim #2",    isEvent: false },
+    { winnerTeam: "B", title: "Scrim #3",    isEvent: false },
+    { winnerTeam: "A", title: "Grand Final", isEvent: true },
   ];
 
-  for (const m of matchups) {
-    const pA = players[m.a]!;
-    const pB = players[m.b]!;
-    const winnerPlayer = m.winner === "a" ? pA : pB;
+  const CHAMPS_A = ["Zed", "Jinx", "LeeSin", "Garen", "Lulu"] as const;
+  const CHAMPS_B = ["Yasuo", "Caitlyn", "Vi", "Darius", "Thresh"] as const;
+
+  for (const ms of matchSeeds) {
+    const alphaEloBefore = teamAlpha!.teamElo;
+    const betaEloBefore  = teamBeta!.teamElo;
+    const eloDelta = 20;
+    const alphaEloAfter = ms.winnerTeam === "A" ? alphaEloBefore + eloDelta : alphaEloBefore - eloDelta;
+    const betaEloAfter  = ms.winnerTeam === "B" ? betaEloBefore  + eloDelta : betaEloBefore  - eloDelta;
 
     const [match] = await db.insert(matchesTable).values({
-      eventId: m.title.includes("Ladder") ? null : event1!.id,
-      matchTitle: m.title,
-      sideAName: pA.riotId,
-      sideBName: pB.riotId,
-      winnerName: winnerPlayer.riotId,
-      score: m.score,
-      format: "1v1",
-      playerAId: pA.id,
-      playerBId: pB.id,
-      playerAEloBefore: pA.currentElo,
-      playerAEloAfter: pA.currentElo + (m.winner === "a" ? 16 : -16),
-      playerBEloBefore: pB.currentElo,
-      playerBEloAfter: pB.currentElo + (m.winner === "b" ? 16 : -16),
-      seasonId: season!.id,
-      isPlayoff: m.title.includes("Final"),
+      teamAId:       teamAlpha!.id,
+      teamBId:       teamBeta!.id,
+      sideAName:     "Team Alpha",
+      sideBName:     "Team Beta",
+      matchTitle:    ms.title,
+      winnerName:    ms.winnerTeam === "A" ? "Team Alpha" : "Team Beta",
+      score:         "1-0",
+      format:        "BO1",
+      teamAEloBefore: alphaEloBefore,
+      teamAEloAfter:  alphaEloAfter,
+      teamBEloBefore: betaEloBefore,
+      teamBEloAfter:  betaEloAfter,
+      resultSource:  "admin_manual",
+      seasonId:      season!.id,
+      eventId:       ms.isEvent ? event1!.id : null,
+      isPlayoff:     ms.isEvent,
     }).returning();
 
-    // ELO history
-    await db.insert(eloHistoryTable).values({
-      playerId: pA.id,
-      elo: pA.currentElo + (m.winner === "a" ? 16 : -16),
-      delta: m.winner === "a" ? 16 : -16,
-      matchId: match!.id,
-      reason: "match",
-    });
-    await db.insert(eloHistoryTable).values({
-      playerId: pB.id,
-      elo: pB.currentElo + (m.winner === "b" ? 16 : -16),
-      delta: m.winner === "b" ? 16 : -16,
-      matchId: match!.id,
-      reason: "match",
-    });
-
-    // VOD for first 4 matches
-    if (matchups.indexOf(m) < 4) {
-      await db.insert(vodEntriesTable).values({
-        eventId: event1!.id,
-        matchId: match!.id,
-        title: `${pA.riotId} vs ${pB.riotId} — ${m.title}`,
-        format: "1v1",
-        playerNames: `${pA.riotId}, ${pB.riotId}`,
-        roleTag: "Mid",
-        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        playerId: pA.id,
-        champion: "Zed",
-        opponentChampion: "Yasuo",
-        position: "Mid",
-        patch: "14.5",
-        playerEloAtTime: pA.currentElo,
+    // match_players: 5 per side = 10 total
+    for (let i = 0; i < 5; i++) {
+      const sideAWin = ms.winnerTeam === "A";
+      await db.insert(matchPlayersTable).values({
+        matchId:          match!.id,
+        playerId:         players[i]!.id,
+        teamSide:         "A",
+        champion:         CHAMPS_A[i],
+        teamPosition:     roleOrder[i],
+        kills:            sideAWin ? 4 + i : 1 + i,
+        deaths:           sideAWin ? 1 : 3,
+        assists:          sideAWin ? 5 : 2,
+        cs:               200 + i * 10,
+        neutralCs:        20,
+        gold:             12000 + i * 500,
+        damageToChampions: 25000 + i * 1000,
+        visionScore:      25,
+        win:              sideAWin,
       });
+      await db.insert(matchPlayersTable).values({
+        matchId:          match!.id,
+        playerId:         players[i + 5]!.id,
+        teamSide:         "B",
+        champion:         CHAMPS_B[i],
+        teamPosition:     roleOrder[i],
+        kills:            sideAWin ? 1 + i : 4 + i,
+        deaths:           sideAWin ? 3 : 1,
+        assists:          sideAWin ? 2 : 5,
+        cs:               180 + i * 10,
+        neutralCs:        15,
+        gold:             10000 + i * 400,
+        damageToChampions: 20000 + i * 800,
+        visionScore:      20,
+        win:              !sideAWin,
+      });
+    }
+
+    // ELO history for both teams
+    await db.insert(eloHistoryTable).values([
+      { teamId: teamAlpha!.id, elo: alphaEloAfter, delta: alphaEloAfter - alphaEloBefore, matchId: match!.id, reason: "match" },
+      { teamId: teamBeta!.id,  elo: betaEloAfter,  delta: betaEloAfter  - betaEloBefore,  matchId: match!.id, reason: "match" },
+    ]);
+
+    // VOD for the grand final
+    if (ms.isEvent) {
       await db.insert(vodEntriesTable).values({
         eventId: event1!.id,
         matchId: match!.id,
-        title: `${pB.riotId} vs ${pA.riotId} — ${m.title} (POV B)`,
-        format: "1v1",
-        playerNames: `${pA.riotId}, ${pB.riotId}`,
-        roleTag: "Mid",
+        title: "Team Alpha vs Team Beta — Grand Final",
+        format: "BO1",
+        playerNames: "Team Alpha, Team Beta",
         videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        playerId: pB.id,
-        champion: "Yasuo",
-        opponentChampion: "Zed",
-        position: "Mid",
-        patch: "14.5",
-        playerEloAtTime: pB.currentElo,
       });
     }
   }
-  console.log("Created 10 matches + ELO history + 8 VODs");
 
-  // Badges
+  console.log(`Created ${matchSeeds.length} matches + match_players + ELO history + 1 VOD`);
+
+  // ── Season Champion ────────────────────────────────────────
+  await db.insert(seasonChampionsTable).values({
+    seasonId: season!.id,
+    teamId:   teamAlpha!.id,
+    teamName: "Team Alpha",
+    finalElo: 1120,
+  });
+  console.log("Created season champion: Team Alpha");
+
+  // ── Badges (player-level) ──────────────────────────────────
   await db.insert(playerBadgesTable).values({ playerId: players[0]!.id, badgeType: "season_champion", seasonId: season!.id });
   await db.insert(playerBadgesTable).values({ playerId: players[0]!.id, badgeType: "win_streak" });
   await db.insert(playerBadgesTable).values({ playerId: players[1]!.id, badgeType: "first_blood" });
-  await db.insert(playerBadgesTable).values({ playerId: players[2]!.id, badgeType: "veteran" });
   console.log("Created badges");
 
-  // Challenges
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
-  await db.insert(challengesTable).values({
-    challengerId: players[1]!.id,
-    challengedId: players[0]!.id,
-    status: "pending",
-    scheduledTime: tomorrow,
-    expiresAt: expiry,
-    seasonId: season!.id,
-  });
-  await db.insert(challengesTable).values({
-    challengerId: players[3]!.id,
-    challengedId: players[2]!.id,
-    status: "accepted",
-    scheduledTime: tomorrow,
-    expiresAt: expiry,
-    seasonId: season!.id,
-  });
-  console.log("Created 2 challenges");
-
-  console.log("Seed complete.");
+  console.log("\n✅ Seed complete (5v5 model).");
+  console.log("   Teams:   Team Alpha (ELO 1120, 3W/1L), Team Beta (ELO 980, 1W/3L)");
+  console.log("   Players: 10 total, 5 per team");
+  console.log("   Matches: 4 (3 scrims + 1 event final)");
+  console.log("   Admin:   admin@vclol.gg / admin123");
   process.exit(0);
 }
 
