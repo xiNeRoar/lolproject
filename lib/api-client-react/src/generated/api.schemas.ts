@@ -320,6 +320,7 @@ export interface Season {
   startDate: string;
   endDate: string;
   eloResetFactor: string;
+  defaultMatchFormat?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -330,6 +331,7 @@ export interface CreateSeasonRequest {
   startDate: string;
   endDate: string;
   eloResetFactor?: string | null;
+  defaultMatchFormat?: string | null;
 }
 
 export interface LadderEntry {
@@ -438,6 +440,7 @@ export interface LadderSettings {
   playoffMinPlayers: number;
   playoffSize: number;
   playoffFormat: string;
+  defaultMatchFormat: string;
   updatedAt: string;
 }
 

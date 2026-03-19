@@ -2330,6 +2330,9 @@ components:
           type: string
         eloResetFactor:
           type: string
+        defaultMatchFormat:
+          type: string
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -2357,6 +2360,9 @@ components:
         endDate:
           type: string
         eloResetFactor:
+          type: string
+          nullable: true
+        defaultMatchFormat:
           type: string
           nullable: true
       required:
@@ -2632,6 +2638,8 @@ components:
           type: integer
         playoffFormat:
           type: string
+        defaultMatchFormat:
+          type: string
         updatedAt:
           type: string
       required:
@@ -2647,6 +2655,7 @@ components:
         - playoffMinPlayers
         - playoffSize
         - playoffFormat
+        - defaultMatchFormat
         - updatedAt
 
     AdminScheduleSettings:

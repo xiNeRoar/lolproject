@@ -19,5 +19,6 @@ export interface LadderSettings {
   playoffMinPlayers: number;
   playoffSize: number;
   playoffFormat: string;
+  defaultMatchFormat: string;
   updatedAt: string;
 }

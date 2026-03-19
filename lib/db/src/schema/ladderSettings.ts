@@ -13,6 +13,7 @@ export const ladderSettingsTable = pgTable("ladder_settings", {
   playoffMinPlayers: integer("playoff_min_players").notNull().default(4),
   playoffSize: integer("playoff_size").notNull().default(8),
   playoffFormat: text("playoff_format").notNull().default("single_elimination"),
+  defaultMatchFormat: text("default_match_format").notNull().default("BO1"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 export type LadderSettings = typeof ladderSettingsTable.$inferSelect;

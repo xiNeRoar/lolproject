@@ -1,6 +1,6 @@
 import AdminLayout from "@/components/layout/AdminLayout";
 import { EVENT_FORMAT_OPTIONS } from "@/lib/tournament-formats";
-import { useListEvents, useCreateEvent, useUpdateEvent, useDeleteEvent, useListRegistrations } from "@workspace/api-client-react";
+import { useListEvents, useCreateEvent, useDeleteEvent, useListRegistrations } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,42 +27,24 @@ export default function ManageEvents() {
   }, [allRegs]);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
   const createMut = useCreateEvent();
-  const updateMut = useUpdateEvent();
   const deleteMut = useDeleteEvent();
 
-  const { register, handleSubmit, reset, setValue } = useForm();
+  const { register, handleSubmit, reset } = useForm();
 
   const openNew = () => {
-    reset({ registrationStatus: 'open', format: '5v5' });
-    setEditingId(null);
-    setIsOpen(true);
-  };
-
-  const openEdit = (event: any) => {
-    reset(event);
-    setEditingId(event.id);
+    reset({ registrationStatus: 'open', format: '' });
     setIsOpen(true);
   };
 
   const onSubmit = (data: any) => {
-    if (editingId) {
-      updateMut.mutate({ id: editingId, data }, {
-        onSuccess: () => {
-          setIsOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['/api/events'] });
-        }
-      });
-    } else {
-      createMut.mutate({ data }, {
-        onSuccess: () => {
-          setIsOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['/api/events'] });
-        }
-      });
-    }
+    createMut.mutate({ data }, {
+      onSuccess: () => {
+        setIsOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['/api/events'] });
+      }
+    });
   };
 
   const handleDelete = (id: number) => {
@@ -147,7 +129,7 @@ export default function ManageEvents() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogHeader>
-          <DialogTitle>{editingId ? "Edit Event" : "Create Event"}</DialogTitle>
+          <DialogTitle>Create Event</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <Input placeholder="Event Title" {...register("title", {required: true})} />
@@ -173,7 +155,7 @@ export default function ManageEvents() {
           <Textarea placeholder="Full Description (Markdown allowed)" className="h-32" {...register("fullDescription")} />
           <Textarea placeholder="Rules Summary" {...register("rulesSummary")} />
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>Save Event</Button>
+            <Button type="submit" disabled={createMut.isPending}>Save Event</Button>
           </div>
         </form>
       </Dialog>

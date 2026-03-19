@@ -1169,6 +1169,7 @@ export const ListSeasonsResponseItem = zod.object({
   startDate: zod.string(),
   endDate: zod.string(),
   eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -1183,6 +1184,7 @@ export const CreateSeasonBody = zod.object({
   startDate: zod.string(),
   endDate: zod.string(),
   eloResetFactor: zod.string().nullish(),
+  defaultMatchFormat: zod.string().nullish(),
 });
 
 /**
@@ -1198,6 +1200,7 @@ export const UpdateSeasonBody = zod.object({
   startDate: zod.string(),
   endDate: zod.string(),
   eloResetFactor: zod.string().nullish(),
+  defaultMatchFormat: zod.string().nullish(),
 });
 
 export const UpdateSeasonResponse = zod.object({
@@ -1207,6 +1210,7 @@ export const UpdateSeasonResponse = zod.object({
   startDate: zod.string(),
   endDate: zod.string(),
   eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -1236,6 +1240,7 @@ export const ActivateSeasonResponse = zod.object({
   startDate: zod.string(),
   endDate: zod.string(),
   eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -1263,6 +1268,7 @@ export const GetLadderResponse = zod.object({
       startDate: zod.string(),
       endDate: zod.string(),
       eloResetFactor: zod.string(),
+      defaultMatchFormat: zod.string().nullish(),
       createdAt: zod.string(),
       updatedAt: zod.string(),
     })
@@ -1342,6 +1348,7 @@ export const GetLadderSettingsResponse = zod.object({
   playoffMinPlayers: zod.number(),
   playoffSize: zod.number(),
   playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -1361,6 +1368,7 @@ export const UpdateLadderSettingsBody = zod.object({
   playoffMinPlayers: zod.number(),
   playoffSize: zod.number(),
   playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -1377,6 +1385,7 @@ export const UpdateLadderSettingsResponse = zod.object({
   playoffMinPlayers: zod.number(),
   playoffSize: zod.number(),
   playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
   updatedAt: zod.string(),
 });
 

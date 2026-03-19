@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
-import { PLAYOFF_FORMAT_OPTIONS } from "@/lib/tournament-formats";
+import { PLAYOFF_FORMAT_OPTIONS, MATCH_FORMAT_OPTIONS } from "@/lib/tournament-formats";
 import {
   useGetLadderSettings,
   useUpdateLadderSettings,
@@ -54,6 +54,7 @@ export default function ManageLadderSettings() {
     playoffMinPlayers: 4,
     playoffSize: 8,
     playoffFormat: "single_elimination",
+    defaultMatchFormat: "BO1",
   });
 
   const [sForm, setSForm] = useState({
@@ -77,6 +78,7 @@ export default function ManageLadderSettings() {
         playoffMinPlayers: (ladder as any).playoffMinPlayers ?? 4,
         playoffSize: (ladder as any).playoffSize ?? 8,
         playoffFormat: (ladder as any).playoffFormat ?? "single_elimination",
+        defaultMatchFormat: ladder.defaultMatchFormat ?? "BO1",
       });
     }
   }, [ladder]);
@@ -107,6 +109,7 @@ export default function ManageLadderSettings() {
           playoffMinPlayers: Number(lForm.playoffMinPlayers),
           playoffSize: Number(lForm.playoffSize),
           playoffFormat: lForm.playoffFormat,
+          defaultMatchFormat: lForm.defaultMatchFormat,
         },
       },
       { onSuccess: () => toast({ title: "Ladder settings saved." }) }
@@ -211,6 +214,19 @@ export default function ManageLadderSettings() {
                   value={lForm.playoffSize}
                   onChange={(v) => setLForm((f) => ({ ...f, playoffSize: Number(v) }))}
                 />
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Default Match Format</label>
+                  <p className="text-xs text-muted-foreground">Global default for new ladder matches (BO1, BO3, BO5). Seasons can override this.</p>
+                  <select
+                    value={lForm.defaultMatchFormat}
+                    onChange={(e) => setLForm((f) => ({ ...f, defaultMatchFormat: e.target.value }))}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    {MATCH_FORMAT_OPTIONS.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Playoff Format</label>
                   <p className="text-xs text-muted-foreground">Bracket format for playoffs</p>

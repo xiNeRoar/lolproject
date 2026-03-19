@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable, vodEntriesTable } from "@workspace/db";
+import { matchesTable, eventsTable, playersTable, eloHistoryTable, ladderSettingsTable, vodEntriesTable, seasonsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
@@ -154,6 +154,25 @@ router.post("/", requireAdmin, async (req, res) => {
     return;
   }
 
+  const VALID_FORMATS = ["BO1", "BO3", "BO5"];
+
+  let resolvedFormat = format || null;
+  if (!resolvedFormat) {
+    if (seasonId) {
+      const [season] = await db.select().from(seasonsTable).where(eq(seasonsTable.id, Number(seasonId)));
+      if (season?.defaultMatchFormat) resolvedFormat = season.defaultMatchFormat;
+    }
+    if (!resolvedFormat) {
+      const [settings] = await db.select().from(ladderSettingsTable).limit(1);
+      resolvedFormat = settings?.defaultMatchFormat ?? "BO1";
+    }
+  }
+
+  if (resolvedFormat && !VALID_FORMATS.includes(resolvedFormat)) {
+    res.status(400).json({ error: `Invalid format. Must be one of: ${VALID_FORMATS.join(", ")}` });
+    return;
+  }
+
   // Compute ELO deltas if both players are linked
   let playerAEloBefore: number | null = null;
   let playerAEloAfter: number | null = null;
@@ -193,7 +212,7 @@ router.post("/", requireAdmin, async (req, res) => {
         sideBName,
         winnerName,
         score: score || null,
-        format: format || null,
+        format: resolvedFormat,
         vodUrl: vodUrl || null,
         playerAId: playerAId ? Number(playerAId) : null,
         playerBId: playerBId ? Number(playerBId) : null,

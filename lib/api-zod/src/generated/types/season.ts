@@ -13,6 +13,7 @@ export interface Season {
   startDate: string;
   endDate: string;
   eloResetFactor: string;
+  defaultMatchFormat?: string | null;
   createdAt: string;
   updatedAt: string;
 }

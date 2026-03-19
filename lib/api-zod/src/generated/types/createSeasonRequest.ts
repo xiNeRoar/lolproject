@@ -12,4 +12,5 @@ export interface CreateSeasonRequest {
   startDate: string;
   endDate: string;
   eloResetFactor?: string | null;
+  defaultMatchFormat?: string | null;
 }

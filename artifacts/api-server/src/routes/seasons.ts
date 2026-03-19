@@ -16,6 +16,7 @@ function formatSeason(s: typeof seasonsTable.$inferSelect) {
     startDate: s.startDate,
     endDate: s.endDate,
     eloResetFactor: s.eloResetFactor,
+    defaultMatchFormat: s.defaultMatchFormat,
     createdAt: s.createdAt.toISOString(),
     updatedAt: s.updatedAt.toISOString(),
   };
@@ -30,16 +31,23 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", requireAdmin, async (req, res) => {
-  const { name, status, startDate, endDate, eloResetFactor } = req.body as {
+  const { name, status, startDate, endDate, eloResetFactor, defaultMatchFormat } = req.body as {
     name?: string;
     status?: string;
     startDate?: string;
     endDate?: string;
     eloResetFactor?: string;
+    defaultMatchFormat?: string | null;
   };
 
   if (!name || !startDate || !endDate) {
     res.status(400).json({ error: "name, startDate, and endDate are required" });
+    return;
+  }
+
+  const VALID_FORMATS = ["BO1", "BO3", "BO5"];
+  if (defaultMatchFormat && !VALID_FORMATS.includes(defaultMatchFormat)) {
+    res.status(400).json({ error: `Invalid defaultMatchFormat. Must be one of: ${VALID_FORMATS.join(", ")}` });
     return;
   }
 
@@ -51,6 +59,7 @@ router.post("/", requireAdmin, async (req, res) => {
       startDate,
       endDate,
       eloResetFactor: eloResetFactor || "0.50",
+      defaultMatchFormat: defaultMatchFormat || null,
     })
     .returning();
 
@@ -74,13 +83,20 @@ router.put("/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { name, status, startDate, endDate, eloResetFactor } = req.body as {
+  const { name, status, startDate, endDate, eloResetFactor, defaultMatchFormat } = req.body as {
     name?: string;
     status?: string;
     startDate?: string;
     endDate?: string;
     eloResetFactor?: string;
+    defaultMatchFormat?: string | null;
   };
+
+  const VALID_FORMATS = ["BO1", "BO3", "BO5"];
+  if (defaultMatchFormat !== undefined && defaultMatchFormat !== null && !VALID_FORMATS.includes(defaultMatchFormat)) {
+    res.status(400).json({ error: `Invalid defaultMatchFormat. Must be one of: ${VALID_FORMATS.join(", ")}` });
+    return;
+  }
 
   const updates: Partial<typeof seasonsTable.$inferInsert> = { updatedAt: new Date() };
   if (name !== undefined) updates.name = name;
@@ -88,6 +104,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   if (startDate !== undefined) updates.startDate = startDate;
   if (endDate !== undefined) updates.endDate = endDate;
   if (eloResetFactor !== undefined) updates.eloResetFactor = eloResetFactor;
+  if (defaultMatchFormat !== undefined) updates.defaultMatchFormat = defaultMatchFormat;
 
   const [row] = await db
     .update(seasonsTable)

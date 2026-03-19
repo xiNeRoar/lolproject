@@ -2,6 +2,9 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import {
   useListSeasons,
   useUpdateSeason,
+  useActivateSeason,
+  useCompleteSeason,
+  useGetLadderSettings,
   useListPlayers,
   useListChallenges,
   useDeleteChallenge,
@@ -69,7 +72,7 @@ export default function ManageSeasonDetail() {
   const seasonId = Number(id);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<Tab>("standings");
+  const [tab, setTab] = useState<Tab>("details");
   const [challengeStatusFilter, setChallengeStatusFilter] = useState<string>("all");
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
 
@@ -82,15 +85,18 @@ export default function ManageSeasonDetail() {
   const { data: allMatches, isLoading: matchesLoading } = useListMatches({ seasonId });
   const { data: allChampions, isLoading: championsLoading } = useListSeasonChampions();
 
+  const { data: ladderSettings } = useGetLadderSettings();
   const deleteChallenge = useDeleteChallenge();
   const deleteMatch = useDeleteMatch();
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
   const updateSeason = useUpdateSeason();
+  const activateSeason = useActivateSeason();
+  const completeSeason = useCompleteSeason();
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
   const [seasonSaving, setSeasonSaving] = useState(false);
   const [seasonEditForm, setSeasonEditForm] = useState({
-    name: "", startDate: "", endDate: "", eloResetFactor: "0.50", status: "upcoming",
+    name: "", startDate: "", endDate: "", eloResetFactor: "0.50", defaultMatchFormat: "" as string | null,
   });
 
   // ── Match form (Add Match dialog) ───────────────────────────
@@ -109,7 +115,7 @@ export default function ManageSeasonDetail() {
         startDate: season.startDate,
         endDate: season.endDate,
         eloResetFactor: season.eloResetFactor,
-        status: season.status,
+        defaultMatchFormat: season.defaultMatchFormat ?? null,
       });
     }
   }, [season?.id]);
@@ -122,8 +128,10 @@ export default function ManageSeasonDetail() {
     if (matchPlayerB) setMatchVal("sideBName", matchPlayerB.riotId);
   }, [watchedPlayerBId]);
 
+  const resolvedDefaultFormat = season?.defaultMatchFormat || ladderSettings?.defaultMatchFormat || "BO1";
+
   const openNewMatch = () => {
-    resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", format: "BO1", score: "" });
+    resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", format: resolvedDefaultFormat, score: "" });
     setEditingMatchId(null);
     setMatchDialogOpen(true);
   };
@@ -275,9 +283,64 @@ export default function ManageSeasonDetail() {
 
       {/* ── DETAILS TAB ───────────────────────────────────────── */}
       {tab === "details" && (
-        <div className="max-w-lg">
-          <p className="text-sm text-muted-foreground mb-6">Edit season settings. Changes take effect immediately on save.</p>
+        <div className="max-w-lg space-y-6">
+          <div className="bg-card border border-border/50 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <label className="text-sm font-medium block">Season Status</label>
+                <p className="text-xs text-muted-foreground mt-0.5">Use the actions below to change season status. Status transitions trigger important side effects.</p>
+              </div>
+              {season && seasonStatusBadge(season.status)}
+            </div>
+            <div className="flex gap-2">
+              {season?.status !== "active" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-green-400 border-green-500/30 hover:bg-green-500/10"
+                  disabled={activateSeason.isPending}
+                  onClick={() => {
+                    if (confirm(`Activate "${season?.name}"?\n\nThis will end any currently active season.`)) {
+                      activateSeason.mutate({ id: seasonId }, {
+                        onSuccess: () => {
+                          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
+                        },
+                      });
+                    }
+                  }}
+                >
+                  Activate Season
+                </Button>
+              )}
+              {season?.status === "active" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10"
+                  disabled={completeSeason.isPending}
+                  onClick={() => {
+                    if (confirm(`Complete "${season?.name}"?\n\nWARNING: This will apply an ELO soft reset to all active players. This action cannot be undone.`)) {
+                      completeSeason.mutate({ id: seasonId }, {
+                        onSuccess: () => {
+                          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/season-champions"] });
+                        },
+                      });
+                    }
+                  }}
+                >
+                  Complete Season
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="bg-card border border-border/50 rounded-lg p-6 space-y-4">
+            <p className="text-xs text-muted-foreground">Edit season metadata. Changes take effect immediately on save.</p>
             <div>
               <label className="text-sm font-medium block mb-1">Season Name</label>
               <Input
@@ -318,16 +381,18 @@ export default function ManageSeasonDetail() {
               <p className="text-xs text-muted-foreground mt-1">0.50 = compress halfway to 1000. 0 = full reset. 1 = no reset.</p>
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1">Status</label>
+              <label className="text-sm font-medium block mb-1">Default Match Format</label>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={seasonEditForm.status}
-                onChange={(e) => setSeasonEditForm((f) => ({ ...f, status: e.target.value }))}
+                value={seasonEditForm.defaultMatchFormat ?? ""}
+                onChange={(e) => setSeasonEditForm((f) => ({ ...f, defaultMatchFormat: e.target.value || null }))}
               >
-                <option value="upcoming">Upcoming</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
+                <option value="">Inherit from Ladder Settings ({ladderSettings?.defaultMatchFormat || "BO1"})</option>
+                {MATCH_FORMAT_OPTIONS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
               </select>
+              <p className="text-xs text-muted-foreground mt-1">Overrides the global ladder default for matches in this season. "Inherit" uses the value from Ladder Settings.</p>
             </div>
             <div className="pt-2">
               <Button
@@ -341,7 +406,7 @@ export default function ManageSeasonDetail() {
                         startDate: seasonEditForm.startDate,
                         endDate: seasonEditForm.endDate,
                         eloResetFactor: seasonEditForm.eloResetFactor,
-                        status: seasonEditForm.status,
+                        defaultMatchFormat: seasonEditForm.defaultMatchFormat,
                       },
                     },
                     {

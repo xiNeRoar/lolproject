@@ -202,17 +202,6 @@ export default function ManageSeasons() {
               0.50 = compress halfway to 1000. 0 = full reset. 1 = no reset.
             </p>
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              {...register("status")}
-            >
-              <option value="upcoming">Upcoming</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={createMut.isPending}>Save</Button>
           </div>

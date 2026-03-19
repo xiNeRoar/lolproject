@@ -10,6 +10,7 @@ export const seasonsTable = pgTable("seasons", {
   endDate: text("end_date").notNull(),
   // ELO soft reset factor: new_elo = 1000 + (old_elo - 1000) * factor
   eloResetFactor: numeric("elo_reset_factor", { precision: 3, scale: 2 }).notNull().default("0.50"),
+  defaultMatchFormat: text("default_match_format"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
