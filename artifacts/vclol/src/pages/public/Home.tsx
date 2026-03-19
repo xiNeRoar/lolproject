@@ -10,7 +10,7 @@ import {
 import { useListEvents, useListVods, useListMatches } from "@workspace/api-client-react";
 import { formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 const DD = "https://ddragon.leagueoflegends.com";
 
@@ -28,13 +28,7 @@ export default function Home() {
   const { data: vods } = useListVods();
   const { data: matches } = useListMatches();
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  useEffect(() => {
-    const sync = () => setLoggedIn(!!localStorage.getItem("vclol_player_id"));
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
+  const { isLoggedIn: loggedIn } = useAuth();
 
   const upcomingEvent = events?.find(e => e.registrationStatus !== 'closed') || events?.[0];
   const recentVods = vods?.slice(0, 3);
@@ -82,9 +76,9 @@ export default function Home() {
                       My Dashboard <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href="/ladder">
+                  <Link href="/teams">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                      View Ladder
+                      View Teams
                     </Button>
                   </Link>
                 </>

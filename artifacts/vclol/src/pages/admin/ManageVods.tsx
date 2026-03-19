@@ -158,10 +158,6 @@ export default function ManageVods() {
       setValue("playerEloAtTime", "");
       return;
     }
-    const player = players?.find((p) => p.id === Number(watchedPlayerId));
-    if (player?.currentElo) {
-      setValue("playerEloAtTime", player.currentElo);
-    }
   }, [watchedPlayerId]);
 
   const onSubmit = (data: Record<string, unknown>) => {

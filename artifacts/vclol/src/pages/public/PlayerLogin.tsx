@@ -3,15 +3,17 @@ import { useLocation } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PlayerLogin() {
   const [, navigate] = useLocation();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
-    if (localStorage.getItem("vclol_player_id")) {
+    if (isLoggedIn) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [isLoggedIn, navigate]);
 
   return (
     <PublicLayout>

@@ -1,29 +1,15 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
-
-interface PublicPlayer {
-  id: number;
-  riotId: string;
-  discordUsername: string;
-  currentElo: number;
-  wins: number;
-  losses: number;
-}
+import { useListPlayers } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DevLogin() {
-  const { data: players, isLoading } = useQuery<PublicPlayer[]>({
-    queryKey: ["/api/players/public-list"],
-    queryFn: async () => {
-      const res = await fetch("/api/players/public-list");
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-  });
-
+  const { data: players, isLoading } = useListPlayers();
   const [, navigate] = useLocation();
+  const { playerId: currentPlayerId } = useAuth();
+  const currentId = currentPlayerId ? String(currentPlayerId) : null;
 
   const loginAs = (playerId: number) => {
     localStorage.setItem("vclol_player_id", String(playerId));
@@ -36,8 +22,6 @@ export default function DevLogin() {
     window.dispatchEvent(new Event("storage"));
     navigate("/");
   };
-
-  const currentId = localStorage.getItem("vclol_player_id");
 
   return (
     <PublicLayout>
@@ -86,8 +70,7 @@ export default function DevLogin() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-display font-bold text-primary">{p.currentElo} ELO</div>
-                    <div className="text-xs text-muted-foreground">{p.wins}W / {p.losses}L</div>
+                    <div className="text-sm font-display font-bold text-primary">ID #{p.id}</div>
                   </div>
                 </button>
               ))
