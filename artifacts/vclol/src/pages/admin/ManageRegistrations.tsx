@@ -105,7 +105,7 @@ export default function ManageRegistrations() {
                           onClick={() => handleConfirm(item.id)}
                           disabled={confirmMut.isPending}
                         >
-                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4 text-green-400" />
                         </Button>
                       )}
                       {item.status !== "withdrawn" && (
@@ -116,7 +116,7 @@ export default function ManageRegistrations() {
                           onClick={() => handleWithdraw(item.id)}
                           disabled={withdrawMut.isPending}
                         >
-                          <XCircle className="w-4 h-4 text-yellow-500" />
+                          <XCircle className="w-4 h-4 text-yellow-400" />
                         </Button>
                       )}
                       <Button

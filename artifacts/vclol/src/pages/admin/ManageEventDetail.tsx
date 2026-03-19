@@ -353,12 +353,12 @@ export default function ManageEventDetail() {
                       <div className="flex items-center justify-end gap-1">
                         {r.status !== "confirmed" && (
                           <Button variant="ghost" size="icon" title="Confirm" onClick={() => confirmReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle className="w-4 h-4 text-green-400" />
                           </Button>
                         )}
                         {r.status !== "withdrawn" && (
                           <Button variant="ghost" size="icon" title="Withdraw" onClick={() => withdrawReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
-                            <XCircle className="w-4 h-4 text-yellow-500" />
+                            <XCircle className="w-4 h-4 text-yellow-400" />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm("Delete?")) deleteReg.mutate({ id: r.id }, { onSuccess: invalidateRegs }); }}>

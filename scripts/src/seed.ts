@@ -203,6 +203,7 @@ async function seed() {
       teamBEloBefore: betaEloBefore,
       teamBEloAfter:  betaEloAfter,
       resultSource:  "admin_manual",
+      visibleAfter:  new Date("2026-01-01"),
       seasonId:      season!.id,
       eventId:       ms.isEvent ? event1!.id : null,
       isPlayoff:     ms.isEvent,

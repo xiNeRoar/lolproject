@@ -151,6 +151,16 @@ Use `useAuth()` everywhere instead of raw localStorage.
 - Email: `admin@vclol.gg`
 - Password: `admin123`
 
+## DB Migration Status (2026-03-19)
+
+All DB schema changes from SCHEMA_CONTRACT.md have been applied:
+- `season_champions`: migrated from `player_id` to `team_id`/`team_name`
+- `players`: dropped `current_elo`/`peak_elo`/`wins`/`losses`
+- `matches`: dropped `player_a_id`/`player_b_id`/`player_a_elo_before/after`/`player_b_elo_before/after`
+- `event_registrations`: added `team_id` FK
+- Dropped tables: `challenges`, `matchmaking_queue`, `interest_submissions`, `admin_schedule_settings`
+- Seed data: 2 teams (Alpha/Beta), 10 players, 4 matches, 1 event, 1 VOD — all 5v5
+
 ## Design System
 
 - Dark theme (charcoal + steel blue). CSS vars in `src/index.css`.
