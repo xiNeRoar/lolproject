@@ -5,9 +5,7 @@ import {
   useActivateSeason,
   useCompleteSeason,
   useGetLadderSettings,
-  useListPlayers,
-  useListChallenges,
-  useDeleteChallenge,
+  useListTeams,
   useListMatches,
   useCreateMatch,
   useUpdateMatch,
@@ -22,24 +20,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ArrowLeft, Trophy, Zap, Swords, Star, ClipboardCheck,
-  UserX, ShieldAlert, ExternalLink, Plus, Info, Edit, Trash2, Film, Settings,
+  ArrowLeft, Trophy, Swords, Star, Plus, Info, Edit, Trash2, Film, Settings, ExternalLink,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
+import { Link } from "wouter";
 
-type Tab = "details" | "standings" | "challenges" | "matches" | "champions";
-
-const ROUND_OPTIONS = [
-  { label: "—  (no round)", value: "" },
-  { label: "Group Stage", value: "0" },
-  { label: "Quarter Finals", value: "1" },
-  { label: "Semi Finals", value: "2" },
-  { label: "Final", value: "3" },
-  { label: "3rd Place", value: "4" },
-];
+type Tab = "details" | "standings" | "matches" | "champions";
 
 function seasonStatusBadge(status: string) {
   if (status === "active") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>;
@@ -47,46 +36,22 @@ function seasonStatusBadge(status: string) {
   return <Badge variant="secondary">Upcoming</Badge>;
 }
 
-function challengeStatusBadge(status: string) {
-  const map: Record<string, string> = {
-    pending: "bg-muted text-muted-foreground border-border",
-    accepted: "bg-green-500/20 text-green-400 border-green-500/30",
-    completed: "bg-primary/20 text-primary border-primary/30",
-    declined: "bg-red-500/20 text-red-400 border-red-500/30",
-    expired: "bg-muted text-muted-foreground border-border",
-    expired_no_show: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    disputed: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  };
-  const cls = map[status] ?? "bg-muted text-muted-foreground border-border";
-  return (
-    <Badge className={`${cls} capitalize text-xs`}>
-      {status.replace(/_/g, " ")}
-    </Badge>
-  );
-}
-
-const DISABLED_TOOLTIP = "Requires backend update — see REMAINING_WORK.md (B3/B5/B6)";
-
 export default function ManageSeasonDetail() {
   const { id } = useParams<{ id: string }>();
   const seasonId = Number(id);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("details");
-  const [challengeStatusFilter, setChallengeStatusFilter] = useState<string>("all");
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
 
-  // ── Data fetching ───────────────────────────────────────────
   const { data: seasons } = useListSeasons();
   const season = seasons?.find((s) => s.id === seasonId);
 
-  const { data: allPlayers, isLoading: playersLoading } = useListPlayers();
-  const { data: allChallenges, isLoading: challengesLoading } = useListChallenges();
+  const { data: allTeams } = useListTeams();
   const { data: allMatches, isLoading: matchesLoading } = useListMatches({ seasonId });
   const { data: allChampions, isLoading: championsLoading } = useListSeasonChampions();
 
   const { data: ladderSettings } = useGetLadderSettings();
-  const deleteChallenge = useDeleteChallenge();
   const deleteMatch = useDeleteMatch();
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
@@ -99,14 +64,13 @@ export default function ManageSeasonDetail() {
     name: "", startDate: "", endDate: "", eloResetFactor: "0.50", defaultMatchFormat: "" as string | null,
   });
 
-  // ── Match form (Add Match dialog) ───────────────────────────
   const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control: matchControl, setValue: setMatchVal } = useForm();
-  const watchedPlayerAId = useWatch({ control: matchControl, name: "playerAId" });
-  const watchedPlayerBId = useWatch({ control: matchControl, name: "playerBId" });
+  const watchedTeamAId = useWatch({ control: matchControl, name: "teamAId" });
+  const watchedTeamBId = useWatch({ control: matchControl, name: "teamBId" });
   const watchedMatchFormat = useWatch({ control: matchControl, name: "format" });
   const scoreOptions = getScoreOptions(watchedMatchFormat || "BO1");
-  const matchPlayerA = allPlayers?.find((p) => p.id === Number(watchedPlayerAId));
-  const matchPlayerB = allPlayers?.find((p) => p.id === Number(watchedPlayerBId));
+  const matchTeamA = allTeams?.find((t) => t.id === Number(watchedTeamAId));
+  const matchTeamB = allTeams?.find((t) => t.id === Number(watchedTeamBId));
 
   useEffect(() => {
     if (season) {
@@ -121,17 +85,17 @@ export default function ManageSeasonDetail() {
   }, [season?.id]);
 
   useEffect(() => {
-    if (matchPlayerA) setMatchVal("sideAName", matchPlayerA.riotId);
-  }, [watchedPlayerAId]);
+    if (matchTeamA) setMatchVal("sideAName", matchTeamA.name);
+  }, [watchedTeamAId]);
 
   useEffect(() => {
-    if (matchPlayerB) setMatchVal("sideBName", matchPlayerB.riotId);
-  }, [watchedPlayerBId]);
+    if (matchTeamB) setMatchVal("sideBName", matchTeamB.name);
+  }, [watchedTeamBId]);
 
   const resolvedDefaultFormat = season?.defaultMatchFormat || ladderSettings?.defaultMatchFormat || "BO1";
 
   const openNewMatch = () => {
-    resetMatch({ playerAId: "", playerBId: "", sideAName: "", sideBName: "", winner: "A", format: resolvedDefaultFormat, score: "" });
+    resetMatch({ teamAId: "", teamBId: "", sideAName: "", sideBName: "", winner: "A", format: resolvedDefaultFormat, score: "" });
     setEditingMatchId(null);
     setMatchDialogOpen(true);
   };
@@ -139,8 +103,8 @@ export default function ManageSeasonDetail() {
   const openEditMatch = (m: Match) => {
     const winner = m.winnerName === m.sideBName ? "B" : "A";
     resetMatch({
-      playerAId: m.playerAId ? String(m.playerAId) : "",
-      playerBId: m.playerBId ? String(m.playerBId) : "",
+      teamAId: m.teamAId ? String(m.teamAId) : "",
+      teamBId: m.teamBId ? String(m.teamBId) : "",
       sideAName: m.sideAName,
       sideBName: m.sideBName,
       winner,
@@ -153,13 +117,13 @@ export default function ManageSeasonDetail() {
 
   const invalidateMatchQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
     queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
   };
 
   const onMatchSubmit = (data: Record<string, unknown>) => {
-    const sideA = String(data.sideAName ?? matchPlayerA?.riotId ?? "");
-    const sideB = String(data.sideBName ?? matchPlayerB?.riotId ?? "");
+    const sideA = String(data.sideAName ?? matchTeamA?.name ?? "");
+    const sideB = String(data.sideBName ?? matchTeamB?.name ?? "");
     const winnerName = data.winner === "B" ? sideB : sideA;
     const payload: CreateMatchRequest = {
       matchTitle: `${sideA} vs ${sideB}`,
@@ -168,10 +132,9 @@ export default function ManageSeasonDetail() {
       winnerName,
       score: data.score ? String(data.score) : null,
       format: data.format ? String(data.format) : "BO1",
-      vodUrl: null,
       eventId: null,
-      playerAId: data.playerAId ? Number(data.playerAId) : null,
-      playerBId: data.playerBId ? Number(data.playerBId) : null,
+      teamAId: data.teamAId ? Number(data.teamAId) : null,
+      teamBId: data.teamBId ? Number(data.teamBId) : null,
       seasonId,
       isPlayoff: false,
       round: null,
@@ -196,31 +159,15 @@ export default function ManageSeasonDetail() {
     }
   };
 
-  // ── Derived data ────────────────────────────────────────────
   const ladderMatches = useMemo(() => (allMatches ?? []).filter((m) => !m.eventId), [allMatches]);
 
   const standings = useMemo(() => {
-    if (!allPlayers || !ladderMatches) return [];
-    const participantIds = new Set<number>();
-    ladderMatches.forEach((m) => {
-      if (m.playerAId) participantIds.add(m.playerAId);
-      if (m.playerBId) participantIds.add(m.playerBId);
-    });
-    return (allPlayers)
-      .filter((p) => participantIds.has(p.id))
-      .sort((a, b) => b.currentElo - a.currentElo)
-      .map((p, idx) => ({ ...p, rank: idx + 1 }));
-  }, [allPlayers, ladderMatches]);
-
-  const seasonChallenges = useMemo(
-    () => (allChallenges ?? []).filter((c) => c.seasonId === seasonId),
-    [allChallenges, seasonId]
-  );
-
-  const filteredChallenges = useMemo(
-    () => seasonChallenges.filter((c) => challengeStatusFilter === "all" || c.status === challengeStatusFilter),
-    [seasonChallenges, challengeStatusFilter]
-  );
+    if (!allTeams) return [];
+    return [...allTeams]
+      .filter((t) => t.isActive)
+      .sort((a, b) => b.teamElo - a.teamElo)
+      .map((t, idx) => ({ ...t, rank: idx + 1 }));
+  }, [allTeams]);
 
   const seasonChampion = useMemo(
     () => (allChampions ?? []).find((c) => c.seasonId === seasonId),
@@ -230,7 +177,6 @@ export default function ManageSeasonDetail() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: "details", label: "Details", icon: <Settings className="w-4 h-4" /> },
     { id: "standings", label: "Standings", icon: <Trophy className="w-4 h-4" /> },
-    { id: "challenges", label: "Challenges", icon: <Zap className="w-4 h-4" />, count: seasonChallenges.length },
     { id: "matches", label: "Matches", icon: <Swords className="w-4 h-4" />, count: ladderMatches.length },
     { id: "champions", label: "Champions", icon: <Star className="w-4 h-4" /> },
   ];
@@ -241,7 +187,6 @@ export default function ManageSeasonDetail() {
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/admin/seasons")}
@@ -260,7 +205,6 @@ export default function ManageSeasonDetail() {
         )}
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-1 border-b border-border mb-6">
         {tabs.map((t) => (
           <button
@@ -281,14 +225,13 @@ export default function ManageSeasonDetail() {
         ))}
       </div>
 
-      {/* ── DETAILS TAB ───────────────────────────────────────── */}
       {tab === "details" && (
         <div className="max-w-lg space-y-6">
           <div className="bg-card border border-border/50 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <label className="text-sm font-medium block">Season Status</label>
-                <p className="text-xs text-muted-foreground mt-0.5">Use the actions below to change season status. Status transitions trigger important side effects.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Use the actions below to change season status.</p>
               </div>
               {season && seasonStatusBadge(season.status)}
             </div>
@@ -297,19 +240,15 @@ export default function ManageSeasonDetail() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-green-400 border-green-500/30 hover:bg-green-500/10"
-                  disabled={activateSeason.isPending}
+                  className="text-green-400 border-green-400/30"
                   onClick={() => {
-                    if (confirm(`Activate "${season?.name}"?\n\nThis will end any currently active season.`)) {
+                    if (confirm("Activate this season? This will deactivate any currently active season.")) {
                       activateSeason.mutate({ id: seasonId }, {
-                        onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
-                        },
+                        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/seasons"] }),
                       });
                     }
                   }}
+                  disabled={activateSeason.isPending}
                 >
                   Activate Season
                 </Button>
@@ -318,20 +257,15 @@ export default function ManageSeasonDetail() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10"
-                  disabled={completeSeason.isPending}
+                  className="text-yellow-400 border-yellow-400/30"
                   onClick={() => {
-                    if (confirm(`Complete "${season?.name}"?\n\nWARNING: This will apply an ELO soft reset to all active players. This action cannot be undone.`)) {
+                    if (confirm("Complete this season? This will crown the top team as champion and archive standings.")) {
                       completeSeason.mutate({ id: seasonId }, {
-                        onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/ladder"] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/season-champions"] });
-                        },
+                        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/seasons"] }),
                       });
                     }
                   }}
+                  disabled={completeSeason.isPending}
                 >
                   Complete Season
                 </Button>
@@ -340,273 +274,121 @@ export default function ManageSeasonDetail() {
           </div>
 
           <div className="bg-card border border-border/50 rounded-lg p-6 space-y-4">
-            <p className="text-xs text-muted-foreground">Edit season metadata. Changes take effect immediately on save.</p>
-            <div>
-              <label className="text-sm font-medium block mb-1">Season Name</label>
-              <Input
-                value={seasonEditForm.name}
-                onChange={(e) => setSeasonEditForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Spring 2025"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Season Info</h3>
+            <div className="space-y-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
-                <Input
-                  type="date"
-                  value={seasonEditForm.startDate}
-                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, startDate: e.target.value }))}
-                />
+                <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                <Input value={seasonEditForm.name} onChange={(e) => setSeasonEditForm((f) => ({ ...f, name: e.target.value }))} />
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">End Date</label>
-                <Input
-                  type="date"
-                  value={seasonEditForm.endDate}
-                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, endDate: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
+                  <Input type="date" value={seasonEditForm.startDate} onChange={(e) => setSeasonEditForm((f) => ({ ...f, startDate: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
+                  <Input type="date" value={seasonEditForm.endDate} onChange={(e) => setSeasonEditForm((f) => ({ ...f, endDate: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">ELO Reset Factor</label>
+                  <Input value={seasonEditForm.eloResetFactor} onChange={(e) => setSeasonEditForm((f) => ({ ...f, eloResetFactor: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Default Match Format</label>
+                  <select
+                    value={seasonEditForm.defaultMatchFormat ?? ""}
+                    onChange={(e) => setSeasonEditForm((f) => ({ ...f, defaultMatchFormat: e.target.value || null }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Use ladder default ({ladderSettings?.defaultMatchFormat ?? "BO1"})</option>
+                    {MATCH_FORMAT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1">ELO Reset Factor</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={seasonEditForm.eloResetFactor}
-                onChange={(e) => setSeasonEditForm((f) => ({ ...f, eloResetFactor: e.target.value }))}
-                placeholder="0.50"
-              />
-              <p className="text-xs text-muted-foreground mt-1">0.50 = compress halfway to 1000. 0 = full reset. 1 = no reset.</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1">Default Match Format</label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={seasonEditForm.defaultMatchFormat ?? ""}
-                onChange={(e) => setSeasonEditForm((f) => ({ ...f, defaultMatchFormat: e.target.value || null }))}
-              >
-                <option value="">Inherit from Ladder Settings ({ladderSettings?.defaultMatchFormat || "BO1"})</option>
-                {MATCH_FORMAT_OPTIONS.map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">Overrides the global ladder default for matches in this season. "Inherit" uses the value from Ladder Settings.</p>
-            </div>
-            <div className="pt-2">
-              <Button
-                onClick={() => {
-                  setSeasonSaving(true);
-                  updateSeason.mutate(
-                    {
-                      id: seasonId,
-                      data: {
-                        name: seasonEditForm.name,
-                        startDate: seasonEditForm.startDate,
-                        endDate: seasonEditForm.endDate,
-                        eloResetFactor: seasonEditForm.eloResetFactor,
-                        defaultMatchFormat: seasonEditForm.defaultMatchFormat,
-                      },
-                    },
-                    {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
-                        setSeasonSaving(false);
-                      },
-                      onError: () => setSeasonSaving(false),
-                    }
-                  );
-                }}
-                disabled={updateSeason.isPending || seasonSaving}
-              >
-                {updateSeason.isPending ? "Saving…" : "Save Changes"}
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              disabled={seasonSaving}
+              onClick={() => {
+                setSeasonSaving(true);
+                updateSeason.mutate({
+                  id: seasonId,
+                  data: {
+                    name: seasonEditForm.name,
+                    startDate: seasonEditForm.startDate,
+                    endDate: seasonEditForm.endDate,
+                    eloResetFactor: seasonEditForm.eloResetFactor,
+                    defaultMatchFormat: seasonEditForm.defaultMatchFormat,
+                  },
+                }, {
+                  onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/seasons"] });
+                    setSeasonSaving(false);
+                  },
+                  onError: () => setSeasonSaving(false),
+                });
+              }}
+            >
+              {seasonSaving ? "Saving…" : "Save Changes"}
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── STANDINGS TAB ─────────────────────────────────────── */}
       {tab === "standings" && (
         <div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Players who have ladder matches in this season, ranked by current ELO.
-          </p>
+          <div className="flex items-start gap-2 text-sm text-muted-foreground mb-4 max-w-lg">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+            <span>
+              Current team standings sorted by ELO. Teams qualify for playoffs based on their ELO ranking.
+            </span>
+          </div>
+
           <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-3 w-12">#</th>
-                  <th className="px-6 py-3">Player</th>
+                  <th className="px-6 py-3 w-14">#</th>
+                  <th className="px-6 py-3">Team</th>
                   <th className="px-6 py-3">ELO</th>
-                  <th className="px-6 py-3">W / L</th>
-                  <th className="px-6 py-3">Win Rate</th>
+                  <th className="px-6 py-3">W/L</th>
                 </tr>
               </thead>
               <tbody>
-                {playersLoading || matchesLoading ? (
-                  <tr><td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">Loading…</td></tr>
-                ) : !standings.length ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
-                      No players have ladder matches in this season yet.
-                    </td>
-                  </tr>
-                ) : standings.map((p) => {
-                  const total = p.wins + p.losses;
-                  const wr = total ? `${Math.round((p.wins / total) * 100)}%` : "—";
-                  return (
-                    <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
-                      <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{p.rank}</td>
+                {standings.length === 0 ? (
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-muted-foreground">No active teams yet.</td></tr>
+                ) : (
+                  standings.map((team) => (
+                    <tr key={team.id} className="border-b border-border/20 hover:bg-muted/20">
+                      <td className="px-6 py-4 font-bold text-muted-foreground">{team.rank}</td>
                       <td className="px-6 py-4">
-                        <div className="font-medium">{p.riotId}</div>
-                        <div className="text-xs text-muted-foreground">{p.discordUsername}</div>
+                        <Link href={`/teams/${team.id}`} className="font-medium text-primary hover:underline">
+                          {team.name}
+                        </Link>
+                        <span className="text-xs text-muted-foreground ml-2">[{team.tag}]</span>
                       </td>
-                      <td className="px-6 py-4 font-mono text-primary font-semibold">{p.currentElo}</td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        <span className="text-green-400">{p.wins}W</span>{" / "}
-                        <span className="text-red-400">{p.losses}L</span>
+                      <td className="px-6 py-4 font-display font-bold text-primary">{team.teamElo}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-green-400">{team.wins}W</span> / <span className="text-red-400">{team.losses}L</span>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">{wr}</td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* ── CHALLENGES TAB ────────────────────────────────────── */}
-      {tab === "challenges" && (
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div className="flex items-start gap-2 text-sm text-muted-foreground max-w-lg">
-              <Info className="w-4 h-4 shrink-0 mt-0.5 text-yellow-400" />
-              <span>
-                <span className="text-yellow-400">Force Accept / Record Result / Assign Loss</span> buttons are pending backend implementation (B3/B5/B6 in REMAINING_WORK.md).
-              </span>
-            </div>
-            <select
-              value={challengeStatusFilter}
-              onChange={(e) => setChallengeStatusFilter(e.target.value)}
-              className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shrink-0"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="completed">Completed</option>
-              <option value="declined">Declined</option>
-              <option value="expired">Expired</option>
-              <option value="expired_no_show">No-show</option>
-              <option value="disputed">Disputed</option>
-            </select>
-          </div>
-
-          {challengesLoading ? (
-            <div className="space-y-2 animate-pulse">
-              {[1, 2, 3].map((i) => <div key={i} className="h-14 bg-card rounded-lg" />)}
-            </div>
-          ) : !filteredChallenges.length ? (
-            <div className="text-center py-16 border border-dashed border-border rounded-lg">
-              <Zap className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-muted-foreground">
-                {seasonChallenges.length === 0 ? "No challenges this season yet." : "No challenges match the selected filter."}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
-                  <tr>
-                    <th className="px-6 py-3">Challenger</th>
-                    <th className="px-6 py-3">vs</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3 hidden sm:table-cell">Scheduled</th>
-                    <th className="px-6 py-3 hidden md:table-cell">Game ID</th>
-                    <th className="px-6 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredChallenges.map((c) => {
-                    const canForceAccept = c.status === "pending";
-                    const canRecordResult = c.status === "accepted" && !!c.gameId;
-                    const canMarkNoShow = c.status === "accepted";
-                    const canAssignLoss = c.status === "expired_no_show";
-                    const isCompleted = c.status === "completed";
-                    return (
-                      <tr key={c.id} className="border-b border-border/20 hover:bg-muted/20">
-                        <td className="px-6 py-4 font-medium">{c.challengerRiotId ?? `#${c.challengerId}`}</td>
-                        <td className="px-6 py-4 text-muted-foreground">{c.challengedRiotId ?? `#${c.challengedId}`}</td>
-                        <td className="px-6 py-4">{challengeStatusBadge(c.status)}</td>
-                        <td className="px-6 py-4 text-muted-foreground text-xs hidden sm:table-cell">
-                          {c.scheduledTime
-                            ? new Date(c.scheduledTime).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                            : "—"}
-                        </td>
-                        <td className="px-6 py-4 text-muted-foreground font-mono text-xs hidden md:table-cell">
-                          {c.gameId ?? "—"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {canForceAccept && (
-                              <Button size="sm" variant="outline" disabled title={DISABLED_TOOLTIP}
-                                className="gap-1.5 text-xs opacity-50 cursor-not-allowed">
-                                <ShieldAlert className="w-3.5 h-3.5" /> Force Accept
-                              </Button>
-                            )}
-                            {canRecordResult && (
-                              <Button size="sm" variant="outline" disabled title={DISABLED_TOOLTIP}
-                                className="gap-1.5 text-xs text-yellow-400 border-yellow-400/30 opacity-50 cursor-not-allowed">
-                                <ClipboardCheck className="w-3.5 h-3.5" /> Record Result
-                              </Button>
-                            )}
-                            {canMarkNoShow && (
-                              <Button size="sm" variant="outline" disabled title={DISABLED_TOOLTIP}
-                                className="gap-1.5 text-xs text-orange-400 border-orange-400/30 opacity-50 cursor-not-allowed">
-                                <UserX className="w-3.5 h-3.5" /> No-Show
-                              </Button>
-                            )}
-                            {canAssignLoss && (
-                              <Button size="sm" variant="outline" disabled title={DISABLED_TOOLTIP}
-                                className="gap-1.5 text-xs text-red-400 border-red-400/30 opacity-50 cursor-not-allowed">
-                                <UserX className="w-3.5 h-3.5" /> Assign Loss
-                              </Button>
-                            )}
-                            {isCompleted && c.matchId && (
-                              <Button size="sm" variant="ghost" className="gap-1.5 text-xs text-primary"
-                                onClick={() => navigate(`/matches/${c.matchId}`)}>
-                                <ExternalLink className="w-3.5 h-3.5" /> View Match
-                              </Button>
-                            )}
-                            <Button size="sm" variant="ghost"
-                              className="text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                              onClick={() => { if (confirm("Delete this challenge?")) deleteChallenge.mutate({ id: c.id }); }}>
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── MATCHES TAB ───────────────────────────────────────── */}
       {tab === "matches" && (
         <div>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
             <div className="flex items-start gap-2 text-sm text-muted-foreground max-w-lg">
               <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
               <span>
-                Ladder matches for this season. Matches from accepted challenges should be created via
-                the <strong className="text-foreground">Challenges → Record Result</strong> flow (once backend B3 is built)
-                to ensure proper linking.
+                Ladder matches for this season. Matches submitted through the Discord bot will appear here automatically.
               </span>
             </div>
             <Button size="sm" onClick={openNewMatch} className="shrink-0">
@@ -618,7 +400,7 @@ export default function ManageSeasonDetail() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-3">Players</th>
+                  <th className="px-6 py-3">Teams</th>
                   <th className="px-6 py-3">Result</th>
                   <th className="px-6 py-3 hidden sm:table-cell">Score</th>
                   <th className="px-6 py-3 hidden md:table-cell">ELO Δ</th>
@@ -650,21 +432,21 @@ export default function ManageSeasonDetail() {
                       {m.score ?? "—"}
                     </td>
                     <td className="px-6 py-4 hidden md:table-cell text-xs space-y-0.5">
-                      {m.playerAEloAfter != null && m.playerAEloBefore != null ? (
+                      {m.teamAEloAfter != null && m.teamAEloBefore != null ? (
                         <div>
                           <span className="text-muted-foreground">{m.sideAName}: </span>
-                          <span className={m.playerAEloAfter >= m.playerAEloBefore ? "text-green-400" : "text-red-400"}>
-                            {m.playerAEloAfter >= m.playerAEloBefore ? "+" : ""}
-                            {m.playerAEloAfter - m.playerAEloBefore}
+                          <span className={m.teamAEloAfter >= m.teamAEloBefore ? "text-green-400" : "text-red-400"}>
+                            {m.teamAEloAfter >= m.teamAEloBefore ? "+" : ""}
+                            {m.teamAEloAfter - m.teamAEloBefore}
                           </span>
                         </div>
                       ) : <span className="text-muted-foreground">—</span>}
-                      {m.playerBEloAfter != null && m.playerBEloBefore != null && (
+                      {m.teamBEloAfter != null && m.teamBEloBefore != null && (
                         <div>
                           <span className="text-muted-foreground">{m.sideBName}: </span>
-                          <span className={m.playerBEloAfter >= m.playerBEloBefore ? "text-green-400" : "text-red-400"}>
-                            {m.playerBEloAfter >= m.playerBEloBefore ? "+" : ""}
-                            {m.playerBEloAfter - m.playerBEloBefore}
+                          <span className={m.teamBEloAfter >= m.teamBEloBefore ? "text-green-400" : "text-red-400"}>
+                            {m.teamBEloAfter >= m.teamBEloBefore ? "+" : ""}
+                            {m.teamBEloAfter - m.teamBEloBefore}
                           </span>
                         </div>
                       )}
@@ -685,8 +467,8 @@ export default function ManageSeasonDetail() {
                         <Button variant="ghost" size="icon" title="View public match page" onClick={() => window.open(`/matches/${m.id}`, "_blank")}>
                           <ExternalLink className="w-4 h-4 text-muted-foreground" />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Delete match — ELO changes will NOT be reversed automatically"
-                          onClick={() => { if (confirm("Delete this match?\n\nELO changes will NOT be reversed automatically.")) deleteMatch.mutate({ id: m.id }); }}>
+                        <Button variant="ghost" size="icon" title="Delete match"
+                          onClick={() => { if (confirm("Delete this match?\n\nELO changes will NOT be reversed automatically.")) deleteMatch.mutate({ id: m.id }, { onSuccess: invalidateMatchQueries }); }}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
@@ -697,40 +479,37 @@ export default function ManageSeasonDetail() {
             </table>
           </div>
 
-          {/* Add / Edit Ladder Match Dialog */}
           <Dialog open={matchDialogOpen} onOpenChange={(open) => { setMatchDialogOpen(open); if (!open) setEditingMatchId(null); }}>
             <DialogHeader>
               <DialogTitle>{editingMatchId ? "Edit Ladder Match" : "Add Ladder Match"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleMatchSubmit(onMatchSubmit)} className="space-y-4 mt-4">
-              {/* Players */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Players</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Teams</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player A</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerAId")}>
-                      <option value="">Select player…</option>
-                      {allPlayers?.map((p) => <option key={p.id} value={p.id}>{p.riotId} ({p.currentElo})</option>)}
+                    <label className="text-xs text-muted-foreground mb-1 block">Team A</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("teamAId")}>
+                      <option value="">Select team…</option>
+                      {allTeams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}] ({t.teamElo})</option>)}
                     </select>
-                    {matchPlayerA && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="text-primary font-semibold">{matchPlayerA.currentElo}</span></p>
+                    {matchTeamA && (
+                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="text-primary font-semibold">{matchTeamA.teamElo}</span></p>
                     )}
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Player B</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
-                      <option value="">Select player…</option>
-                      {allPlayers?.map((p) => <option key={p.id} value={p.id}>{p.riotId} ({p.currentElo})</option>)}
+                    <label className="text-xs text-muted-foreground mb-1 block">Team B</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("teamBId")}>
+                      <option value="">Select team…</option>
+                      {allTeams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}] ({t.teamElo})</option>)}
                     </select>
-                    {matchPlayerB && (
-                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="text-primary font-semibold">{matchPlayerB.currentElo}</span></p>
+                    {matchTeamB && (
+                      <p className="text-xs text-muted-foreground mt-1">ELO: <span className="text-primary font-semibold">{matchTeamB.teamElo}</span></p>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Result */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Result</p>
                 <div>
@@ -738,11 +517,11 @@ export default function ManageSeasonDetail() {
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" value="A" {...regMatch("winner")} defaultChecked className="accent-primary" />
-                      <span className="text-sm">{matchPlayerA?.riotId ?? "Player A"}</span>
+                      <span className="text-sm">{matchTeamA?.name ?? "Team A"}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" value="B" {...regMatch("winner")} className="accent-primary" />
-                      <span className="text-sm">{matchPlayerB?.riotId ?? "Player B"}</span>
+                      <span className="text-sm">{matchTeamB?.name ?? "Team B"}</span>
                     </label>
                   </div>
                 </div>
@@ -768,7 +547,7 @@ export default function ManageSeasonDetail() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={(createMatch.isPending || updateMatch.isPending) || (!editingMatchId && (!watchedPlayerAId || !watchedPlayerBId))}>
+                <Button type="submit" disabled={(createMatch.isPending || updateMatch.isPending) || (!editingMatchId && (!watchedTeamAId || !watchedTeamBId))}>
                   {createMatch.isPending || updateMatch.isPending ? "Saving…" : editingMatchId ? "Save Changes" : "Save Match"}
                 </Button>
               </div>
@@ -777,7 +556,6 @@ export default function ManageSeasonDetail() {
         </div>
       )}
 
-      {/* ── CHAMPIONS TAB ─────────────────────────────────────── */}
       {tab === "champions" && (
         <div>
           <p className="text-sm text-muted-foreground mb-4">
@@ -800,7 +578,11 @@ export default function ManageSeasonDetail() {
                 <Star className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
                 <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Season Champion</p>
                 <p className="text-2xl font-display font-bold text-yellow-400">
-                  {seasonChampion.playerRiotId ?? `Player #${seasonChampion.playerId}`}
+                  {seasonChampion.teamName ? (
+                    <Link href={`/teams/${seasonChampion.teamId}`} className="hover:underline">
+                      {seasonChampion.teamName}
+                    </Link>
+                  ) : `Team #${seasonChampion.teamId}`}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Final ELO: <span className="text-primary font-mono font-semibold">{seasonChampion.finalElo}</span>

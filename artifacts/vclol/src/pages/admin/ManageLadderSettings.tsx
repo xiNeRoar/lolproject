@@ -4,13 +4,11 @@ import { PLAYOFF_FORMAT_OPTIONS, MATCH_FORMAT_OPTIONS } from "@/lib/tournament-f
 import {
   useGetLadderSettings,
   useUpdateLadderSettings,
-  useGetAdminSchedule,
-  useUpdateAdminSchedule,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Calendar } from "lucide-react";
+import { Settings } from "lucide-react";
 
 function Field({
   label, hint, type = "number", value, onChange,
@@ -37,31 +35,15 @@ function Field({
 
 export default function ManageLadderSettings() {
   const { data: ladder, isLoading: loadingLadder } = useGetLadderSettings();
-  const { data: schedule, isLoading: loadingSchedule } = useGetAdminSchedule();
   const updateLadder = useUpdateLadderSettings();
-  const updateSchedule = useUpdateAdminSchedule();
   const { toast } = useToast();
 
   const [lForm, setLForm] = useState({
     kFactor: 32,
     minMatchesForDisplay: 4,
-    maxChallengesPerWeek: 3,
-    maxChallengesSameOpponentPerWeek: 1,
-    challengeExpiryHours: 48,
-    maxDeclinesPerWeek: 2,
-    maxDeclinesSameOpponentPerWeek: 1,
-    noShowExpiryDays: 7,
-    playoffMinPlayers: 4,
     playoffSize: 8,
     playoffFormat: "single_elimination",
     defaultMatchFormat: "BO1",
-  });
-
-  const [sForm, setSForm] = useState({
-    availableDays: "saturday,sunday",
-    startTime: "12:00",
-    endTime: "20:00",
-    maxConcurrentMatches: 4,
   });
 
   useEffect(() => {
@@ -69,30 +51,12 @@ export default function ManageLadderSettings() {
       setLForm({
         kFactor: ladder.kFactor,
         minMatchesForDisplay: ladder.minMatchesForDisplay,
-        maxChallengesPerWeek: ladder.maxChallengesPerWeek,
-        maxChallengesSameOpponentPerWeek: ladder.maxChallengesSameOpponentPerWeek,
-        challengeExpiryHours: ladder.challengeExpiryHours,
-        maxDeclinesPerWeek: (ladder as any).maxDeclinesPerWeek ?? 2,
-        maxDeclinesSameOpponentPerWeek: (ladder as any).maxDeclinesSameOpponentPerWeek ?? 1,
-        noShowExpiryDays: (ladder as any).noShowExpiryDays ?? 7,
-        playoffMinPlayers: (ladder as any).playoffMinPlayers ?? 4,
-        playoffSize: (ladder as any).playoffSize ?? 8,
-        playoffFormat: (ladder as any).playoffFormat ?? "single_elimination",
+        playoffSize: ladder.playoffSize,
+        playoffFormat: ladder.playoffFormat,
         defaultMatchFormat: ladder.defaultMatchFormat ?? "BO1",
       });
     }
   }, [ladder]);
-
-  useEffect(() => {
-    if (schedule) {
-      setSForm({
-        availableDays: schedule.availableDays,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        maxConcurrentMatches: schedule.maxConcurrentMatches,
-      });
-    }
-  }, [schedule]);
 
   const handleSaveLadder = () => {
     updateLadder.mutate(
@@ -100,13 +64,6 @@ export default function ManageLadderSettings() {
         data: {
           kFactor: Number(lForm.kFactor),
           minMatchesForDisplay: Number(lForm.minMatchesForDisplay),
-          maxChallengesPerWeek: Number(lForm.maxChallengesPerWeek),
-          maxChallengesSameOpponentPerWeek: Number(lForm.maxChallengesSameOpponentPerWeek),
-          challengeExpiryHours: Number(lForm.challengeExpiryHours),
-          maxDeclinesPerWeek: Number(lForm.maxDeclinesPerWeek),
-          maxDeclinesSameOpponentPerWeek: Number(lForm.maxDeclinesSameOpponentPerWeek),
-          noShowExpiryDays: Number(lForm.noShowExpiryDays),
-          playoffMinPlayers: Number(lForm.playoffMinPlayers),
           playoffSize: Number(lForm.playoffSize),
           playoffFormat: lForm.playoffFormat,
           defaultMatchFormat: lForm.defaultMatchFormat,
@@ -116,26 +73,11 @@ export default function ManageLadderSettings() {
     );
   };
 
-  const handleSaveSchedule = () => {
-    updateSchedule.mutate(
-      {
-        data: {
-          availableDays: sForm.availableDays,
-          startTime: sForm.startTime,
-          endTime: sForm.endTime,
-          maxConcurrentMatches: Number(sForm.maxConcurrentMatches),
-        },
-      },
-      { onSuccess: () => toast({ title: "Schedule settings saved." }) }
-    );
-  };
-
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-display font-bold mb-6">Ladder & Schedule Settings</h1>
+      <h1 className="text-2xl font-display font-bold mb-6">Ladder Settings</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Ladder ELO Settings */}
+      <div className="max-w-lg">
         <Card className="bg-card/40 border-border/40">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -158,58 +100,13 @@ export default function ManageLadderSettings() {
                 />
                 <Field
                   label="Minimum Matches to Appear"
-                  hint="Players need this many matches to show on the ladder"
+                  hint="Teams need this many matches to show on the ladder"
                   value={lForm.minMatchesForDisplay}
                   onChange={(v) => setLForm((f) => ({ ...f, minMatchesForDisplay: Number(v) }))}
                 />
                 <Field
-                  label="Max Challenges Per Week"
-                  hint="Max challenges a player can send per week"
-                  value={lForm.maxChallengesPerWeek}
-                  onChange={(v) => setLForm((f) => ({ ...f, maxChallengesPerWeek: Number(v) }))}
-                />
-                <Field
-                  label="Max Challenges vs Same Opponent / Week"
-                  value={lForm.maxChallengesSameOpponentPerWeek}
-                  onChange={(v) => setLForm((f) => ({ ...f, maxChallengesSameOpponentPerWeek: Number(v) }))}
-                />
-                <Field
-                  label="Challenge Expiry (hours)"
-                  hint="Time window before a challenge auto-expires"
-                  value={lForm.challengeExpiryHours}
-                  onChange={(v) => setLForm((f) => ({ ...f, challengeExpiryHours: Number(v) }))}
-                />
-                <Field
-                  label="Max Declines Per Week"
-                  hint="How many challenges a player can decline per week (across all challengers)"
-                  type="number"
-                  value={lForm.maxDeclinesPerWeek}
-                  onChange={(v) => setLForm((f) => ({ ...f, maxDeclinesPerWeek: Number(v) }))}
-                />
-                <Field
-                  label="Max Declines vs Same Opponent Per Week"
-                  hint="How many times a player can decline the same challenger per week"
-                  type="number"
-                  value={lForm.maxDeclinesSameOpponentPerWeek}
-                  onChange={(v) => setLForm((f) => ({ ...f, maxDeclinesSameOpponentPerWeek: Number(v) }))}
-                />
-                <Field
-                  label="No-Show Expiry (Days)"
-                  hint="Days after accepted challenge before it's flagged as no-show"
-                  type="number"
-                  value={lForm.noShowExpiryDays}
-                  onChange={(v) => setLForm((f) => ({ ...f, noShowExpiryDays: Number(v) }))}
-                />
-                <Field
-                  label="Playoff Min Players"
-                  hint="Minimum qualified players needed to run a playoff"
-                  type="number"
-                  value={lForm.playoffMinPlayers}
-                  onChange={(v) => setLForm((f) => ({ ...f, playoffMinPlayers: Number(v) }))}
-                />
-                <Field
                   label="Playoff Size"
-                  hint="Number of players in the playoff bracket (4 or 8)"
+                  hint="Number of teams in the playoff bracket (4 or 8)"
                   type="number"
                   value={lForm.playoffSize}
                   onChange={(v) => setLForm((f) => ({ ...f, playoffSize: Number(v) }))}
@@ -246,60 +143,6 @@ export default function ManageLadderSettings() {
                   disabled={updateLadder.isPending}
                 >
                   {updateLadder.isPending ? "Saving..." : "Save Ladder Settings"}
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Schedule Settings */}
-        <Card className="bg-card/40 border-border/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="w-5 h-5 text-primary" />
-              Match Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {loadingSchedule ? (
-              <div className="space-y-3 animate-pulse">
-                {[1, 2, 3, 4].map((i) => <div key={i} className="h-9 bg-muted rounded" />)}
-              </div>
-            ) : (
-              <>
-                <Field
-                  label="Available Days"
-                  hint="Comma-separated: monday, tuesday, wednesday, thursday, friday, saturday, sunday"
-                  type="text"
-                  value={sForm.availableDays}
-                  onChange={(v) => setSForm((f) => ({ ...f, availableDays: v }))}
-                />
-                <Field
-                  label="Start Time (HH:MM)"
-                  hint="Matches can start from this time"
-                  type="time"
-                  value={sForm.startTime}
-                  onChange={(v) => setSForm((f) => ({ ...f, startTime: v }))}
-                />
-                <Field
-                  label="End Time (HH:MM)"
-                  hint="No matches scheduled after this time"
-                  type="time"
-                  value={sForm.endTime}
-                  onChange={(v) => setSForm((f) => ({ ...f, endTime: v }))}
-                />
-                <Field
-                  label="Max Concurrent Matches"
-                  hint="How many matches can run at the same time"
-                  value={sForm.maxConcurrentMatches}
-                  onChange={(v) => setSForm((f) => ({ ...f, maxConcurrentMatches: Number(v) }))}
-                />
-                <Button
-                  className="w-full mt-2"
-                  onClick={handleSaveSchedule}
-                  disabled={updateSchedule.isPending}
-                >
-                  {updateSchedule.isPending ? "Saving..." : "Save Schedule Settings"}
                 </Button>
               </>
             )}

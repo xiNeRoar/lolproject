@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useListVods, useListEvents, useGetLadder } from "@workspace/api-client-react";
+import { useListVods, useListEvents, useListPlayers } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,42 +14,33 @@ export default function Vods() {
   const [search, setSearch] = useState("");
   const [eventId, setEventId] = useState<number | undefined>();
   const [champion, setChampion] = useState("");
-  const [opponentChampion, setOpponentChampion] = useState("");
   const [position, setPosition] = useState("");
   const [patch, setPatch] = useState("");
-  const [eloMin, setEloMin] = useState("");
-  const [eloMax, setEloMax] = useState("");
   const [playerIdFilter, setPlayerIdFilter] = useState<number | undefined>();
 
-  const hasFilters = !!(search || eventId || champion || opponentChampion || position || patch || eloMin || eloMax || playerIdFilter);
+  const hasFilters = !!(search || eventId || champion || position || patch || playerIdFilter);
 
   const params = hasFilters
     ? {
         search: search || undefined,
         eventId,
         champion: champion || undefined,
-        opponentChampion: opponentChampion || undefined,
         position: position || undefined,
         patch: patch || undefined,
-        eloMin: eloMin ? Number(eloMin) : undefined,
-        eloMax: eloMax ? Number(eloMax) : undefined,
         playerId: playerIdFilter,
       }
     : undefined;
 
   const { data: vods, isLoading } = useListVods(params);
   const { data: events } = useListEvents();
-  const { data: ladder } = useGetLadder();
+  const { data: players } = useListPlayers();
 
   const clearFilters = () => {
     setSearch("");
     setEventId(undefined);
     setChampion("");
-    setOpponentChampion("");
     setPosition("");
     setPatch("");
-    setEloMin("");
-    setEloMax("");
     setPlayerIdFilter(undefined);
   };
 
@@ -59,9 +50,7 @@ export default function Vods() {
         <h1 className="text-4xl font-display font-bold mb-2">VOD Archive</h1>
         <p className="text-muted-foreground mb-10">Study local matches, review your gameplay, and see how others perform.</p>
 
-        {/* Filters */}
         <div className="flex flex-col gap-3 mb-10 bg-card/30 p-4 rounded-lg border border-border/50">
-          {/* Row 1: search + event */}
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -84,18 +73,11 @@ export default function Vods() {
             </select>
           </div>
 
-          {/* Row 2: champion filters + position + patch */}
           <div className="flex flex-col md:flex-row gap-3">
             <Input
               placeholder="Champion (e.g. Zed)"
               value={champion}
               onChange={(e) => setChampion(e.target.value)}
-              className="bg-background md:w-40"
-            />
-            <Input
-              placeholder="Opponent (e.g. Ahri)"
-              value={opponentChampion}
-              onChange={(e) => setOpponentChampion(e.target.value)}
               className="bg-background md:w-40"
             />
             <select
@@ -116,34 +98,15 @@ export default function Vods() {
             />
           </div>
 
-          {/* Row 3: ELO range + player filter + clear */}
           <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
-            <div className="flex gap-2 items-center">
-              <Input
-                type="number"
-                placeholder="ELO min"
-                value={eloMin}
-                onChange={(e) => setEloMin(e.target.value)}
-                className="bg-background w-28"
-              />
-              <span className="text-muted-foreground text-sm">–</span>
-              <Input
-                type="number"
-                placeholder="ELO max"
-                value={eloMax}
-                onChange={(e) => setEloMax(e.target.value)}
-                className="bg-background w-28"
-              />
-            </div>
-            {/* Player filter dropdown */}
             <select
               className="flex h-10 w-full md:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={playerIdFilter || ""}
               onChange={(e) => setPlayerIdFilter(e.target.value ? Number(e.target.value) : undefined)}
             >
               <option value="">All Players</option>
-              {ladder?.entries?.map((entry) => (
-                <option key={entry.id} value={entry.id}>{entry.riotId}</option>
+              {players?.map((p) => (
+                <option key={p.id} value={p.id}>{p.riotId}</option>
               ))}
             </select>
             {hasFilters && (
@@ -154,7 +117,6 @@ export default function Vods() {
           </div>
         </div>
 
-        {/* Results */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -190,7 +152,6 @@ export default function Vods() {
                       {vod.eventTitle || "Independent Match"}
                     </p>
 
-                    {/* Champion info */}
                     {vod.champion && (
                       <div className="flex gap-1 flex-wrap mb-3">
                         <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
@@ -214,16 +175,15 @@ export default function Vods() {
                       </p>
                     )}
 
-                    {/* Match link */}
-                    {(vod as any).matchId && (
+                    {vod.matchId && (
                       <p className="text-xs text-muted-foreground mb-2">
                         Match:{" "}
                         <Link
-                          href={`/matches/${(vod as any).matchId}`}
+                          href={`/matches/${vod.matchId}`}
                           className="text-primary hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          #{(vod as any).matchId}
+                          #{vod.matchId}
                         </Link>
                       </p>
                     )}

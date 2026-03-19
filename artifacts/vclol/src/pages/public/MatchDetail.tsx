@@ -1,9 +1,10 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetMatch, useListSeasons } from "@workspace/api-client-react";
+import { useGetMatch, useListSeasons, useGetMatchPlayers } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, PlayCircle, Video } from "lucide-react";
+import { ChevronLeft, PlayCircle, Video, Users } from "lucide-react";
+import { champPortraitUrl } from "@/lib/lol-utils";
 
 function EloDelta({ before, after }: { before: number | null | undefined; after: number | null | undefined }) {
   if (before == null || after == null) return null;
@@ -30,17 +31,6 @@ function extractYouTubeId(url: string | null | undefined): string | null {
   return null;
 }
 
-function BackButton() {
-  return (
-    <button
-      onClick={() => window.history.back()}
-      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6"
-    >
-      <ChevronLeft className="w-4 h-4" /> Back
-    </button>
-  );
-}
-
 function bracketRoundLabel(round: number | null | undefined, bracketSlot: number | null | undefined): string | null {
   if (round == null) return null;
   switch (round) {
@@ -53,8 +43,10 @@ function bracketRoundLabel(round: number | null | undefined, bracketSlot: number
 
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
-  const { data: match, isLoading, isError } = useGetMatch(Number(id));
+  const matchId = Number(id);
+  const { data: match, isLoading, isError } = useGetMatch(matchId);
   const { data: seasons } = useListSeasons();
+  const { data: matchPlayers } = useGetMatchPlayers(matchId, { query: { enabled: !!match } });
 
   if (isLoading) {
     return (
@@ -62,7 +54,6 @@ export default function MatchDetail() {
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 animate-pulse">
           <div className="h-12 bg-card rounded mb-6 w-32" />
           <div className="h-48 bg-card rounded-xl mb-6" />
-          <div className="aspect-video bg-card rounded-xl" />
         </div>
       </PublicLayout>
     );
@@ -73,154 +64,161 @@ export default function MatchDetail() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">Match not found.</p>
-          <button
-            onClick={() => window.history.back()}
-            className="text-primary hover:underline text-sm mt-2 inline-block"
-          >
-            ← Back
-          </button>
+          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">← Back</button>
         </div>
       </PublicLayout>
     );
   }
 
-  const seasonName = match.seasonId
-    ? seasons?.find((s) => s.id === match.seasonId)?.name
-    : null;
-
+  const seasonName = match.seasonId ? seasons?.find((s) => s.id === match.seasonId)?.name : null;
   const sideAWon = match.winnerName === match.sideAName;
   const sideBWon = match.winnerName === match.sideBName;
-  const videoId = extractYouTubeId(match.vodUrl);
-
-  const isSeries = match.format
-    ? /bo\d|best.of/i.test(match.format)
-    : false;
-
   const roundLabel = match.isPlayoff ? bracketRoundLabel(match.round, match.bracketSlot) : null;
 
-  const vods = (match as any).vods as Array<{
-    id: number; title: string; videoUrl?: string | null; playerRiotId?: string | null;
-    champion?: string | null; opponentChampion?: string | null; position?: string | null;
-  }> | undefined;
+  const vods = match.vods ?? [];
+  const teamAPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "blue" || p.teamSide === "A");
+  const teamBPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "red" || p.teamSide === "B");
 
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
-        <BackButton />
+        <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Back
+        </button>
 
-        {/* Title + badges */}
         <div className="mb-6">
           <h1 className="text-2xl font-display font-bold mb-3">{match.matchTitle}</h1>
           <div className="flex flex-wrap gap-2">
             {match.format && <Badge variant="outline">{match.format}</Badge>}
             {match.isPlayoff && <Badge className="bg-primary/20 text-primary border-primary/30">Playoff</Badge>}
-            {roundLabel && (
-              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{roundLabel}</Badge>
-            )}
+            {roundLabel && <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{roundLabel}</Badge>}
             {seasonName && <Badge variant="secondary">{seasonName}</Badge>}
             {match.eventTitle && match.eventSlug && (
               <Link href={`/events/${match.eventSlug}`}>
-                <Badge variant="outline" className="hover:border-primary/50 cursor-pointer">
-                  {match.eventTitle}
-                </Badge>
+                <Badge variant="outline" className="hover:border-primary/50 cursor-pointer">{match.eventTitle}</Badge>
               </Link>
             )}
           </div>
         </div>
 
-        {/* Players + Score */}
         <div className="mb-8">
-          {isSeries ? (
-            <div className="flex items-stretch gap-4">
-              <div className={`flex-1 p-5 rounded-xl border text-center ${sideAWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-                {sideAWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-                <div className="text-lg font-display font-bold mb-1">
-                  {match.playerARiotId ? (
-                    <Link href={`/players/${encodeURIComponent(match.playerARiotId)}`} className="hover:text-primary transition-colors">
-                      {match.sideAName}
-                    </Link>
-                  ) : match.sideAName}
-                </div>
-                <EloDelta before={match.playerAEloBefore} after={match.playerAEloAfter} />
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className={`p-5 rounded-xl border text-center ${sideAWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
+              {sideAWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
+              <div className="text-lg font-display font-bold mb-1">
+                {match.teamAId ? (
+                  <Link href={`/teams/${match.teamAId}`} className="hover:text-primary transition-colors">
+                    {match.sideAName}
+                  </Link>
+                ) : match.sideAName}
               </div>
-
-              <div className="flex flex-col items-center justify-center px-4 shrink-0">
-                {match.score ? (
-                  <span className="text-4xl font-display font-bold tracking-widest">{match.score}</span>
-                ) : (
-                  <span className="text-muted-foreground text-sm">vs</span>
-                )}
-              </div>
-
-              <div className={`flex-1 p-5 rounded-xl border text-center ${sideBWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-                {sideBWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-                <div className="text-lg font-display font-bold mb-1">
-                  {match.playerBRiotId ? (
-                    <Link href={`/players/${encodeURIComponent(match.playerBRiotId)}`} className="hover:text-primary transition-colors">
-                      {match.sideBName}
-                    </Link>
-                  ) : match.sideBName}
-                </div>
-                <EloDelta before={match.playerBEloBefore} after={match.playerBEloAfter} />
-              </div>
+              {match.teamATag && <div className="text-xs text-muted-foreground">[{match.teamATag}]</div>}
+              <EloDelta before={match.teamAEloBefore} after={match.teamAEloAfter} />
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className={`p-5 rounded-xl border text-center ${sideAWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-                  {sideAWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-                  <div className="text-lg font-display font-bold mb-1">
-                    {match.playerARiotId ? (
-                      <Link href={`/players/${encodeURIComponent(match.playerARiotId)}`} className="hover:text-primary transition-colors">
-                        {match.sideAName}
-                      </Link>
-                    ) : match.sideAName}
-                  </div>
-                  <EloDelta before={match.playerAEloBefore} after={match.playerAEloAfter} />
-                </div>
-                <div className={`p-5 rounded-xl border text-center ${sideBWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-                  {sideBWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-                  <div className="text-lg font-display font-bold mb-1">
-                    {match.playerBRiotId ? (
-                      <Link href={`/players/${encodeURIComponent(match.playerBRiotId)}`} className="hover:text-primary transition-colors">
-                        {match.sideBName}
-                      </Link>
-                    ) : match.sideBName}
-                  </div>
-                  <EloDelta before={match.playerBEloBefore} after={match.playerBEloAfter} />
-                </div>
+            <div className={`p-5 rounded-xl border text-center ${sideBWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
+              {sideBWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
+              <div className="text-lg font-display font-bold mb-1">
+                {match.teamBId ? (
+                  <Link href={`/teams/${match.teamBId}`} className="hover:text-primary transition-colors">
+                    {match.sideBName}
+                  </Link>
+                ) : match.sideBName}
               </div>
-              {match.score && (
-                <div className="text-center">
-                  <span className="text-3xl font-display font-bold tracking-widest">{match.score}</span>
-                </div>
-              )}
-            </>
+              {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
+              <EloDelta before={match.teamBEloBefore} after={match.teamBEloAfter} />
+            </div>
+          </div>
+          {match.score && (
+            <div className="text-center">
+              <span className="text-3xl font-display font-bold tracking-widest">{match.score}</span>
+            </div>
           )}
         </div>
 
-        {/* Embedded VOD (legacy vodUrl) */}
-        {videoId ? (
-          <div className="mb-8 rounded-xl overflow-hidden border border-border/40 bg-black aspect-video">
-            <iframe
-              src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={match.matchTitle}
-            />
-          </div>
-        ) : match.vodUrl ? (
-          <div className="mb-8 p-4 rounded-xl border border-border/40 bg-card/30 text-sm text-muted-foreground">
-            VOD:{" "}
-            <a href={match.vodUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-              {match.vodUrl}
-            </a>
-          </div>
-        ) : null}
+        {(teamAPlayers.length > 0 || teamBPlayers.length > 0) && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" /> Player Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                    <tr>
+                      <th className="px-4 py-2">Player</th>
+                      <th className="px-4 py-2">Champion</th>
+                      <th className="px-4 py-2">K/D/A</th>
+                      <th className="px-4 py-2 hidden sm:table-cell">CS</th>
+                      <th className="px-4 py-2 hidden sm:table-cell">Gold</th>
+                      <th className="px-4 py-2 hidden md:table-cell">Dmg</th>
+                      <th className="px-4 py-2 hidden md:table-cell">Vision</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamAPlayers.length > 0 && (
+                      <tr className="bg-blue-500/5 border-b border-border/30">
+                        <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
+                          {match.sideAName} {sideAWon ? "(WIN)" : "(LOSS)"}
+                        </td>
+                      </tr>
+                    )}
+                    {teamAPlayers.map((p) => (
+                      <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
+                        <td className="px-4 py-2">
+                          {p.playerRiotId ? (
+                            <Link href={`/players/${encodeURIComponent(p.playerRiotId)}`} className="text-primary hover:underline text-xs">
+                              {p.playerRiotId}
+                            </Link>
+                          ) : <span className="text-xs text-muted-foreground">Player #{p.playerId}</span>}
+                          {p.teamPosition && <div className="text-[10px] text-muted-foreground">{p.teamPosition}</div>}
+                        </td>
+                        <td className="px-4 py-2 text-xs">{p.champion || "-"}</td>
+                        <td className="px-4 py-2 text-xs font-medium">
+                          <span className="text-green-400">{p.kills}</span>/<span className="text-red-400">{p.deaths}</span>/<span className="text-blue-400">{p.assists}</span>
+                        </td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.cs + p.neutralCs}</td>
+                        <td className="px-4 py-2 text-xs text-yellow-400 hidden sm:table-cell">{(p.gold / 1000).toFixed(1)}k</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{(p.damageToChampions / 1000).toFixed(1)}k</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{p.visionScore}</td>
+                      </tr>
+                    ))}
+                    {teamBPlayers.length > 0 && (
+                      <tr className="bg-red-500/5 border-b border-border/30">
+                        <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-red-400">
+                          {match.sideBName} {sideBWon ? "(WIN)" : "(LOSS)"}
+                        </td>
+                      </tr>
+                    )}
+                    {teamBPlayers.map((p) => (
+                      <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
+                        <td className="px-4 py-2">
+                          {p.playerRiotId ? (
+                            <Link href={`/players/${encodeURIComponent(p.playerRiotId)}`} className="text-primary hover:underline text-xs">
+                              {p.playerRiotId}
+                            </Link>
+                          ) : <span className="text-xs text-muted-foreground">Player #{p.playerId}</span>}
+                          {p.teamPosition && <div className="text-[10px] text-muted-foreground">{p.teamPosition}</div>}
+                        </td>
+                        <td className="px-4 py-2 text-xs">{p.champion || "-"}</td>
+                        <td className="px-4 py-2 text-xs font-medium">
+                          <span className="text-green-400">{p.kills}</span>/<span className="text-red-400">{p.deaths}</span>/<span className="text-blue-400">{p.assists}</span>
+                        </td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.cs + p.neutralCs}</td>
+                        <td className="px-4 py-2 text-xs text-yellow-400 hidden sm:table-cell">{(p.gold / 1000).toFixed(1)}k</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{(p.damageToChampions / 1000).toFixed(1)}k</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{p.visionScore}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* VODs from replay pipeline */}
-        {vods && vods.length > 0 && (
+        {vods.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader>
               <CardTitle className="text-base font-display flex items-center gap-2">

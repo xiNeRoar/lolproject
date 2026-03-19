@@ -124,8 +124,15 @@ Use `useAuth()` everywhere instead of raw localStorage.
 | `/admin/ladder-settings` | ManageLadderSettings | Remove 7 challenge fields + schedule section |
 | `/admin/login` | Login | Unchanged |
 
-**Delete pages:** ManageChallenges, Interest
-**Delete components:** ChallengeModal
+**Deleted pages:** ManageChallenges ✓, Interest ✓, Ladder ✓ (redirects to /teams)
+**Deleted components:** ChallengeModal ✓
+
+---
+
+## Utility Files
+
+- `src/lib/lol-utils.ts` — CHAMP_IDS, champPortraitUrl, eloBadgeColor, rankLabel, rankIcon, BADGE_META, ROLES
+- `src/hooks/use-auth.ts` — shared auth hook (wraps localStorage stub)
 
 ---
 

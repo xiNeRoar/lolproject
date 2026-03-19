@@ -9,13 +9,13 @@ export default function Dashboard() {
   if (isLoading) return <AdminLayout>Loading...</AdminLayout>;
 
   const statCards = [
-    { label: "Interest Submissions", value: stats?.interests || 0, icon: Users, color: "text-blue-500" },
-    { label: "Total Events", value: stats?.events || 0, icon: Calendar, color: "text-purple-500" },
-    { label: "Event Registrations", value: stats?.registrations || 0, icon: ClipboardList, color: "text-green-500" },
-    { label: "Matches Recorded", value: stats?.matches || 0, icon: Swords, color: "text-orange-500" },
-    { label: "VODs Archived", value: stats?.vods || 0, icon: Video, color: "text-red-500" },
-    { label: "Registered Players", value: stats?.players || 0, icon: UserCheck, color: "text-cyan-500" },
-    { label: "Seasons", value: stats?.seasons || 0, icon: Trophy, color: "text-yellow-500" },
+    { label: "Teams", value: stats?.teams || 0, icon: Users, color: "text-blue-400" },
+    { label: "Registered Players", value: stats?.players || 0, icon: UserCheck, color: "text-green-400" },
+    { label: "Total Events", value: stats?.events || 0, icon: Calendar, color: "text-purple-400" },
+    { label: "Event Registrations", value: stats?.registrations || 0, icon: ClipboardList, color: "text-primary" },
+    { label: "Matches Recorded", value: stats?.matches || 0, icon: Swords, color: "text-yellow-400" },
+    { label: "VODs Archived", value: stats?.vods || 0, icon: Video, color: "text-red-400" },
+    { label: "Seasons", value: stats?.seasons || 0, icon: Trophy, color: "text-primary" },
   ];
 
   return (

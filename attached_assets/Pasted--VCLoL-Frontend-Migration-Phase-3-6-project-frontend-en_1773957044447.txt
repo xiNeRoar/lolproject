@@ -1,0 +1,831 @@
+# VCLoL — Frontend Migration Phase 3–6
+
+## 你嘅角色同工作方式
+
+你係呢個 project 嘅 **frontend engineer**。後端已完成。你嘅工作係：
+1. 按以下 spec 建立 pages
+2. 決定所有 presentation 細節（layout、typography hierarchy、spacing、animation、互動方式）
+3. 確保同現有 pages 視覺語言一致
+4. 完成後跑 self-validation checklist
+
+**必讀先（按順序）：**
+- `replit.md` — 你嘅 session reference：stack、file ownership、hooks import、design system
+- `docs/MIGRATION_PLAN.md` — file-by-file 完整 spec，Appendix A 有所有 edge case 同埋現有頁面每行代碼嘅詳細分析
+- `CLAUDE.md` — business logic principles，data model
+
+---
+
+## 非可妥協嘅技術規則
+
+呢啲係工程規則，唔係設計建議。違反任何一條係 bug，唔係風格問題。
+
+**1. 只用 generated hooks。**
+所有 API calls 必須 import 自 `@workspace/api-client-react`。唔可以寫 `fetch("/api/...")` 或任何手寫 HTTP call。Hook 唔存在就喺 commit message 記錄需求（`// NEEDS_HOOK: description`），唔好自己寫。
+
+**2. TypeScript strict。**
+零 `any` casts，除非 OpenAPI schema genuinely 缺少某個 field。係嘅話加 `// TODO: add field to OpenAPI spec` comment 並且喺 commit message 列出。
+
+**3. `useAuth()` hook 統一管理 auth state。**
+創建 `src/hooks/use-auth.ts` 作為唯一 auth entry point：
+```tsx
+export function useAuth() {
+  const id = localStorage.getItem("vclol_player_id");
+  return { playerId: id ? Number(id) : null, isLoggedIn: !!id };
+  // Phase 2: replace body with useGetAuthMe()
+}
+```
+全 codebase 搜尋 `localStorage.getItem("vclol_player_id")`，全部換成 `useAuth()`。唯一例外係 `DevLogin.tsx`（set/remove action）同 `use-auth.ts` 本身。
+
+**4. Query invalidation 用 generated key getters。**
+```tsx
+// 正確
+import { getListTeamsQueryKey, getGetTeamQueryKey } from "@workspace/api-client-react";
+queryClient.invalidateQueries({ queryKey: getListTeamsQueryKey() });
+
+// 錯誤
+queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
+```
+
+**5. Mutation feedback 要一致。**
+成功同失敗都用 `toast`（codebase 已有 sonner）。唔可以用 silent mutation。
+
+**6. Shared utilities 抽取，唔好 copy-paste。**
+以下 functions 喺現有 codebase 中有 duplication，必須抽做 shared file（位置由你決定）：
+- ELO display helpers（`eloBadgeColor`、`rankLabel`、`rankIcon`）— 目前喺 Ladder.tsx、PlayerProfile.tsx、PlayerDashboard.tsx 各有一份
+- Champion utilities（`CHAMP_IDS`、`toChampId`、`champPortraitUrl`）— 喺 PlayerProfile.tsx 同 PlayerDashboard.tsx 各有一份
+- Badge metadata（`BADGE_META`）— 喺 PlayerProfile.tsx 同 PlayerDashboard.tsx 各有一份
+- `EloDelta` display component — 喺 MatchDetail.tsx 同 PlayerProfile.tsx 各有一份
+
+---
+
+## Phase 3 — Layout & Navigation
+
+### `PublicLayout.tsx`
+
+**Nav 要有嘅 links：** Home、Teams（`/teams`）、VODs、Events、About。
+
+原因：Teams 係新嘅 leaderboard。"Ladder" 呢個 label 係 1v1 概念，已唔 applicable。
+
+同時將 auth state 換用 `useAuth()` hook。
+
+### `AdminLayout.tsx`
+
+**Sidebar 要新增 Teams section**，link 去 `/admin/teams`。位置建議係 Players 同 Ladder 之間，因為 Teams 係連接 Players 同 Ladder 嘅概念（teams have players, teams have ELO）。
+
+移除任何仍存在嘅 `/admin/challenges` nav link。
+
+---
+
+## Phase 4 — Public Pages
+
+### 要刪除嘅 files
+
+- `src/pages/public/Interest.tsx` — deprecated，已有 redirect
+- `src/components/ChallengeModal.tsx` — challenge system 已刪除
+
+---
+
+### NEW: `/teams` — Team Leaderboard
+
+**用戶係誰：** 任何人，包括未登入嘅訪客。主要係想了解 community 競技水平嘅玩家。
+
+**用戶想做咩：**
+- 了解邊支 team 最強
+- 知道自己嘅 team 係咩排名
+- 決定去哪個 team 參加練習賽作為對手
+
+**可用 data：**
+
+```typescript
+// useGetLadder() → LadderResponse
+interface LadderResponse {
+  season?: Season | null;    // 當前 season 資料，可能係 null
+  entries: LadderEntry[];    // 排名列表，已按 teamElo 排序
+}
+
+interface LadderEntry {
+  rank: number;       // 排名（1-based）
+  id: number;         // team ID，用作 link 去 /teams/:id
+  name: string;       // team 名稱
+  tag: string;        // 2-5 字母 tag，e.g. "TSM"
+  teamElo: number;    // 當前 ELO（base 1000）
+  peakElo: number;    // 歷史最高 ELO
+  wins: number;
+  losses: number;
+  winRate?: number;   // 0-100 的 percentage，可能 undefined
+}
+
+// useGetLadderSettings() → LadderSettings
+interface LadderSettings {
+  kFactor: number;              // ELO 計算用，喺 "How it works" 顯示
+  minMatchesForDisplay: number; // 最少場次才上榜，喺 subtitle 顯示
+  playoffSize: number;          // 前 N 名入 playoff，用作分隔線
+  playoffFormat: string;        // "single_elimination" | "double_elimination"
+  defaultMatchFormat: string;   // "BO1" | "BO3" | "BO5"
+}
+```
+
+**Business rules（呢啲唔係設計決定，係 hard rules）：**
+- `playoffSize` 決定分隔線位置：前 N 名係 playoff zone，視覺上要有明確區分
+- `minMatchesForDisplay` 要喺頁面顯示，因為用戶可能搵唔到自己個 team（唔夠場次所以唔顯示）
+- Season 資料如果有就顯示，連同剩餘日數（用 `season.endDate` 計算）
+- `entries` 可能係空 array（platform 剛起步時）
+
+**每個 entry 要顯示嘅資料：**
+
+| 資料 | 用途 | 備註 |
+|---|---|---|
+| `rank` | 主要排名指標 | Top 3 可特別處理 |
+| `name` + `tag` | 識別 team | tag 係簡短識別符，類似 Twitter handle |
+| `teamElo` | 核心競技指標 | 最重要嘅數字，要最突出 |
+| `peakElo` | 展示 team 歷史最佳表現 | secondary info |
+| `wins` + `losses` | 勝負記錄 | |
+| `winRate` | 勝率 | 可能 undefined，係的話唔顯示 |
+| → link | Navigation | 整行可以 click 去 team profile |
+
+**額外 context：**
+- ELO 1000 係 base，所以 1000 以下係低，1200+ 係好，1400+ 係出色
+- 現有 Ladder.tsx 有完整嘅參考實現，包括 season countdown、playoff divider 嘅 UX pattern，你可以直接參考或重用
+- "How the Ladder Works" section 解釋規則，對新用戶重要，用 `ladderSettings` data
+
+---
+
+### NEW: `/teams/:id` — Team Profile
+
+**用戶係誰：** 想了解某支特定 team 的訪客（可能係考慮加入的玩家、對手、scout）。
+
+**用戶想做咩：**
+- 了解呢支 team 嘅實力同風格
+- 睇 roster，知道有邊啲人
+- 睇 match history，了解佢哋最近打緊點
+
+**可用 data：**
+
+```typescript
+// useGetTeam(id) → TeamProfile
+interface TeamProfile {
+  id: number;
+  name: string;
+  tag: string;
+  captainPlayerId: number;    // 可以 link 去 /players/:riotId 但需要先 resolve
+  teamElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  isActive: boolean;          // 30 日無比賽就 inactive
+  members: TeamMember[];      // 成員列表
+  recentMatches: Match[];     // 最近 10 場
+  createdAt: string;
+}
+
+interface TeamMember {
+  id: number;
+  teamId: number;
+  playerId: number;
+  playerRiotId?: string | null;           // 用作 link 去 /players/:riotId
+  playerDiscordUsername?: string | null;
+  role?: string | null;                    // top/jg/mid/adc/sup/fill，可能 null
+  status: string;                          // "active" | "inactive"
+  joinedAt: string;                        // ISO date string
+}
+
+// useGetTeamEloHistory(id) → EloHistoryEntry[]
+interface EloHistoryEntry {
+  id: number;
+  teamId: number;
+  elo: number;      // ELO value at this point
+  delta: number;    // change from previous（正係升，負係降）
+  matchId?: number | null;  // 係咩 match 觸發，可 link
+  reason: string;           // "match" | "season_reset" | "manual_admin"
+  createdAt: string;
+}
+```
+
+**每個 section 嘅資料用途：**
+
+**Team identity（頁頂）：**
+- `name`、`tag`：識別 team，tag 係短版 identifier
+- `teamElo`：競技水平，最重要指標
+- `peakElo`：顯示 team 歷史最高點，代表佢哋最強嗰刻
+- `wins`/`losses`：record
+- `isActive`：inactive 嘅 team 要讓用戶知道（30 日無比賽），避免誤解
+
+**ELO History Chart：**
+- 用 `eloHistory` data，按時間順序顯示 ELO 變化
+- 用途：展示 team 嘅成長軌跡同穩定性
+- `reason === "season_reset"` 係 season 完結時嘅 soft reset，喺 chart 上可以有視覺標記
+- Recharts `AreaChart` — 現有 `PlayerProfile.tsx` 有完整參考實現可以直接借鑑
+
+**Roster：**
+- `members[]` — 顯示誰在隊中
+- `playerRiotId` 可 link 去 `/players/:riotId`（如有）
+- `role` 係用戶自己設定嘅主要位置，可能係 null（bot 加人時未設定）
+- `status` 區分 active/inactive 成員，inactive 係長期無出場
+- `joinedAt` 顯示成員幾時加入
+
+**Recent Matches：**
+- `recentMatches[]` — 近 10 場
+- 每場需要顯示：對手係邊個 team、勝負、ELO 變化（這個 team 的）、日期
+- 判斷呢個 team 係 A 還是 B：`match.teamAId === team.id`
+- ELO delta（這個 team）：
+  - 如果係 Team A：`teamAEloAfter - teamAEloBefore`
+  - 如果係 Team B：`teamBEloAfter - teamBEloBefore`
+- `gameDuration`（milliseconds）可以格式化做 MM:SS 顯示
+- `visibleAfter` — 如果係未來時間，呢場 match 係 private，唔應該 link 去 match detail（只顯示結果）
+
+**States 必須 handle：**
+- Loading（async data fetch 期間）
+- Not found（invalid ID）
+- Empty members（新 team 未加人）
+- Empty match history（新 team 未打比賽）
+- Empty ELO history（新 team 無紀錄）
+
+---
+
+### REWRITE: `Ladder.tsx`
+
+Redirect 去 `/teams`。Ladder 概念依家係 team-based，URL 保留作 backward compat。
+
+---
+
+### REWRITE: `PlayerProfile.tsx`
+
+**現有頁面顯示咩（1v1 model）：**
+ELO、peak ELO、wins/losses、ELO chart、challenge button、champion pool（from VODs）
+
+**5v5 model 需要顯示咩（同原因）：**
+
+**Player identity：**
+- `riotId`：玩家識別符
+- `discordUsername`：社群聯絡
+- `primaryRole`/`secondaryRole`：玩家主要位置（新加，from .rofl data）
+- `isActive`：是否活躍
+- **移除：** `currentElo`、`peakElo`、`wins`、`losses`（ELO 屬於 teams，唔屬於 player）
+
+**Teams section（新加）：**
+- Data：`player.teams: PlayerTeamEntry[]`（`{teamId, teamName, teamTag, role, status}`）
+- 用途：讓訪客知道呢個玩家喺邊啲隊伍參加過比賽，係佢嘅 competitive resume 核心部分
+- Active teams vs inactive teams 要區分
+- 每個 team link 去 `/teams/:teamId`
+
+**Aggregate Stats section（新加）：**
+```typescript
+interface PlayerAggregateStats {
+  totalGames: number;  // 總場數
+  wins: number;        // 總勝場
+  losses: number;      // 總負場
+  avgKills: number;    // 場均 kills（小數）
+  avgDeaths: number;   // 場均 deaths
+  avgAssists: number;  // 場均 assists
+  avgCs: number;       // 場均 CS（minions + neutral）
+  topChampions: PlayerChampionStats[];
+}
+interface PlayerChampionStats {
+  champion: string;  // champion 名
+  games: number;     // 出場次數
+  wins?: number;     // 勝場（可能 undefined）
+  avgKda?: number;   // 平均 KDA（可能 undefined）
+}
+```
+- 用途：呢啲係玩家喺 5v5 比賽中嘅表現數據，scout 或對手會睇
+- Data 來自 `match_players` table（真實 game data），比舊版嘅 VOD metadata 準確得多
+- 用 `useGetPlayerChampions(player.id)` 獲取更詳細嘅 champion stats
+
+**Recent Matches：**
+- Data：`player.recentMatches: Match[]`（同 TeamProfile 一樣嘅 Match shape）
+- 用途：睇玩家近期打緊點
+- 注意：比賽係 team 對 team，所以每場要顯示兩隊名稱，唔係兩個玩家名
+
+**移除：**
+- ELO history chart（`useGetEloHistory` hook 已刪，ELO 屬於 team）
+- Challenge button + `ChallengeModal`（challenge system 已刪）
+- `seasonChamps.filter((c) => c.playerId === ...)` 改用 `c.teamId`（SeasonChampion schema 改變）
+
+**保留不變：** Badges section、Events section、VODs section、loading/error states。
+
+---
+
+### REWRITE: `MatchDetail.tsx`
+
+**現有頁面（1v1 model）：**
+- 顯示 Player A vs Player B，各自 ELO delta，YouTube embed
+
+**5v5 model 需要顯示咩：**
+
+**Match identity：**
+- `sideAName` vs `sideBName`（係 team names）
+- `winnerName`：邊隊贏
+- `score`（e.g. "1-0"）
+- `format`（BO1/BO3/BO5）
+- `gameDuration`（milliseconds → 格式化 MM:SS）
+- `gameVersion`（patch number，e.g. "15.6"）
+- `isPlayoff`、`round`、`bracketSlot`：tournament context（現有 `bracketRoundLabel` function 可以 reuse）
+- `eventTitle`：屬於哪個 event（如有）
+
+**Team ELO changes：**
+- Team A：`teamAEloBefore` → `teamAEloAfter`，delta = after - before
+- Team B：`teamBEloBefore` → `teamBEloAfter`，delta = after - before
+- 用途：讓玩家知道呢場比賽對 ELO 排名嘅影響
+- 可能係 null（admin 手動建立嘅 match 無 ELO 計算）
+
+**10-Player Stats Table（核心新增）：**
+```typescript
+// useGetMatchPlayers(match.id) → MatchPlayerEntry[]
+interface MatchPlayerEntry {
+  teamSide: string;             // "A" | "B" — 決定屬於哪隊
+  playerRiotId?: string | null; // 如有，可 link 去 /players/:riotId
+  champion?: string | null;     // champion 名，可用 Data Dragon CDN 顯示 portrait
+  teamPosition?: string | null; // 位置（TOP/JUNGLE/MIDDLE/BOTTOM/UTILITY）
+  kills: number;
+  deaths: number;
+  assists: number;
+  cs: number;                   // minions killed
+  neutralCs: number;            // neutral minions killed（jungle）
+  gold: number;                 // gold earned
+  damageToChampions: number;
+  visionScore: number;
+  level?: number | null;        // final level
+  win: boolean;
+  item0: number | null;         // item ID，可用 Data Dragon 顯示 icon
+  item1: number | null;
+  item2: number | null;
+  item3: number | null;
+  item4: number | null;
+  item5: number | null;
+  item6: number | null;         // trinket slot
+  summonerSpell1: number | null;
+  summonerSpell2: number | null;
+}
+```
+- 10 players（5 per team），split by `teamSide === "A"` vs `"B"`
+- Champion portrait：`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{ChampionId}_0.jpg`
+  - Champion name → ID mapping（"Lee Sin" → "LeeSin"，"Kai'Sa" → "Kaisa" 等）
+  - 現有 `PlayerProfile.tsx` 入面有完整 `CHAMP_IDS` mapping 同 `toChampId()` function，extract 做 shared utility
+- Item icons：`https://ddragon.leagueoflegends.com/cdn/15.6.1/img/item/{itemId}.png`（patch version 用 `match.gameVersion`）
+  - Item ID 0 或 null = empty slot
+- 呢個 table 係整個 platform 最重要嘅 data display，係用戶睇完比賽後第一個想睇嘅嘢
+- `resultSource === "admin_manual"` 嘅 match 無 match_players data，需要 empty state 解釋
+
+**Visibility：**
+- `match.visibleAfter`：如果係未來時間，呢場係 private（只有參與隊伍可以睇）
+- 公開訪客睇到 private match 應該顯示什麼由你決定（可以 show/hide stats，或 show blurred，或顯示 "Stats visible to participating teams only"）
+
+**VOD section（保留）：**
+- `match.vods: VodEntry[]`（schema 已有，移除 `(match as any).vods` cast）
+
+---
+
+### REWRITE: `PlayerDashboard.tsx`
+
+**用戶係誰：** 已登入玩家，睇自己嘅資料。
+
+**用戶想做咩：**
+- 知道自己最近打緊點
+- 查看自己所屬嘅 teams
+- 睇通知
+
+**1v1 時有但5v5已移除嘅功能：**
+- ELO card：ELO 屬於 team，唔屬於個人
+- ELO chart：同上
+- Challenges section（pending/upcoming challenges，accept/decline）：challenge system 已刪
+- ROFL upload button：上傳功能移到 Discord bot
+- GameIdSubmit：同上
+
+**5v5 需要顯示嘅資料：**
+
+**My Teams（新加）：**
+- Data：`useGetPlayerById(playerId)` → `player.teams: PlayerTeamEntry[]`
+- 用途：玩家嘅主要 landing — 知道自己屬於哪些隊伍，係 dashboard 核心
+- `status` 區分 active/inactive
+- Link 去 `/teams/:teamId`
+- 如果係 empty：引導用戶去 Discord bot 加入 team
+
+**Recent Match Results（新加）：**
+- Data：`player.recentMatches: Match[]`
+- 用途：快速了解最近表現
+- 簡化顯示：隊 A vs 隊 B，勝負，日期，link 去 match detail
+
+**Notifications（保留）：**
+- Data：`useListNotifications()` → `Notification[]`
+- `useMarkNotificationRead(id)` 標記已讀
+- Notification types 依家係：`match_result`、`season_completed`、`badge_earned`、`event_registration_confirmed`/`declined`
+- 舊 challenge 相關 types（`challenge_received` 等）唔會再出現，但 schema 係 string 所以唔會 crash
+
+**Badges section（保留）：**
+- Data：`useGetPlayerBadges(playerId)`
+
+**Auth check（保留）：**
+- 未登入就顯示 LoggedOut state（現有已有）
+
+---
+
+### REWRITE: `Register.tsx`
+
+**用戶係誰：** 想加入平台嘅新玩家。
+
+**用戶想做咩：** 了解如何加入，然後去做。
+
+**Business reality：** Registration 唔係透過 web form，係透過 Discord bot。呢個 page 嘅唯一功能係解釋點做同引導用戶。
+
+**需要傳達嘅資訊：**
+1. 加入需要透過 Discord bot（唔係 web form）
+2. 具體步驟：
+   - 將 bot 加入你嘅 Discord server（需要一個 "Add Bot" button，href 暫時係 placeholder `#`）
+   - 用 `/register-team <name> <tag>` 建立隊伍（captain）
+   - 用 `/add @player` 加入隊員
+   - 打完第一場，用 `/submit` 上傳 `.rofl` 文件
+3. 如果已有帳號：Discord OAuth login（link 去 `/login`）
+
+**唔再需要嘅：**
+- Registration form（riotId、discordUsername 等）
+- form submission logic
+- localStorage.setItem（login after register）
+
+---
+
+### MODIFY: `Home.tsx`
+
+**具體要改嘅地方：**
+- 所有 "1v1 ladder"、"challenge" 相關嘅 hero copy → team scrim recording context（自行撰寫，保持同等質量）
+- "Register Now" CTA → "Add Bot to Discord"（link 去 `/register`）
+- Recent matches section：確保無 `playerARiotId`/`playerBRiotId` 顯示（`sideAName`/`sideBName` 依家係 team names，直接顯示即可）
+
+---
+
+### MODIFY: `About.tsx`
+
+Copy-only changes（自行判斷措辭）：移除 1v1/challenge 相關描述，改為 team scrim recording context。
+
+---
+
+### MODIFY: `DevLogin.tsx`
+
+**Line 91-93：** Player list 顯示緊 `p.currentElo`、`p.wins`、`p.losses`——呢啲 fields 已從 Player schema 刪除，會 TypeScript error。只顯示 `id`、`riotId`、`discordUsername`。
+
+---
+
+### MODIFY: `PlayerLogin.tsx`
+
+移除 "Register here →" link。Registration 係透過 bot，web register link 會誤導用戶。Discord OAuth button 保留。
+
+---
+
+### MODIFY: `Vods.tsx`
+
+**Player filter dropdown issue：**
+現有 code 用 `ladder?.entries` 嚟 populate player filter，但 ladder entries 依家係 teams，唔係 players。
+你可以：(A) 改用 `useListPlayers()` 做 player filter，或 (B) 移除 player filter（其他 filters 已足夠）。由你決定哪個對用戶更好。
+
+**Type casts：** 移除 `(vod as any).matchId` casts（`VodEntry.matchId` 依家係 typed field）。
+
+---
+
+### MODIFY: `VodDetail.tsx`
+
+移除 `(vod as any).matchId` casts。
+
+---
+
+### MODIFY: `EventDetail.tsx`
+
+**Participants section：**
+`EventRegistration` 依家有 `teamId?: number | null`。如果有 teamId，可以考慮顯示 team name（需要另外 fetch 或靠 `eventTitle` 等 context）。如果無，顯示 `riotId`（backward compat）。
+
+**Registration CTA：**
+"Register as Player" → 引導去 `/register`（Discord bot landing page）。
+
+---
+
+### KEEP 不變
+
+- `Events.tsx`
+- `Contact.tsx`
+
+---
+
+## Phase 5 — Admin Pages
+
+### DELETE
+
+- `ManageChallenges.tsx` — challenge system endpoints 已全部刪除
+
+---
+
+### NEW: `/admin/teams` — Manage Teams
+
+**Admin 想做咩：**
+- 睇所有 teams 嘅狀態（通常只係查閱，bot 負責建立）
+- 在特殊情況下手動修改 team 資料（ELO correction、rename、captain change）
+- 睇某個 team 嘅 members
+- 在必要時刪除 team
+
+**可用 hooks：**
+```typescript
+useListTeams(params?: { active?: boolean })    // → Team[]
+useGetTeam(id)                                  // → TeamProfile（有 members）
+useListTeamMembers(id)                          // → TeamMember[]
+useCreateTeam()                                 // → Team
+useUpdateTeam()                                 // → Team（reuses CreateTeamRequest）
+useDeleteTeam()                                 // → SuccessResponse
+```
+
+**Team schema：**
+```typescript
+interface Team {
+  id: number;
+  name: string;
+  tag: string;           // 2-5 uppercase alphanumeric
+  captainPlayerId: number;
+  discordServerId?: string | null;
+  teamElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateTeamRequest {
+  name: string;
+  tag: string;              // validate: /^[A-Z0-9]{2,5}$/
+  captainPlayerId: number;  // use useListPlayers() for dropdown
+  discordServerId?: string | null;
+  teamElo?: number | null;  // default 1000
+  isActive?: boolean | null;
+}
+```
+
+**呢個 page 嘅 design 跟 `ManagePlayers.tsx` 嘅 pattern 就好**，佢哋係同類型 admin CRUD page。
+
+---
+
+### REWRITE: `Dashboard.tsx`
+
+**Data change：** `AdminStats.interests` 已刪，改為 `AdminStats.teams`。
+
+```typescript
+interface AdminStats {
+  teams: number;         // 新
+  players: number;
+  events: number;
+  registrations: number;
+  matches: number;
+  vods: number;
+  seasons: number;
+  // interests: number  ← 已刪
+}
+```
+
+Teams 係新嘅核心概念，所以佢喺 dashboard 嘅重要性應該係排喺前面。
+
+---
+
+### REWRITE: `ManageLadderSettings.tsx`
+
+**Schema 已大幅縮小。** 舊版有 13 個 fields（包括 7 個 challenge-related）；新版只有 5 個：
+
+```typescript
+interface LadderSettings {
+  id: number;
+  kFactor: number;              // ELO K-factor（建議 range 16-64）
+  minMatchesForDisplay: number; // 幾場才上榜（防止 ELO 不穩定）
+  playoffSize: number;          // 幾支 team 入 playoff
+  playoffFormat: string;        // "single_elimination" | "double_elimination"
+  defaultMatchFormat: string;   // "BO1" | "BO3" | "BO5"
+}
+```
+
+**完全移除：**
+- 所有 challenge 相關 fields（`maxChallengesPerWeek` 等 7 個）
+- Admin Schedule section（`useGetAdminSchedule`、`useUpdateAdminSchedule` 已刪）
+- 所有 `(ladder as any).fieldName` type casts
+
+---
+
+### REWRITE: `ManageMatches.tsx`
+
+**Form data change：** Match 依家係 Team A vs Team B，唔係 Player A vs Player B。
+
+**舊 form fields（移除）：** `playerAId`, `playerBId`
+**新 form fields（新增）：** `teamAId`, `teamBId`（用 `useListTeams()` 做 dropdown）
+
+**Auto-fill behaviour（business logic，必須保留）：**
+選擇 team 之後，`sideAName`/`sideBName` 自動填入 `team.name`（可 override）。舊版係 auto-fill player `riotId`。Pattern 一樣，data source 改變。
+
+**Team ELO display：**
+選擇 team 後，喺 dropdown 下面顯示 `team.teamElo`（幫助 admin 了解雙方實力差距）。舊版顯示 `player.currentElo`，邏輯一樣。
+
+**其他 form fields 保持不變：**
+`winnerName`（radio: sideAName/sideBName）、`score`、`format`、`eventId`、`seasonId`、`isPlayoff`、`round`、`bracketSlot`、`isLosersBracket`
+
+---
+
+### REWRITE: `ManageSeasonDetail.tsx`
+
+**Tabs 由 4 → 3：移除 Challenges tab。**
+
+**Standings section：**
+舊版用 `useListPlayers()` + sort by `currentElo`。
+新版用 `useListTeams()` + sort by `teamElo`（或 filter by seasonId 的 matches）。
+顯示：rank、team name、tag、teamElo、wins、losses。
+
+**Match creation form（同 ManageMatches.tsx 一樣）：** Team A/B dropdowns。
+
+**Champions tab：**
+```typescript
+interface SeasonChampion {
+  seasonId: number;
+  teamId: number;
+  teamName?: string | null;  // 直接顯示，無需再 fetch
+  finalElo: number;
+  createdAt: string;
+}
+```
+顯示 `teamName`，link 去 `/teams/:teamId`。舊版顯示 `playerRiotId`。
+
+**Edge cases 必須保留（唔好刪）：**
+- Season activate 嘅 confirm dialog（會 deactivate 其他 seasons）
+- Season complete 嘅 confirm dialog（不可逆操作）
+- 呢啲 UX pattern 喺 `ManageSeasonDetail.tsx` 現有代碼有，保持不變
+
+---
+
+### MODIFY: `ManagePlayers.tsx`
+
+**Table columns：** 移除 ELO column、W/L columns。新增 `primaryRole` column。
+
+**Edit form：** 移除 `currentElo`、`peakElo`、`wins`、`losses` fields（Player schema 已無）。新增 `primaryRole`、`secondaryRole` dropdowns（options: `["top", "jg", "mid", "adc", "sup", "fill"]`）。
+
+---
+
+### MODIFY: `ManageRegistrations.tsx`
+
+`EventRegistration` 依家有 `teamId?: number | null`。Table 新增 team column（有值就顯示，無就顯示 `—`）。
+
+---
+
+### MODIFY: `ManageEventDetail.tsx`
+
+Match creation form 同 `ManageMatches.tsx` 一樣：team dropdowns 代替 player dropdowns。
+
+**以下 edge cases 必須完整保留（唔好刪）：**
+- Participant count validation（Single/Double Elimination 要求 power of 2：4/8/16）
+- Round slot capacity（Finals: 1 slot，Semi Finals: 2 slots，auto-disable 當 full）
+- Format change warning（match 已存在時改 format 顯示 yellow warning）
+- 呢啲係 business logic，唔係 UI 裝飾
+
+Registration tab：如 `r.teamId` 有值就顯示 team context。
+
+---
+
+### KEEP 不變
+
+- `Login.tsx`
+- `ManageSeasons.tsx`
+- `ManageVods.tsx`
+
+---
+
+## Phase 6 — App.tsx Routing
+
+```typescript
+// ADD imports
+import Teams from "@/pages/public/Teams";
+import TeamProfile from "@/pages/public/TeamProfile";
+import ManageTeams from "@/pages/admin/ManageTeams";
+
+// REMOVE imports
+// Interest (deleted)
+// ManageChallenges (deleted)
+
+// ADD routes
+<Route path="/teams" component={Teams} />
+<Route path="/teams/:id" component={TeamProfile} />
+<Route path="/admin/teams" component={ManageTeams} />
+
+// MODIFY /ladder (keep for backward compat, redirect to /teams)
+<Route path="/ladder">{() => { window.location.replace("/teams"); return null; }}</Route>
+
+// REMOVE routes
+// /interest (or keep as-is redirect to /register — already done)
+// /admin/challenges
+```
+
+---
+
+## Testing
+
+### Unit Tests（`src/lib/*.test.ts`）
+
+Utility functions 係 pure functions，unit test cost 極低：
+
+```typescript
+// src/lib/lol-utils.test.ts
+describe("eloBadgeColor", () => {
+  it("returns gold class for elo >= 1400")
+  it("returns silver class for elo >= 1200")
+  it("returns bronze class for elo >= 1100")
+  it("returns default class for elo < 1100")
+})
+
+describe("toChampId", () => {
+  it("handles champion names with apostrophes (Kai'Sa → Kaisa)")
+  it("handles champion names with spaces (Lee Sin → LeeSin)")
+  it("handles Dr. Mundo → DrMundo")
+  it("passes through simple names unchanged")
+})
+
+describe("useAuth", () => {
+  it("returns null playerId when localStorage is empty")
+  it("returns numeric playerId when localStorage has value")
+  it("returns isLoggedIn false when no playerId")
+  it("returns isLoggedIn true when playerId present")
+})
+```
+
+### E2E Tests（Playwright，`tests/`）
+
+Critical paths — 防止 regression：
+
+```typescript
+// tests/team-leaderboard.spec.ts
+// /teams renders without crashing
+// shows empty state when no teams
+// playoff divider visible when entries > playoffSize
+// clicking row navigates to /teams/:id
+
+// tests/team-profile.spec.ts
+// /teams/:id renders hero card with name and ELO
+// shows "not found" state for invalid ID
+// roster table visible
+// recent matches list visible
+
+// tests/match-detail.spec.ts
+// /matches/:id renders match title
+// shows 10-player stats table when matchPlayers data exists
+// shows appropriate message when no matchPlayers (admin_manual match)
+
+// tests/admin-smoke.spec.ts
+// /admin/teams page loads after login
+// /admin/ladder-settings shows exactly 5 fields
+// ManageSeasonDetail has no "Challenges" tab
+// Dashboard shows "Teams" stat card, not "Interest Submissions"
+```
+
+---
+
+## Validation Checklist
+
+**做完每個 phase 後 self-validate，做完所有 phases 後做完整 final check。**
+
+### TypeScript
+- [ ] `pnpm run typecheck` — 零 errors
+
+### Forbidden patterns（全 codebase search）
+- [ ] `localStorage.getItem("vclol_player_id")` — 只剩 `DevLogin.tsx` 同 `use-auth.ts`
+- [ ] `fetch("/api/` — 零 results 喺任何 page/component/hook file
+- [ ] `playerAId` / `playerBId` — 零 results 喺任何 page file
+- [ ] `currentElo` / `peakElo` — 零 results 喺任何 page/component display（schema type definitions 除外）
+- [ ] `useListChallenges` / `useCreateChallenge` / `useGetAdminSchedule` — 零 results
+- [ ] `stats.interests` — 零 results
+- [ ] `(vod as any)` / `(match as any)` / `(ladder as any)` — 零 results
+- [ ] `import.*ChallengeModal` — 零 results
+
+### Deleted files confirmed gone
+- [ ] `src/pages/public/Interest.tsx`
+- [ ] `src/components/ChallengeModal.tsx`
+- [ ] `src/pages/admin/ManageChallenges.tsx`
+
+### New pages render
+- [ ] `/teams` — leaderboard visible 或 empty state
+- [ ] `/teams/1` — team profile visible 或 not-found state
+- [ ] `/admin/teams` — admin page loads after login
+
+### Business logic
+- [ ] `ManageLadderSettings.tsx` — 只有 5 個 input fields
+- [ ] `ManageSeasonDetail.tsx` — 無 Challenges tab
+- [ ] `Dashboard.tsx` — 有 Teams stat，無 Interest Submissions stat
+- [ ] `MatchDetail.tsx` — 有 10-player stats table section
+
+---
+
+## Commit Message
+
+```
+[HANDOFF-CLAUDE] Phase 3-6 done — frontend migration complete
+
+Summary:
+- New pages: /teams (leaderboard), /teams/:id (team profile), /admin/teams (CRUD)
+- Rewrites: Ladder→redirect, PlayerProfile, MatchDetail, PlayerDashboard, Register
+- Admin: Dashboard, ManageLadderSettings, ManageMatches, ManageSeasonDetail updated
+- Deleted: Interest.tsx, ChallengeModal.tsx, ManageChallenges.tsx
+- Shared utilities extracted (lol-utils, use-auth)
+- Tests: unit tests for utilities, E2E for critical paths
+
+TypeScript: zero errors
+All validation checklist items: pass
+
+Needs from Claude (Phase 7):
+[list any backend changes needed, or "none"]
+```

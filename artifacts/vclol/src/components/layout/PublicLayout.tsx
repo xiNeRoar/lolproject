@@ -1,33 +1,22 @@
 import { Link, useLocation } from "wouter";
 import { Menu, X, Shield } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const { playerId, logout } = useAuth();
 
-  useEffect(() => {
-    const sync = () => setPlayerId(localStorage.getItem("vclol_player_id"));
-    sync();
-    window.addEventListener("storage", sync);
-    window.addEventListener("focus", sync);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("focus", sync);
-    };
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("vclol_player_id");
-    window.dispatchEvent(new Event("storage"));
+  const handleLogout = () => {
+    logout();
     setMobileMenuOpen(false);
-  }, []);
+  };
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/ladder", label: "Ladder" },
+    { href: "/teams", label: "Teams" },
     { href: "/vods", label: "VODs" },
     { href: "/events", label: "Events" },
     { href: "/about", label: "About" },
@@ -38,14 +27,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="font-display font-bold text-xl tracking-wider text-primary hover:text-primary/80 transition-colors">
                 VCLoL
               </Link>
             </div>
 
-            {/* Desktop Nav */}
             <nav className="hidden md:flex space-x-8">
               {navLinks.map((link) => (
                 <Link
@@ -61,7 +48,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
             </nav>
 
-            {/* CTA & Auth — desktop */}
             <div className="hidden md:flex items-center space-x-3">
               {playerId ? (
                 <>
@@ -83,17 +69,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                     Login
                   </Link>
-                  <Link
+                  <a
                     href="/register"
                     className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
                   >
-                    Register
-                  </Link>
+                    Add Bot to Discord
+                  </a>
                 </>
               )}
             </div>
 
-            {/* Mobile menu button */}
             <div className="flex items-center md:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -105,7 +90,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
 
-        {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-card absolute w-full">
             <div className="px-2 pt-2 pb-3 space-y-1">
@@ -155,7 +139,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                       onClick={() => setMobileMenuOpen(false)}
                       className="block px-3 py-2 mt-1 rounded-md text-base font-medium bg-primary text-primary-foreground"
                     >
-                      Register
+                      Add Bot to Discord
                     </Link>
                   </>
                 )}
