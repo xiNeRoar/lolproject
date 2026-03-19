@@ -26,10 +26,10 @@ export default function About() {
                 The platform is live. Players can register, compete on the ELO Ladder, and build a verifiable match record over time.
               </p>
               <ul className="list-disc pl-5 text-muted-foreground space-y-2">
-                <li><strong className="text-foreground">ELO Ladder:</strong> Persistent competitive ranking that tracks your progress across seasons.</li>
-                <li><strong className="text-foreground">VOD Archive:</strong> First-person match recordings with timestamps, searchable by champion, matchup, and ELO range.</li>
+                <li><strong className="text-foreground">Team ELO Ladder:</strong> Persistent competitive ranking that tracks your team's progress across seasons.</li>
+                <li><strong className="text-foreground">VOD Archive:</strong> Match recordings with timestamps, searchable by champion, matchup, and role.</li>
                 <li><strong className="text-foreground">Events & Brackets:</strong> Structured tournaments with bracket progression and recorded results.</li>
-                <li><strong className="text-foreground">Challenge System:</strong> Challenge any ladder player directly through the website.</li>
+                <li><strong className="text-foreground">Discord Bot Integration:</strong> Register teams, add players, and submit replays directly through Discord.</li>
               </ul>
             </section>
 

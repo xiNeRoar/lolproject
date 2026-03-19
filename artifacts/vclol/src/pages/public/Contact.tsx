@@ -16,7 +16,7 @@ export default function Contact() {
               <MessageSquare className="w-6 h-6 text-primary" />
             </div>
             <h3 className="text-xl font-bold mb-2">Discord</h3>
-            <p className="text-muted-foreground mb-6">The primary hub for all project communication and matchmaking.</p>
+            <p className="text-muted-foreground mb-6">The primary hub for all project communication and team coordination.</p>
             <p className="text-sm font-medium border border-border/50 bg-background px-4 py-2 rounded">
               Join via the Discord link on our Register page
             </p>
