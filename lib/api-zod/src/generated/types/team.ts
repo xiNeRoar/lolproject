@@ -6,14 +6,17 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface Season {
+export interface Team {
   id: number;
   name: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  eloResetFactor: string;
-  defaultMatchFormat?: string | null;
+  tag: string;
+  captainPlayerId: number;
+  discordServerId?: string | null;
+  teamElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

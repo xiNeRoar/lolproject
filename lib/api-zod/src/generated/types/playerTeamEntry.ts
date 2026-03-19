@@ -6,6 +6,10 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface HealthStatus {
+export interface PlayerTeamEntry {
+  teamId: number;
+  teamName: string;
+  teamTag: string;
+  role?: string | null;
   status: string;
 }

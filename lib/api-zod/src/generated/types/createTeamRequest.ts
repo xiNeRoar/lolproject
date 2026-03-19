@@ -6,14 +6,11 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface LadderEntry {
-  rank: number;
-  id: number;
+export interface CreateTeamRequest {
   name: string;
   tag: string;
-  teamElo: number;
-  peakElo: number;
-  wins: number;
-  losses: number;
-  winRate?: number;
+  captainPlayerId: number;
+  discordServerId?: string | null;
+  teamElo?: number | null;
+  isActive?: boolean | null;
 }

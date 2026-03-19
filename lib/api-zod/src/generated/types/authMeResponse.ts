@@ -6,6 +6,9 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface AuthMeResponse {
+  authenticated: boolean;
+  playerId?: number | null;
+  riotId?: string | null;
+  discordUsername?: string | null;
 }

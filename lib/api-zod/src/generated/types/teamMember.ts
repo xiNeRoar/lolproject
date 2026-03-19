@@ -6,11 +6,13 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface SeasonChampion {
+export interface TeamMember {
   id: number;
-  seasonId: number;
   teamId: number;
-  teamName?: string | null;
-  finalElo: number;
-  createdAt: string;
+  playerId: number;
+  playerRiotId?: string | null;
+  playerDiscordUsername?: string | null;
+  role?: string | null;
+  status: string;
+  joinedAt: string;
 }
