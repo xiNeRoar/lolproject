@@ -63,6 +63,7 @@ function formatMatch(
     gameDuration: m.gameDuration ?? null,
     gameVersion: m.gameVersion ?? null,
     resultSource: m.resultSource,
+    roflFilePath: m.roflFilePath ?? null,
     visibleAfter: m.visibleAfter?.toISOString() ?? null,
     seasonId: m.seasonId ?? null,
     eventId: m.eventId ?? null,
@@ -533,6 +534,59 @@ router.get("/:id/players", async (req, res) => {
     res.json(rows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch match players" });
+  }
+});
+
+// GET /matches/:id/replay — download the .rofl file (2-week window)
+router.get("/:id/replay", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, id));
+    if (!match || !match.roflFilePath) {
+      res.status(404).json({ error: "Replay file not found" });
+      return;
+    }
+
+    if (!isMatchVisible(match) && !req.session.adminId) {
+      const playerId = req.session.playerId;
+      if (!playerId) {
+        res.status(403).json({ error: "Match is not publicly visible yet" });
+        return;
+      }
+      const playerInMatch = await db.select().from(matchPlayersTable)
+        .where(and(eq(matchPlayersTable.matchId, id), eq(matchPlayersTable.playerId, playerId)))
+        .limit(1);
+      if (playerInMatch.length === 0) {
+        res.status(403).json({ error: "Match is not publicly visible yet" });
+        return;
+      }
+    }
+
+    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+    if (Date.now() - match.createdAt.getTime() > twoWeeksMs) {
+      res.status(410).json({ error: "Replay download window has expired (2-week limit)" });
+      return;
+    }
+
+    const path = await import("path");
+    const fs = await import("fs");
+    const filePath = path.resolve(match.roflFilePath);
+    if (!fs.existsSync(filePath)) {
+      res.status(404).json({ error: "Replay file not found on disk" });
+      return;
+    }
+
+    const fileName = `${match.sideAName}_vs_${match.sideBName}_${match.id}.rofl`.replace(/[^a-zA-Z0-9._-]/g, "_");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Type", "application/octet-stream");
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to download replay" });
   }
 });
 

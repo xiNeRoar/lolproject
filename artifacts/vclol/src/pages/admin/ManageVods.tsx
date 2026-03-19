@@ -154,10 +154,6 @@ export default function ManageVods() {
       skipAutoFill.current = false;
       return;
     }
-    if (!watchedPlayerId) {
-      setValue("playerEloAtTime", "");
-      return;
-    }
   }, [watchedPlayerId]);
 
   const onSubmit = (data: Record<string, unknown>) => {

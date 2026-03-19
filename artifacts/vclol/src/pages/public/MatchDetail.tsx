@@ -3,8 +3,13 @@ import { useGetMatch, useListSeasons, useGetMatchPlayers } from "@workspace/api-
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, PlayCircle, Video, Users } from "lucide-react";
-import { champPortraitUrl } from "@/lib/lol-utils";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { toast } from "sonner";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 function EloDelta({ before, after }: { before: number | null | undefined; after: number | null | undefined }) {
   if (before == null || after == null) return null;
@@ -41,12 +46,28 @@ function bracketRoundLabel(round: number | null | undefined, bracketSlot: number
   }
 }
 
+function isWithinTwoWeeks(dateStr: string): boolean {
+  const created = new Date(dateStr).getTime();
+  const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+  return Date.now() - created < twoWeeksMs;
+}
+
+function daysRemaining(dateStr: string): number {
+  const created = new Date(dateStr).getTime();
+  const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+  const remaining = twoWeeksMs - (Date.now() - created);
+  return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
+}
+
 export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const matchId = Number(id);
-  const { data: match, isLoading, isError } = useGetMatch(matchId);
+  const { data: match, isLoading, isError, refetch } = useGetMatch(matchId);
   const { data: seasons } = useListSeasons();
   const { data: matchPlayers } = useGetMatchPlayers(matchId, { query: { enabled: !!match } });
+  const { playerIdNum, isLoggedIn } = useAuth();
+  const [povRequesting, setPovRequesting] = useState(false);
+  const [visUpdating, setVisUpdating] = useState(false);
 
   if (isLoading) {
     return (
@@ -78,6 +99,69 @@ export default function MatchDetail() {
   const vods = match.vods ?? [];
   const teamAPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "blue" || p.teamSide === "A");
   const teamBPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "red" || p.teamSide === "B");
+
+  const allPlayers = [...teamAPlayers, ...teamBPlayers];
+  const currentPlayerInMatch = allPlayers.find((p) => p.playerId === playerIdNum);
+  const roflAvailable = !!(match as any).roflFilePath && isWithinTwoWeeks(match.createdAt);
+  const roflDaysLeft = roflAvailable ? daysRemaining(match.createdAt) : 0;
+
+  const handlePovRequest = async () => {
+    if (!currentPlayerInMatch) return;
+    setPovRequesting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/replays`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          matchId,
+          playerId: playerIdNum,
+          renderMode: "pov",
+        }),
+      });
+      if (res.ok) {
+        toast.success("POV render requested! You'll be notified when it's ready.");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to request POV render.");
+      }
+    } catch {
+      toast.error("Failed to request POV render.");
+    } finally {
+      setPovRequesting(false);
+    }
+  };
+
+  const handleVisibilityChange = async (visibility: "public" | "private" | "default") => {
+    setVisUpdating(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/matches/${matchId}/visibility`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ visibility }),
+      });
+      if (res.ok) {
+        toast.success(`Match visibility set to ${visibility}.`);
+        refetch();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to update visibility.");
+      }
+    } catch {
+      toast.error("Failed to update visibility.");
+    } finally {
+      setVisUpdating(false);
+    }
+  };
+
+  const currentVisibility = match.visibleAfter
+    ? new Date(match.visibleAfter).getTime() <= 0
+      ? "public"
+      : new Date(match.visibleAfter).getFullYear() >= 9000
+        ? "private"
+        : "default"
+    : "default";
 
   return (
     <PublicLayout>
@@ -140,6 +224,32 @@ export default function MatchDetail() {
             </div>
           )}
         </div>
+
+        {(roflAvailable || (isLoggedIn && currentPlayerInMatch)) && (
+          <div className="flex flex-wrap gap-3 mb-6">
+            {roflAvailable && (
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <a href={`${API_BASE}/api/matches/${matchId}/replay`} download>
+                  <Download className="w-4 h-4" />
+                  Download .rofl
+                  <span className="text-xs text-muted-foreground ml-1">({roflDaysLeft}d left)</span>
+                </a>
+              </Button>
+            )}
+            {isLoggedIn && currentPlayerInMatch && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handlePovRequest}
+                disabled={povRequesting}
+              >
+                <FileVideo className="w-4 h-4" />
+                {povRequesting ? "Requesting..." : "Request My POV"}
+              </Button>
+            )}
+          </div>
+        )}
 
         {(teamAPlayers.length > 0 || teamBPlayers.length > 0) && (
           <Card className="bg-card/40 border-border/40 mb-6">
@@ -274,6 +384,53 @@ export default function MatchDetail() {
                   );
                 })}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isLoggedIn && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader>
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                {currentVisibility === "private" ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
+                Match Visibility
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                {currentVisibility === "public" && "This match is publicly visible."}
+                {currentVisibility === "private" && "This match is hidden from public view."}
+                {currentVisibility === "default" && "This match follows the default 7-day delay before becoming public."}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant={currentVisibility === "public" ? "default" : "outline"}
+                  size="sm"
+                  disabled={visUpdating || currentVisibility === "public"}
+                  onClick={() => handleVisibilityChange("public")}
+                >
+                  Public
+                </Button>
+                <Button
+                  variant={currentVisibility === "default" ? "default" : "outline"}
+                  size="sm"
+                  disabled={visUpdating || currentVisibility === "default"}
+                  onClick={() => handleVisibilityChange("default")}
+                >
+                  Default (7d)
+                </Button>
+                <Button
+                  variant={currentVisibility === "private" ? "default" : "outline"}
+                  size="sm"
+                  disabled={visUpdating || currentVisibility === "private"}
+                  onClick={() => handleVisibilityChange("private")}
+                >
+                  Private
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Only team captains and admins can change visibility.
+              </p>
             </CardContent>
           </Card>
         )}

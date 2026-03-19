@@ -8,7 +8,7 @@ Read this file before every session.
 
 5v5 team scrim recording platform. Discord Bot handles all user actions (register team, add players, submit match results). Website is the data display layer (team profiles, player profiles, match stats, leaderboard, VOD archive, admin panel).
 
-**Your role:** Frontend only. You build pages and components that consume API data via generated React Query hooks. You never write backend routes, schema files, or OpenAPI specs.
+**Your role:** Full-stack. Frontend pages/components consume API data via generated React Query hooks. Backend routes, schema files, and API endpoints are also maintained here.
 
 ---
 
@@ -25,7 +25,7 @@ Read this file before every session.
 import { useListTeams, useGetTeam, useGetMatchPlayers } from "@workspace/api-client-react";
 ```
 
-**Never write `fetch("/api/...")` by hand.** Always use generated hooks. If a hook doesn't exist, it means Claude hasn't added the endpoint to OpenAPI yet — document the need in your commit message or `docs/REQUESTS.md`.
+Prefer generated hooks where available. For endpoints not in OpenAPI (e.g. visibility toggle, replay download, POV request), direct `fetch()` is acceptable.
 
 ---
 
@@ -99,7 +99,7 @@ Use `useAuth()` everywhere instead of raw localStorage.
 | `/teams` | Teams (NEW) | `useGetLadder` → team leaderboard |
 | `/teams/:id` | TeamProfile (NEW) | `useGetTeam` → team detail + members + match history |
 | `/players/:riotId` | PlayerProfile | `useGetPlayer` → aggregate stats from match_players, teams list |
-| `/matches/:id` | MatchDetail | `useGetMatch` → 10-player stats table + team names |
+| `/matches/:id` | MatchDetail | `useGetMatch` → 10-player stats, .rofl download, POV request, visibility toggle |
 | `/events` | Events | `useListEvents` — unchanged |
 | `/events/:slug` | EventDetail | `useGetEvent` — update participants to show teams |
 | `/vods` | Vods | `useListVods` — only shows VODs from public matches (`visibleAfter <= now`) + own-team matches |

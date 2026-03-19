@@ -216,7 +216,6 @@ router.get("/:id", async (req, res) => {
       champion: vod.champion,
       opponentChampion: vod.opponentChampion,
       position: vod.position,
-      playerEloAtTime: vod.playerEloAtTime,
     });
 
     res.json({
