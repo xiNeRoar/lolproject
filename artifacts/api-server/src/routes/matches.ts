@@ -11,7 +11,7 @@ import {
   eloHistoryTable,
   playersTable,
 } from "@workspace/db";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, or } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges } from "../lib/badges";
@@ -28,6 +28,27 @@ function isVisible(m: typeof matchesTable.$inferSelect): boolean {
     return Date.now() >= m.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000;
   }
   return Date.now() >= m.visibleAfter.getTime();
+}
+/**
+ * True if playerId is an active member of teamA or teamB.
+ * Uses team_members (not match_players) — coaches/bench players can access too.
+ */
+async function isMemberOfMatch(
+  playerId: number,
+  match: typeof matchesTable.$inferSelect
+): Promise<boolean> {
+  const teamIds = [match.teamAId, match.teamBId].filter((id): id is number => id !== null);
+  if (teamIds.length === 0) return false;
+  const rows = await db
+    .select({ id: teamMembersTable.id })
+    .from(teamMembersTable)
+    .where(and(
+      eq(teamMembersTable.playerId, playerId),
+      eq(teamMembersTable.status, "active"),
+      or(...teamIds.map((tid) => eq(teamMembersTable.teamId, tid)))
+    ))
+    .limit(1);
+  return rows.length > 0;
 }
 
 // ── Formatters ───────────────────────────────────────────────
@@ -385,54 +406,55 @@ router.get("/:id", async (req, res) => {
       return;
     }
 
-    // Enrich team names
+    // ── Visibility gate (#8) ────────────────────────────────────────────────
+    // Private matches: redacted response (not 403). W/L visible, stats hidden.
+    const isAdmin = !!req.session.adminId;
+    const visible = isVisible(match);
+    const pid = req.session.playerId ? Number(req.session.playerId) : null;
+    const memberAccess = (!visible && !isAdmin && pid)
+      ? await isMemberOfMatch(pid, match) : false;
+    const canSeeStats = isAdmin || visible || memberAccess;
+
+    // Always enrich team names (needed for basic match info)
     const teamA = match.teamAId
       ? (await db.select().from(teamsTable).where(eq(teamsTable.id, match.teamAId)))[0]
       : null;
     const teamB = match.teamBId
       ? (await db.select().from(teamsTable).where(eq(teamsTable.id, match.teamBId)))[0]
       : null;
-
     const event = match.eventId
       ? (await db.select().from(eventsTable).where(eq(eventsTable.id, match.eventId)))[0]
       : null;
 
-    // match_players with player riotId
+    const base = formatMatch(match, {
+      teamAName: teamA?.name ?? null, teamATag: teamA?.tag ?? null,
+      teamBName: teamB?.name ?? null, teamBTag: teamB?.tag ?? null,
+      eventTitle: event?.title ?? null, eventSlug: event?.slug ?? null,
+    });
+
+    if (!canSeeStats) {
+      // Redacted: W/L visible, per-player stats + VODs hidden
+      res.json({ ...base, matchPlayers: [], vods: [], _private: true,
+        visibleAfter: match.visibleAfter?.toISOString() ?? null });
+      return;
+    }
+
     const mpRows = await db
-      .select({
-        mp: matchPlayersTable,
-        playerRiotId: playersTable.riotId,
-      })
+      .select({ mp: matchPlayersTable, playerRiotId: playersTable.riotId })
       .from(matchPlayersTable)
       .leftJoin(playersTable, eq(matchPlayersTable.playerId, playersTable.id))
       .where(eq(matchPlayersTable.matchId, id))
       .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
 
-    const vods = await db
-      .select()
-      .from(vodEntriesTable)
-      .where(eq(vodEntriesTable.matchId, id));
+    const vods = await db.select().from(vodEntriesTable).where(eq(vodEntriesTable.matchId, id));
 
     res.json({
-      ...formatMatch(match, {
-        teamAName: teamA?.name ?? null,
-        teamATag: teamA?.tag ?? null,
-        teamBName: teamB?.name ?? null,
-        teamBTag: teamB?.tag ?? null,
-        eventTitle: event?.title ?? null,
-        eventSlug: event?.slug ?? null,
-      }),
-      matchPlayers: mpRows.map((r) =>
-        formatMatchPlayer(r.mp, r.playerRiotId ?? null)
-      ),
+      ...base,
+      matchPlayers: mpRows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)),
       vods: vods.map((v) => ({
-        id: v.id,
-        matchId: v.matchId ?? null,
-        title: v.title,
-        videoUrl: v.videoUrl,
-        champion: v.champion ?? null,
-        createdAt: v.createdAt.toISOString(),
-        updatedAt: v.updatedAt.toISOString(),
+        id: v.id, matchId: v.matchId ?? null, title: v.title,
+        videoUrl: v.videoUrl, champion: v.champion ?? null,
+        createdAt: v.createdAt.toISOString(), updatedAt: v.updatedAt.toISOString(),
       })),
     });
   } catch (err) {
@@ -563,10 +585,9 @@ router.get("/:id/replay", async (req, res) => {
         res.status(403).json({ error: "Match is not publicly visible yet" });
         return;
       }
-      const playerInMatch = await db.select().from(matchPlayersTable)
-        .where(and(eq(matchPlayersTable.matchId, id), eq(matchPlayersTable.playerId, playerId)))
-        .limit(1);
-      if (playerInMatch.length === 0) {
+      // Use team_members (not match_players) — coaches/bench can download (#9)
+      const isMember = await isMemberOfMatch(Number(playerId), match);
+      if (!isMember) {
         res.status(403).json({ error: "Match is not publicly visible yet" });
         return;
       }
