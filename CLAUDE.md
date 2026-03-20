@@ -1,224 +1,120 @@
-# VCLoL — Claude Code Reference
+# VCLoL — Claude Session Reference
 
-Read this file completely before every session. Every decision here is final unless explicitly overridden by the user in the current session.
+Read this file before every session. Each session is scoped to specific GitHub Issue numbers — read the issue, do the work, commit with `closes #N`.
 
 ---
 
-## Project Identity
+## Project in One Sentence
 
-5v5 team scrim recording platform for amateur League of Legends players. Core: Discord Bot (data producer — registration, .rofl submission, notifications) + Website (data consumer — team profiles, player profiles, match stats, leaderboard, VOD archive). Fill the gap between PlayVS (school-based) and NACL (Riot Tier 2) for independent players NA-wide.
+5v5 team scrim recording platform. Discord bot produces all data (.rofl parse → match record → ELO). Website displays it. Bot is the product; website is the showcase.
 
-Full PRD: `/docs/PRD_v3.md`
-Schema contract: `/docs/SCHEMA_CONTRACT.md`
-Migration plan: `/docs/MIGRATION_PLAN.md`
-Bot spec: `/docs/BOT_SPEC.md`
-
-**STATUS:** Migrating from 1v1 ladder (main branch) to 5v5 team model (variant branch). See MIGRATION_PLAN.md for complete file-by-file plan.
+**Full PRD:** `docs/PRD_v3.md`
+**Bot spec:** `docs/BOT_SPEC.md`
+**Schema:** `docs/SCHEMA_CONTRACT.md`
+**User journeys:** `docs/USER_JOURNEYS.md`
 
 ---
 
 ## Absolute Principles
 
-1. **Everything defaults to automatic.** Admin can override but automation is always the default.
-2. **Zero hardcoded configurable values.** K-factor, match limits, playoff sizes — all read from `ladderSettings` DB table.
-3. **Read source before answering.** Never guess schema, never guess route signatures, never assume a file exists without reading it.
-4. **Schema first.** Every change: Schema → OpenAPI spec → orval codegen → Express route → React page with generated hooks. Never write frontend API calls by hand.
-5. **Every team ELO change writes to `elo_history`.** No exceptions. Reason field: `match`, `scrim`, `season_reset`, `manual_admin`.
-6. **.rofl metadata is source of truth.** Never trust player-reported results. Results come from .rofl parse. 10 player entries per 5v5 match.
-7. **Teams own ELO, not players.** `teams.teamElo` is the ranking metric. Players have no individual ELO. Player stats (KDA, champion pool, win rate) are aggregated from `match_players` table.
-8. **Bot produces data, website displays data.** All user actions (register team, add players, submit .rofl) happen in Discord. Website is read-only except for admin panel and Discord OAuth login.
+1. **Schema → OpenAPI → codegen → route → page.** Never skip. Never write frontend fetch() by hand.
+2. **Every team ELO change writes to `elo_history`.** Reason: `match`, `season_reset`, `manual_admin`, `registration`.
+3. **Teams own ELO. Players do not.** `players` table has no ELO columns.
+4. **Bot is the only data producer.** All match data from .rofl parse. Admin manual entry is fallback only.
+5. **Read source before answering.** Never guess schema or route signatures.
+6. **No SSH. Deployment is Portainer only.**
 
 ---
 
 ## Architecture
 
-**Stack:** pnpm monorepo, React + Vite + Wouter, Express + TypeScript, PostgreSQL + Drizzle ORM, OpenAPI → Orval codegen, discord.js v14
-
-**Repo:** `xiNeRoar/lolproject` branch `variant`
-
-**Key paths:**
-- Schema: `lib/db/src/schema/`
-- OpenAPI: `lib/api-spec/openapi.yaml`
-- Codegen config: `lib/api-spec/orval.config.ts`
-- Generated hooks: `lib/api-client-react/src/generated/`
-- Backend routes: `artifacts/api-server/src/routes/`
-- Frontend pages: `artifacts/vclol/src/pages/`
-- Discord bot: `artifacts/discord-bot/` (new package)
-
-**After ANY schema change:**
 ```
-cd lib/db && pnpm run push
+pnpm monorepo
+├── lib/db/src/schema/        ← Drizzle schema (source of truth)
+├── lib/api-spec/openapi.yaml ← API contract (source of truth)
+├── lib/api-client-react/     ← Generated hooks (never edit directly)
+├── artifacts/api-server/     ← Express routes
+├── artifacts/vclol/          ← React frontend (Replit owns)
+└── artifacts/discord-bot/    ← Bot (Claude owns, not yet built)
 ```
 
-**After ANY OpenAPI change:**
-```
-cd lib/api-spec && pnpm run codegen
-```
-Verify generated types in `lib/api-client-react/src/generated/api.schemas.ts` before writing any frontend code.
-
-**Deployment:** User manages via Portainer UI. Never suggest SSH or CLI deployment.
+**After schema change:** `cd lib/db && pnpm run push`
+**After OpenAPI change:** `cd lib/api-spec && pnpm run codegen`
 
 ---
 
-## Authentication Architecture
-
-**Admin:** Session-based (`req.session.adminId`). `requireAdmin` middleware on all admin routes. Keep as-is from v1.
-
-**Player (current stub):** localStorage `vclol_player_id`. ALL of these must be replaced with session-based auth.
-
-**Player (target):** Discord OAuth → `req.session.playerId`. Routes: `/auth/discord` → `/auth/discord/callback` → set session. Session stores `playerId` and `playerRiotId`.
-
-**Critical localStorage locations to replace (9 total):**
-- `PublicLayout.tsx` (nav auth state + logout)
-- `PlayerDashboard.tsx` (root auth check)
-- `PlayerProfile.tsx` (auth for future team actions)
-- `Ladder.tsx` (per-row action buttons)
-- `Home.tsx` (hero CTAs)
-- `DevLogin.tsx` (dev login/logout — keep for dev)
-- `Register.tsx` (post-registration auth — page becomes landing)
-
----
-
-## Data Model — Core Truth
+## Data Model
 
 ```
-teams (has teamElo, wins, losses)
-  └── team_members (playerId, role, status)
-        └── players (riotId, discordId — NO elo, NO wins/losses)
+teams (teamElo, wins, losses, isActive, captainPlayerId nullable)
+  └── team_members (playerId, role, status: active/inactive)
 
-matches (teamAId, teamBId, winner, teamElo changes)
-  └── match_players (10 rows: playerId, champion, KDA, CS, items — from .rofl parse)
+matches (teamAId, teamBId, visibleAfter, resultSource)
+  └── match_players (10 rows: PUUID, champion, KDA, CS, items, win)
 
-seasons → matches (via seasonId)
-events → matches (via eventId)
-elo_history (teamId, delta, reason)
-```
-
-**Tables deleted from v1:** challenges, matchmaking_queue, interest_submissions, admin_schedule_settings
-**Tables added:** teams, team_members, match_players
-
-Full schema with Drizzle code: `/docs/SCHEMA_CONTRACT.md`
-
----
-
-## Business Logic — Match Visibility
-
-**Default:** Match details + VOD are private for 7 days (only participating teams can see).
-**After 7 days:** Auto-public — appears in VOD Archive, visible to everyone.
-**Captain override:** Can set a match to permanent private (never public) or immediate public.
-
-**Implementation:**
-- `matches.visibleAfter` timestamp column. Default = `createdAt + 7 days`.
-- Permanent private: captain sets `visibleAfter` to far-future date (e.g. 2099-01-01).
-- Immediate public: captain sets `visibleAfter` to now or past.
-- VOD Archive query: `WHERE visibleAfter <= NOW()` (plus own-team matches always visible).
-- Match detail page: check `visibleAfter` or team membership before showing per-player stats.
-- Player profile aggregate stats (KDA, win rate, champion pool) are ALWAYS public regardless of match visibility — they are anonymized aggregates, not match-specific data.
-- Team ELO always counts regardless of visibility.
-
----
-
-## Business Logic — Match Creation (Two Modes)
-
-**Mode 1: .rofl parse (default)**
-- Source: Discord bot `/submit` or `POST /api/matches/submit`
-- Creates: match + 10 match_players rows + team ELO update
-- `resultSource = "rofl_parse"`
-
-**Mode 2: Admin manual (override)**
-- Source: Admin panel match form
-- Creates: match + team ELO update, **NO match_players rows** (no per-player stats)
-- `resultSource = "admin_manual"`
-- Use case: sponsored events, offline matches, third-party tournament results
-
----
-
-## Business Logic — Match Submission (THE core endpoint)
-
-```
-POST /api/matches/submit (multipart — .rofl file upload)
-
-1. Validate file: check ROFL2 magic bytes (RIOT\x02\x00), reject if invalid
-2. Parse metadata: extract JSON from end of file (scan backward for '{')
-3. Extract statsJson: deserialize PlayerStats2[] array (10 entries for 5v5)
-4. For each player entry: extract RIOT_ID_GAME_NAME, RIOT_ID_TAG_LINE, PUUID,
-   SKIN (champion), TEAM (100=blue/200=red), WIN, CHAMPIONS_KILLED, NUM_DEATHS,
-   ASSISTS, MINIONS_KILLED, NEUTRAL_MINIONS_KILLED, GOLD_EARNED, VISION_SCORE,
-   LEVEL, ITEM0-6, TOTAL_DAMAGE_DEALT_TO_CHAMPIONS
-5. Match teams: group players by TEAM field. Look up team by matching 3+ PUUIDs/riotIds
-   against team_members. If no match found → reject or ask captain to confirm
-6. Determine winner: WIN field on any player entry
-7. Create match record: teamAId, teamBId, winnerName, gameDuration, gameVersion
-8. Create 10 match_player records (one per player)
-9. Calculate team ELO: read from teams table, apply calculateElo(), update teams table
-10. Write elo_history for both teams
-11. Store .rofl file path for VOD pipeline
-12. Return match summary
+elo_history (teamId, elo, delta, reason, matchId)
+seasons → matches | events → matches
+notifications (playerId, type, dmSent, dmFailed)
+admin_actions (adminId, actionType, entityType, entityId, detail)
+player_bans (playerId or teamId, reason, banType, expiresAt, isActive)
+bot_heartbeats (timestamp — bot writes every 5 min)
 ```
 
 ---
 
-## Business Logic — Team ELO
+## Auth
 
-**Calculation:** Same standard Elo formula as v1. `calculateElo()` in `lib/elo.ts` is pure math — works unchanged with team ELO values.
-
-**Written when:** Match result confirmed (from .rofl parse or admin manual entry)
-
-**Season reset:** Soft reset on season complete — compresses team ELO toward baseline. Factor configurable via `seasons.eloResetFactor`. Writes `elo_history` with reason `season_reset`.
-
-**Ladder:** `GET /api/ladder` → `SELECT * FROM teams WHERE isActive ORDER BY teamElo DESC`. Response: team entries with name, tag, elo, wins, losses.
+**Admin:** `req.session.adminId` — iron-session cookie.
+**Player (current stub):** `localStorage.getItem("vclol_player_id")` — being replaced in Issue #7.
+**Player (target):** Discord OAuth → `req.session.playerId`. Routes `/auth/discord` + `/auth/discord/callback` already exist.
 
 ---
 
-## Business Logic — Team Lifecycle
+## Visibility Rules
 
-- No explicit disband/remove commands
-- .rofl data is source of truth for roster
-- 30 days no match → team auto-set Inactive (off leaderboard, data preserved)
-- New player in .rofl not in roster → bot asks captain to confirm add
-- Player absent from N consecutive .rofl → auto inactive member
-- One player can be in multiple teams
-- Player career history shows all teams with per-team stats
+```
+match.visibleAfter = null        → public 7 days after createdAt
+match.visibleAfter = new Date(0) → always public
+match.visibleAfter = 9999-01-01  → permanent private
+```
 
----
-
-## Ownership & Handoff Protocol
-
-**Claude owns:** schema files, route files, openapi.yaml, lib/ code, discord bot, CLAUDE.md
-**Replit owns:** page files, component files, layout files, replit.md
-
-**Handoff flow:**
-1. Claude completes a phase → commits with message starting with `[HANDOFF-REPLIT]`
-2. User tells Replit to pull and continue
-3. Replit completes work → commits with message starting with `[HANDOFF-CLAUDE]`
-4. User tells Claude to pull and continue
-
-**Neither side edits the other's files.** If Replit needs a backend change, it documents the request in the commit message or a `docs/REQUESTS.md` file. Claude picks it up next session.
+Private match access: player must be active member of teamA or teamB — check `team_members`, NOT `match_players`.
+Non-members: return redacted response `{...matchInfo, matchPlayers:[], vods:[], _private:true}` — NOT 403.
 
 ---
 
-## Environment Variables
+## Team Lifecycle
 
-| Var | Required | Default | Notes |
-|-----|----------|---------|-------|
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `SESSION_SECRET` | Yes (prod) | `"vclol-dev-secret"` | Must be random in production |
-| `DISCORD_CLIENT_ID` | Yes | — | Discord OAuth app |
-| `DISCORD_CLIENT_SECRET` | Yes | — | Discord OAuth app |
-| `DISCORD_REDIRECT_URI` | Yes | `http://localhost:5173/auth/discord/callback` | Must match Discord app config |
-| `DISCORD_BOT_TOKEN` | Yes | — | Discord bot token |
-| `RIOT_API_KEY` | No | — | Phase 2: validates Riot ID exists |
-| `ROFL_UPLOAD_DIR` | No | `./uploads/rofl` | Where .rofl files are stored |
-| `PORT` | No | `3000` | API server port |
+- No match in 30 days → `isActive = false` (off leaderboard, data preserved)
+- `captainPlayerId` nullable — orphaned team ok, admin assigns new captain
+- One player can be on multiple teams simultaneously
+- Roster source of truth = .rofl data, not manual entry
 
 ---
 
-## What NOT to Do
+## Key Constants
 
-- Never create challenge-related code (deleted system)
-- Never write matchmaking queue code (deleted system)
-- Never put ELO on the players table (ELO belongs to teams)
-- Never create interest submission endpoints (deleted feature)
-- Never reference playerAId/playerBId in matches (use teamAId/teamBId)
-- Never write frontend API calls by hand (always use generated hooks from codegen)
-- Never suggest SSH deployment (user uses Portainer only)
+```
+Seed: Team Alpha id=8, Team Beta id=9. Players ids 39-48. xiNe#NA1=id39.
+ELO history: GET /api/elo-history/team/:teamId
+Bot status: GET /api/bot-status
+gameDuration: milliseconds
+```
+
+---
+
+## Ownership
+
+**Claude owns (Replit never edits):**
+`lib/db/src/schema/` · `lib/api-spec/openapi.yaml` · `artifacts/api-server/` · `artifacts/discord-bot/` · `docs/` (except replit.md) · `CLAUDE.md`
+
+**Replit owns (Claude never edits):**
+`artifacts/vclol/src/pages/` · `artifacts/vclol/src/components/` · `artifacts/vclol/src/hooks/` · `artifacts/vclol/src/lib/` · `artifacts/vclol/src/App.tsx` · `replit.md`
+
+---
+
+## Session Protocol
+
+Scoped to GitHub Issue numbers. Read issue → do work → commit `closes #N`.
+Do NOT read archived docs. Do NOT read MIGRATION_PLAN or REMAINING_WORK — deleted.
+Replit backend requests → `docs/REQUESTS.md`.
