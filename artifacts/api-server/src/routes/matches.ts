@@ -557,7 +557,7 @@ router.get("/:id/replay", async (req, res) => {
       return;
     }
 
-    if (!isMatchVisible(match) && !req.session.adminId) {
+    if (!isVisible(match) && !req.session.adminId) {
       const playerId = req.session.playerId;
       if (!playerId) {
         res.status(403).json({ error: "Match is not publicly visible yet" });

@@ -125,6 +125,24 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 4. If BOTH sides now have teamIds: calculate ELO retroactively for both teams. Write `elo_history`.
 5. Reply: "✅ Match #{matchId} claimed for **{team}**. ELO updated: {team} {delta}."
 
+### `/visibility [match-id] <public|private|default>`
+**Who:** Captain of either participating team
+**What:** Change match visibility. Controls whether match details (per-player stats, VOD, .rofl) are publicly accessible.
+**Flow:**
+1. If `match-id` omitted → find most recent match involving invoker's team.
+   If invoker captains multiple teams → Discord select menu: "Which team's last match?"
+2. Look up match by id. Verify invoker is captain of `teamAId` or `teamBId`.
+   - Not captain of either → "Only team captains can change match visibility."
+   - Match has null `teamAId`/`teamBId` (unregistered opponent) → only the registered side's captain can change.
+3. Apply visibility:
+   - `public` → set `matches.visibleAfter = new Date(0)` (epoch = always visible)
+   - `private` → set `matches.visibleAfter = new Date("9999-01-01")` (far-future = never visible)
+   - `default` → set `matches.visibleAfter = null` (7-day auto-public rule applies)
+4. Reply: "Match #{id} visibility set to **{value}**."
+**Edge cases:**
+- Two captains set different values → last write wins. Each change logged via admin_actions.
+- Captain transferred after match → new captain inherits authority.
+
 ### `/stats [team|player] [name]`
 **Who:** Anyone
 **What:** Quick stats lookup in Discord.

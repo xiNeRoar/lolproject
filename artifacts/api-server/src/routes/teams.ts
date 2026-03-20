@@ -124,6 +124,7 @@ router.post("/", requireAdmin, async (req, res) => {
       })
       .returning();
 
+    logAdminAction(req.session.adminId!, "create", "team", row!.id, `Created team "${name}" [${tag}]`);
     res.status(201).json(formatTeam(row!));
   } catch (err: any) {
     if (err?.code === "23505") {
@@ -234,6 +235,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       res.status(404).json({ error: "Team not found" });
       return;
     }
+    logAdminAction(req.session.adminId!, "update", "team", row.id, `Updated team "${row.name}" [${row.tag}]`);
     res.json(formatTeam(row));
   } catch (err: any) {
     if (err?.code === "23505") {
@@ -253,6 +255,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
       return;
     }
     await db.delete(teamsTable).where(eq(teamsTable.id, id));
+    logAdminAction(req.session.adminId!, "delete", "team", id, `Deleted team id=${id}`);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete team" });
