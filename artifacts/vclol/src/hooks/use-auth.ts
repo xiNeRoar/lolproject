@@ -1,29 +1,53 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
+import { useGetAuthMe, getGetAuthMeQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
+function subscribeToStorage(cb: () => void) {
+  window.addEventListener("storage", cb);
+  return () => window.removeEventListener("storage", cb);
+}
+
+function getLocalPlayerId() {
+  return localStorage.getItem("vclol_player_id");
+}
 
 export function useAuth() {
-  const [playerId, setPlayerId] = useState<string | null>(() =>
-    localStorage.getItem("vclol_player_id")
-  );
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useGetAuthMe({
+    query: {
+      staleTime: 30_000,
+      retry: false,
+    },
+  });
 
-  useEffect(() => {
-    const sync = () => setPlayerId(localStorage.getItem("vclol_player_id"));
-    window.addEventListener("storage", sync);
-    window.addEventListener("focus", sync);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("focus", sync);
-    };
-  }, []);
+  const localPlayerId = useSyncExternalStore(subscribeToStorage, getLocalPlayerId);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     localStorage.removeItem("vclol_player_id");
     window.dispatchEvent(new Event("storage"));
-  }, []);
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {}
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+  }, [queryClient]);
+
+  const sessionAuth = data?.authenticated ?? false;
+  const sessionPlayerId = data?.playerId ?? null;
+  const localIdNum = localPlayerId ? parseInt(localPlayerId, 10) || 0 : 0;
+
+  const isLoggedIn = !!localPlayerId || sessionAuth;
+  const playerIdNum = localPlayerId ? localIdNum : (sessionPlayerId ?? 0);
+  const playerId = isLoggedIn ? String(playerIdNum) : null;
 
   return {
     playerId,
-    isLoggedIn: !!playerId,
-    playerIdNum: playerId ? Number(playerId) : 0,
+    isLoggedIn,
+    playerIdNum,
+    riotId: data?.riotId ?? null,
+    discordUsername: data?.discordUsername ?? null,
+    isLoading,
     logout,
   };
 }
