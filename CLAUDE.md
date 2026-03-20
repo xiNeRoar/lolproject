@@ -78,6 +78,35 @@ with urllib.request.urlopen(req) as r:
 ```
 
 This applies to: bugs you notice, missing features, doc gaps, security issues, performance problems — anything. If it's worth fixing, it needs an issue first.
+If the problem is **directly related to the issue you are currently working on** (e.g. you discovered a sub-bug, a missing edge case, or a clarification needed), **comment on that issue first** before opening a new one:
+
+```python
+import json, urllib.request, subprocess
+
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
+
+ISSUE_NUMBER = N  # the issue you are currently working on
+
+data = json.dumps({
+    "body": "**Found during implementation:**\n\n[describe what you found]\n\n**Decision:** [fix inline / opening new issue #N / blocked until X]"
+}).encode()
+req = urllib.request.Request(
+    f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{ISSUE_NUMBER}/comments",
+    data=data,
+    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+)
+with urllib.request.urlopen(req) as r:
+    d = json.load(r); print(f"Commented on #{ISSUE_NUMBER}")
+```
+
+**Rule:**
+- Problem is a sub-task or edge case of the current issue → **comment on current issue**
+- Problem is independent / different area of codebase → **open new issue** with `Related to #N` in body
+- Both can apply: comment first, then open new issue referencing the comment
+
+
 
 ---
 

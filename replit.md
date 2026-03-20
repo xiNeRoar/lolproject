@@ -77,6 +77,32 @@ with urllib.request.urlopen(req) as r:
 ```
 
 This applies to: UI bugs, UX gaps, broken journeys, missing empty states, missing loading states — anything. If it's worth fixing, it needs an issue first.
+If the problem is **directly related to the issue you are currently working on**, **comment on that issue first**:
+
+```python
+import json, urllib.request, subprocess
+
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
+
+ISSUE_NUMBER = N  # current issue
+
+data = json.dumps({
+    "body": "**Found during implementation:**\n\n[describe]\n\n**Decision:** [fix inline / opening new issue #N / blocked]"
+}).encode()
+req = urllib.request.Request(
+    f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{ISSUE_NUMBER}/comments",
+    data=data,
+    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+)
+with urllib.request.urlopen(req) as r:
+    print(f"Commented on #{ISSUE_NUMBER}")
+```
+
+**Rule:** Sub-task of current issue → comment. Independent problem → new issue with `Related to #N`.
+
+
 
 ---
 
