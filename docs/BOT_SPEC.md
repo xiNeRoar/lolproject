@@ -93,6 +93,37 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 2. Set `team_members.status = 'inactive'` (don't delete — preserve history)
 3. Reply: "@user removed from **{team}**."
 
+### `/transfer-captain <@user>`
+**Who:** Current team captain only
+**What:** Transfer captain role to another active team member.
+**Flow:**
+1. Confirm invoker is current captain of a team
+2. If invoker captains multiple teams → Discord select menu: "Which team?"
+3. Confirm @user is an active member of that team
+4. Update `teams.captainPlayerId = newCaptain.id`
+5. Original captain remains as active team_member (history preserved)
+6. Reply: "**@user** is now captain of **{team}**."
+**Error cases:**
+- @user not on team → "Must be an active team member to become captain."
+- Invoker not captain → "Only the current captain can transfer leadership."
+
+### `/leave`
+**Who:** Any active team member (NOT captain)
+**What:** Leave a team voluntarily.
+**Flow:**
+1. Find invoker's active team membership(s)
+2. If invoker is captain → reject: "Use `/transfer-captain` first before leaving."
+3. If invoker is member of multiple teams → Discord select menu: "Which team do you want to leave?"
+4. Set `team_members.status = 'inactive'`
+5. Reply: "You have left **{team}**."
+**Note:** Captain cannot `/leave`. Must `/transfer-captain` first. This prevents orphaned teams with no authority.
+
+### `/add` — Multi-team captain disambiguation
+If the invoking captain is captain of multiple active teams:
+1. Bot replies with Discord select menu: "Which team do you want to add **@user** to?"
+2. Captain selects → continues original `/add` flow
+If captain has only one team → direct execution (no menu).
+
 ---
 
 ## .rofl Upload Size Constraint
@@ -152,6 +183,9 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 | Team name taken | "Team name '{name}' is already taken. Choose another." |
 | Tag format invalid | "Tag must be 2-5 uppercase letters/numbers (e.g. TSM, C9, T1)." |
 | Not captain | "Only the team captain can use this command." |
+| Transfer target not on team | "Must be an active team member to become captain." |
+| Captain tries /leave | "Use `/transfer-captain` first before leaving." |
+| Not a member of any team | "You are not a member of any team." |
 | Bot lacks permissions | "I need permission to send messages and attach embeds in this channel." |
 
 ---
@@ -170,7 +204,9 @@ artifacts/discord-bot/
 │   │   ├── submit.ts
 │   │   ├── stats.ts
 │   │   ├── roster.ts
-│   │   └── remove.ts
+│   │   ├── remove.ts
+│   │   ├── transfer-captain.ts
+│   │   └── leave.ts
 │   ├── lib/
 │   │   ├── rofl-parser.ts  # .rofl binary parsing
 │   │   ├── team-matcher.ts # Match players to teams by PUUID

@@ -24,6 +24,8 @@ export * from "./errorResponse";
 export * from "./event";
 export * from "./eventDetail";
 export * from "./eventRegistration";
+export * from "./getReplayStatus200";
+export * from "./getReplayStatusParams";
 export * from "./healthStatus";
 export * from "./ladderEntry";
 export * from "./ladderResponse";

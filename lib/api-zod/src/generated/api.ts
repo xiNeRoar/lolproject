@@ -904,6 +904,28 @@ export const UpdateMatchVisibilityResponse = zod.object({
 });
 
 /**
+ * @summary Download .rofl replay file (2-week window)
+ */
+export const DownloadMatchReplayParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Check POV request status for a match+player
+ */
+export const GetReplayStatusQueryParams = zod.object({
+  matchId: zod.coerce.number(),
+  playerId: zod.coerce.number(),
+});
+
+export const GetReplayStatusResponse = zod.object({
+  exists: zod.boolean(),
+  status: zod.string().nullish(),
+  submittedAt: zod.string().nullish(),
+  processedAt: zod.string().nullish(),
+});
+
+/**
  * @summary List all events
  */
 export const ListEventsResponseItem = zod.object({

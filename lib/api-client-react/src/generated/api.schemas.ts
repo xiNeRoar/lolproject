@@ -573,6 +573,18 @@ export type ListMatchesParams = {
   search?: string;
 };
 
+export type GetReplayStatusParams = {
+  matchId: number;
+  playerId: number;
+};
+
+export type GetReplayStatus200 = {
+  exists: boolean;
+  status?: string | null;
+  submittedAt?: string | null;
+  processedAt?: string | null;
+};
+
 export type ListRegistrationsParams = {
   eventId?: number;
 };

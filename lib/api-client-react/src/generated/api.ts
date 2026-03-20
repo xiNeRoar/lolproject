@@ -35,6 +35,8 @@ import type {
   Event,
   EventDetail,
   EventRegistration,
+  GetReplayStatus200,
+  GetReplayStatusParams,
   HealthStatus,
   LadderResponse,
   LadderSettings,
@@ -2503,6 +2505,187 @@ export const useUpdateMatchVisibility = <
 > => {
   return useMutation(getUpdateMatchVisibilityMutationOptions(options));
 };
+
+/**
+ * @summary Download .rofl replay file (2-week window)
+ */
+export const getDownloadMatchReplayUrl = (id: number) => {
+  return `/api/matches/${id}/replay`;
+};
+
+export const downloadMatchReplay = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadMatchReplayUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadMatchReplayQueryKey = (id: number) => {
+  return [`/api/matches/${id}/replay`] as const;
+};
+
+export const getDownloadMatchReplayQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadMatchReplay>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadMatchReplay>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getDownloadMatchReplayQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof downloadMatchReplay>>
+  > = ({ signal }) => downloadMatchReplay(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadMatchReplay>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadMatchReplayQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadMatchReplay>>
+>;
+export type DownloadMatchReplayQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Download .rofl replay file (2-week window)
+ */
+
+export function useDownloadMatchReplay<
+  TData = Awaited<ReturnType<typeof downloadMatchReplay>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadMatchReplay>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadMatchReplayQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Check POV request status for a match+player
+ */
+export const getGetReplayStatusUrl = (params: GetReplayStatusParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/replays/status?${stringifiedParams}`
+    : `/api/replays/status`;
+};
+
+export const getReplayStatus = async (
+  params: GetReplayStatusParams,
+  options?: RequestInit,
+): Promise<GetReplayStatus200> => {
+  return customFetch<GetReplayStatus200>(getGetReplayStatusUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReplayStatusQueryKey = (params?: GetReplayStatusParams) => {
+  return [`/api/replays/status`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetReplayStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReplayStatus>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetReplayStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReplayStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReplayStatusQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getReplayStatus>>> = ({
+    signal,
+  }) => getReplayStatus(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReplayStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReplayStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReplayStatus>>
+>;
+export type GetReplayStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Check POV request status for a match+player
+ */
+
+export function useGetReplayStatus<
+  TData = Awaited<ReturnType<typeof getReplayStatus>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetReplayStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReplayStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReplayStatusQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all events

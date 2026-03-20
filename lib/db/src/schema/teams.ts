@@ -7,8 +7,10 @@ export const teamsTable = pgTable("teams", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   tag: text("tag").notNull(), // 2-5 uppercase alphanumeric, e.g. "TSM"
-  captainPlayerId: integer("captain_player_id").notNull()
+  captainPlayerId: integer("captain_player_id")
     .references(() => playersTable.id, { onDelete: "set null" }),
+    // nullable: allows orphaned teams when captain player is deleted
+    // Admin can assign new captain via PUT /api/teams/:id
   discordServerId: text("discord_server_id"),
   teamElo: integer("team_elo").notNull().default(1000),
   peakElo: integer("peak_elo").notNull().default(1000),

@@ -663,6 +663,75 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /matches/{id}/replay:
+    get:
+      operationId: downloadMatchReplay
+      tags: [matches]
+      summary: Download .rofl replay file (2-week window)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: .rofl file download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Replay not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Download window expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /replays/status:
+    get:
+      operationId: getReplayStatus
+      tags: [replays]
+      summary: Check POV request status for a match+player
+      parameters:
+        - name: matchId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: playerId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Status info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  status:
+                    type: string
+                    nullable: true
+                  submittedAt:
+                    type: string
+                    nullable: true
+                  processedAt:
+                    type: string
+                    nullable: true
+                required: [exists]
+
   # ── Events ──────────────────────────────────────────────────
 
   /events:
