@@ -8,7 +8,7 @@
 
 ---
 
-## MANDATORY: Run at the start of every session before anything else
+## STEP 0 — Run at the start of every session (mandatory, no exceptions)
 
 ```python
 import json, urllib.request, subprocess, re
@@ -40,20 +40,51 @@ next_issue = next((i for i in mine if not blocked(i)), None)
 if next_issue:
     ms = (next_issue.get('milestone') or {}).get('title', 'none')
     print(f"NEXT: #{next_issue['number']} [{ms}] {next_issue['title']}")
+    print(f"URL: {next_issue['html_url']}")
 else:
     print("No unblocked Claude issues.")
     for i in mine: print(f"  BLOCKED: #{i['number']} {i['title']}")
 ```
 
-Then: `git fetch origin variant && git checkout FETCH_HEAD -- .`
+Then sync to latest remote (hard reset — discards any local uncommitted changes):
+```bash
+git fetch origin variant && git reset --hard FETCH_HEAD
+```
 
-Read the issue completely. Then start.
+Read the issue completely before touching any code.
 
 ---
 
-## MANDATORY: When you find ANY problem, gap, or improvement during work
+## STEP 1 — When you find a problem during work
 
-**Do not fix silently. Open a GitHub Issue first, every time.**
+Two cases. Pick the right one:
+
+**Case A — Sub-task or edge case of the issue you are currently working on:**
+Comment on the current issue first, then decide whether to fix inline or open a new issue.
+
+```python
+import json, urllib.request, subprocess
+
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
+
+ISSUE_NUMBER = N  # replace with current issue number
+
+data = json.dumps({
+    "body": "**Found during implementation:**\n\n[describe what you found]\n\n**Decision:** [fixing inline / opening new issue #N / blocked until X]"
+}).encode()
+req = urllib.request.Request(
+    f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{ISSUE_NUMBER}/comments",
+    data=data,
+    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+)
+with urllib.request.urlopen(req) as r:
+    print(f"Commented on #{ISSUE_NUMBER}")
+```
+
+**Case B — Independent problem in a different area:**
+Open a new issue before fixing it.
 
 ```python
 import json, urllib.request, subprocess
@@ -64,21 +95,33 @@ TOKEN = subprocess.check_output(
 
 data = json.dumps({
     "title": "[Claude] One-line description",
-    "labels": ["claude", "backend"],   # add "bug" if it's a bug
+    "labels": ["claude", "backend"],   # add "bug" if applicable
     "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
-    "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ..."
+    "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ...\n\nRelated to #N"
 }).encode()
 req = urllib.request.Request(
     "https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
     headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
 )
 with urllib.request.urlopen(req) as r:
-    d = json.load(r)
-    print(f"Opened #{d['number']}: {d['title']}")
+    d = json.load(r); print(f"Opened #{d['number']}: {d['title']}")
 ```
 
-This applies to: bugs you notice, missing features, doc gaps, security issues, performance problems — anything. If it's worth fixing, it needs an issue first.
-If the problem is **directly related to the issue you are currently working on** (e.g. you discovered a sub-bug, a missing edge case, or a clarification needed), **comment on that issue first** before opening a new one:
+Never fix silently without a record.
+
+---
+
+## STEP 2 — Commit, push, then close the issue via API
+
+```bash
+git add -A
+git commit -m "short description
+
+closes #N"
+git push origin variant
+```
+
+**Then close via API — `closes #N` in commit message does NOT auto-close on non-default branches:**
 
 ```python
 import json, urllib.request, subprocess
@@ -87,44 +130,20 @@ TOKEN = subprocess.check_output(
     "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
 ).decode().strip()
 
-ISSUE_NUMBER = N  # the issue you are currently working on
-
-data = json.dumps({
-    "body": "**Found during implementation:**\n\n[describe what you found]\n\n**Decision:** [fix inline / opening new issue #N / blocked until X]"
-}).encode()
-req = urllib.request.Request(
-    f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{ISSUE_NUMBER}/comments",
-    data=data,
-    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
-)
-with urllib.request.urlopen(req) as r:
-    d = json.load(r); print(f"Commented on #{ISSUE_NUMBER}")
-```
-
-**Rule:**
-- Problem is a sub-task or edge case of the current issue → **comment on current issue**
-- Problem is independent / different area of codebase → **open new issue** with `Related to #N` in body
-- Both can apply: comment first, then open new issue referencing the comment
-
-
-
----
-
-## MANDATORY: Commit format — every time
-
-```bash
-git add -A
-git commit -m "short description of what changed
-
-closes #N"      ← automatically closes the issue on GitHub
-git push origin variant
+for n in [N]:  # replace with issue number(s)
+    data = json.dumps({"state": "closed"}).encode()
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{n}",
+        data=data, method="PATCH",
+        headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(req) as r:
+        d = json.load(r); print(f"Closed #{d['number']}: {d['title']}")
 ```
 
 ---
 
-## MANDATORY: After every issue — update docs in the same commit
-
-Every completed issue requires updating the corresponding doc. No exceptions.
+## STEP 3 — Update the relevant doc in the same commit
 
 | What changed | Update this file |
 |---|---|
@@ -133,14 +152,13 @@ Every completed issue requires updating the corresponding doc. No exceptions.
 | New or changed API endpoint | `lib/api-spec/openapi.yaml` → run codegen |
 | New environment variable required | `docs/DEPLOYMENT.md` |
 | User journey step count improved | `docs/USER_JOURNEYS.md` |
-| Architecture principle changed | `CLAUDE.md` itself |
-| Ownership rule changed | `CLAUDE.md` itself |
+| Architecture principle or constant changed | `CLAUDE.md` itself |
 
-**CLAUDE.md is a living document.** If you learn something that should change how future sessions work — a principle, a constant, a rule — update CLAUDE.md in the same commit. You own this file.
+**CLAUDE.md is a living document.** Update it in the same commit when you learn something that changes how future sessions should work.
 
 ---
 
-## MANDATORY: Check docs/REQUESTS.md each session
+## STEP 4 — Check docs/REQUESTS.md each session
 
 If Replit left a backend request: open a GitHub Issue for it, do the work, clear the entry from REQUESTS.md. All in one commit.
 
@@ -177,8 +195,8 @@ pnpm monorepo
 ## Data Model
 
 ```
-teams (teamElo, wins, losses, isActive, captainPlayerId nullable, lastMatchAt)
-  └── team_members (playerId, role, status: active/inactive)
+teams (teamElo, wins, losses, isActive, captainPlayerId nullable, lastMatchAt, defaultMatchVisibility)
+  └── team_members (playerId, role, status: active/inactive, lastActiveAt)
 matches (teamAId, teamBId, visibleAfter, resultSource, roflFilePath)
   └── match_players (10 rows: PUUID, champion, KDA, CS, items, win)
 elo_history · seasons · events · notifications · admin_actions · player_bans · bot_heartbeats

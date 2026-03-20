@@ -7,7 +7,7 @@ Never edit: schema, OpenAPI, backend routes, `CLAUDE.md`, `docs/` (except `docs/
 
 ---
 
-## MANDATORY: Run at the start of every session before anything else
+## STEP 0 — Run at the start of every session (mandatory, no exceptions)
 
 ```python
 import json, urllib.request, subprocess, re
@@ -39,45 +39,27 @@ next_issue = next((i for i in mine if not blocked(i)), None)
 if next_issue:
     ms = (next_issue.get('milestone') or {}).get('title', 'none')
     print(f"NEXT: #{next_issue['number']} [{ms}] {next_issue['title']}")
+    print(f"URL: {next_issue['html_url']}")
 else:
     print("No unblocked Replit issues.")
     for i in mine: print(f"  BLOCKED: #{i['number']} {i['title']}")
 ```
 
-Then: `git fetch origin variant && git checkout FETCH_HEAD -- . && pnpm install`
+Then sync to latest remote (hard reset — discards any local uncommitted changes):
+```bash
+git fetch origin variant && git reset --hard FETCH_HEAD && pnpm install
+```
 
 Read the issue. Check `docs/USER_JOURNEYS.md` for the journey it serves and its step-count constraint. Then start.
 
 ---
 
-## MANDATORY: When you find ANY frontend problem, gap, or improvement
+## STEP 1 — When you find a problem during work
 
-**Do not fix silently. Open a GitHub Issue first, every time.**
+Two cases. Pick the right one:
 
-```python
-import json, urllib.request, subprocess
-
-TOKEN = subprocess.check_output(
-    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
-).decode().strip()
-
-data = json.dumps({
-    "title": "[Replit] One-line description",
-    "labels": ["replit", "frontend"],  # add "bug" if it's a bug
-    "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
-    "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ..."
-}).encode()
-req = urllib.request.Request(
-    "https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
-    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
-)
-with urllib.request.urlopen(req) as r:
-    d = json.load(r)
-    print(f"Opened #{d['number']}: {d['title']}")
-```
-
-This applies to: UI bugs, UX gaps, broken journeys, missing empty states, missing loading states — anything. If it's worth fixing, it needs an issue first.
-If the problem is **directly related to the issue you are currently working on**, **comment on that issue first**:
+**Case A — Sub-task or edge case of the issue you are currently working on:**
+Comment on the current issue first.
 
 ```python
 import json, urllib.request, subprocess
@@ -86,10 +68,10 @@ TOKEN = subprocess.check_output(
     "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
 ).decode().strip()
 
-ISSUE_NUMBER = N  # current issue
+ISSUE_NUMBER = N  # replace with current issue number
 
 data = json.dumps({
-    "body": "**Found during implementation:**\n\n[describe]\n\n**Decision:** [fix inline / opening new issue #N / blocked]"
+    "body": "**Found during implementation:**\n\n[describe]\n\n**Decision:** [fixing inline / opening new issue #N / blocked]"
 }).encode()
 req = urllib.request.Request(
     f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{ISSUE_NUMBER}/comments",
@@ -100,13 +82,35 @@ with urllib.request.urlopen(req) as r:
     print(f"Commented on #{ISSUE_NUMBER}")
 ```
 
-**Rule:** Sub-task of current issue → comment. Independent problem → new issue with `Related to #N`.
+**Case B — Independent problem in a different area:**
+Open a new issue before fixing it.
 
+```python
+import json, urllib.request, subprocess
 
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
+
+data = json.dumps({
+    "title": "[Replit] One-line description",
+    "labels": ["replit", "frontend"],  # add "bug" if applicable
+    "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
+    "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ...\n\nRelated to #N"
+}).encode()
+req = urllib.request.Request(
+    "https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
+    headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+)
+with urllib.request.urlopen(req) as r:
+    d = json.load(r); print(f"Opened #{d['number']}: {d['title']}")
+```
+
+Never fix silently without a record.
 
 ---
 
-## MANDATORY: When you need a backend change
+## STEP 2 — When you need a backend change
 
 Write to `docs/REQUESTS.md` AND open a GitHub Issue (labels: `claude, backend`):
 
@@ -122,7 +126,7 @@ Do NOT edit backend files. Claude picks this up next session.
 
 ---
 
-## MANDATORY: Commit format — every time
+## STEP 3 — Commit, push, then close the issue via API
 
 ```bash
 git add -A
@@ -132,17 +136,37 @@ closes #N"
 git push origin variant
 ```
 
+**Then close via API — `closes #N` does NOT auto-close on variant branch:**
+
+```python
+import json, urllib.request, subprocess
+
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
+
+for n in [N]:  # replace with issue number(s)
+    data = json.dumps({"state": "closed"}).encode()
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/xiNeRoar/lolproject/issues/{n}",
+        data=data, method="PATCH",
+        headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(req) as r:
+        d = json.load(r); print(f"Closed #{d['number']}: {d['title']}")
+```
+
 ---
 
-## MANDATORY: After every issue — update docs and validate design
+## STEP 4 — Update docs and validate design
 
 **Update `docs/USER_JOURNEYS.md`** if the journey step count improved.
 
-**replit.md is a living document.** If you learn something about the design system, discover a pattern that should be standardized, or find a rule that's missing — update replit.md in the same commit. You own this file.
+**replit.md is a living document.** Update it in the same commit when you learn something about the design system or discover a pattern that should be standardized.
 
 **Design validation before every commit:**
 - [ ] Follows DS-1 through DS-9 below
-- [ ] Loading state: animate-pulse skeletons (never text "Loading...")
+- [ ] Loading state: animate-pulse skeletons (never "Loading...")
 - [ ] Empty state: dashed border + icon + description
 - [ ] Mobile-responsive at 375px
 - [ ] Uses `useAuth()`, never raw localStorage

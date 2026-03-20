@@ -23,6 +23,8 @@ export const teamsTable = pgTable("teams", {
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
+  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
+  lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -39,6 +41,7 @@ export const teamMembersTable = pgTable("team_members", {
   role: text("role"),                        // top, jg, mid, adc, sup, fill, null
   status: text("status").notNull().default("active"), // active, inactive
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at"),          // updated when member appears in .rofl
 });
 ```
 
@@ -137,6 +140,8 @@ export const playersTable = pgTable("players", {
   primaryRole: text("primary_role"),          // NEW: top/jg/mid/adc/sup
   secondaryRole: text("secondary_role"),      // NEW
   isActive: boolean("is_active").notNull().default(true),
+  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
+  lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),
@@ -257,6 +262,8 @@ export const playerBansTable = pgTable("player_bans", {
   banType: text("ban_type").notNull().default("permanent"), // temporary | permanent
   expiresAt: timestamp("expires_at"), // null = permanent
   isActive: boolean("is_active").notNull().default(true),
+  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
+  lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 ```
