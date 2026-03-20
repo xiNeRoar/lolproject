@@ -138,20 +138,20 @@ export default function Home() {
             {[
               {
                 icon: Trophy,
-                title: "Competitive Local Play",
-                desc: "Structured 5v5 events beyond solo queue. Team scrims and organized in-houses designed for serious improvement.",
+                title: "Verified Scrim Records",
+                desc: "Every match result is parsed from Riot's .rofl replay files — champion picks, KDA, duration, winner. No self-reporting. Your record is real.",
                 delay: 0,
               },
               {
                 icon: BarChart3,
-                title: "Match Records & VODs",
-                desc: "Every official match is recorded. Build a public history of your competitive performance and access high-level local VODs.",
+                title: "Persistent Competitive Resume",
+                desc: "Build a public profile showing your organized team play history: champion pool, aggregate KDA, win rate, and ELO trajectory across all teams. The team play resume OP.GG can't provide.",
                 delay: 0.1,
               },
               {
-                icon: Users,
-                title: "A Place to Be Seen",
-                desc: "Network with dedicated players in the Lower Mainland. Find teams, scrim partners, and local rivals.",
+                icon: Video,
+                title: "Spectator VOD Archive",
+                desc: "Every scrim generates a permanent spectator-view video. Download .rofl files for free-camera review within the patch window, or request your personal POV render.",
                 delay: 0.2,
               },
             ].map(({ icon: Icon, title, desc, delay }) => (

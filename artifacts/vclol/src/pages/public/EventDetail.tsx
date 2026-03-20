@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
-import { Trophy, Video, Calendar, AlertCircle, Users } from "lucide-react";
+import { Trophy, Video, Calendar, AlertCircle, Users, MessageCircle } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 function EventMatches({ format, matches }: { format: string | null | undefined; matches: Match[] }) {
   if (format === "Single Elimination") return <SingleEliminationBracket matches={matches} />;
@@ -26,6 +27,7 @@ export default function EventDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { data: event, isLoading, error } = useGetEvent(slug);
   const { data: registrations } = useListRegistrations(event?.id ? { eventId: event.id } : undefined);
+  const { isLoggedIn } = useAuth();
 
   if (isLoading) return <PublicLayout><div className="p-16 text-center text-muted-foreground animate-pulse">Loading event...</div></PublicLayout>;
   if (error || !event) return <PublicLayout><div className="p-16 text-center text-destructive">Event not found.</div></PublicLayout>;
@@ -146,16 +148,30 @@ export default function EventDetail() {
                   <div className="bg-secondary/50 p-4 rounded text-center text-sm text-muted-foreground">
                     Registration for this event is currently closed.
                   </div>
+                ) : isLoggedIn ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Event registration is handled through the Discord bot.
+                    </p>
+                    <div className="bg-card/60 border border-border/50 rounded-lg p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <MessageCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground">
+                          Use <code className="text-primary font-mono">/register-event</code> in your Discord server to sign up your team.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      To register for this event, you must be a registered VCLoL player.
+                      To participate, you need to be a registered VCLoL player.
                     </p>
                     <Link href="/register">
-                      <Button className="w-full">Add Bot to Discord →</Button>
+                      <Button className="w-full">Get Started →</Button>
                     </Link>
                     <p className="text-xs text-muted-foreground text-center">
-                      Already registered? Contact admin via Discord to be added to this event.
+                      Already registered? Use the Discord bot's <code className="text-primary font-mono">/register-event</code> command.
                     </p>
                   </div>
                 )}

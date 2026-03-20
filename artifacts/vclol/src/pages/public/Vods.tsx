@@ -177,14 +177,7 @@ export default function Vods() {
 
                     {vod.matchId && (
                       <p className="text-xs text-muted-foreground mb-2">
-                        Match:{" "}
-                        <Link
-                          href={`/matches/${vod.matchId}`}
-                          className="text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          #{vod.matchId}
-                        </Link>
+                        Match: <span className="text-primary">#{vod.matchId}</span>
                       </p>
                     )}
 
