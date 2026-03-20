@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { teamsTable, teamMembersTable, playersTable, matchesTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { teamsTable, teamMembersTable, playersTable, matchesTable, eloHistoryTable } from "@workspace/db";
+import { eq, desc, and, inArray, or } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
 
@@ -123,6 +123,15 @@ router.post("/", requireAdmin, async (req, res) => {
         isActive: isActive ?? true,
       })
       .returning();
+
+    // Write ELO baseline row (Issue #12) — chart starts at 1000
+    await db.insert(eloHistoryTable).values({
+      teamId: row!.id,
+      elo: row!.teamElo,
+      delta: 0,
+      reason: "registration",
+      matchId: null,
+    });
 
     logAdminAction(req.session.adminId!, "create", "team", row!.id, `Created team "${name}" [${tag}]`);
     res.status(201).json(formatTeam(row!));
@@ -373,6 +382,115 @@ router.delete("/:id/members/:memberId", requireAdmin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to remove member" });
   }
+});
+
+
+// ── Captain self-service endpoints (Issue #14) ────────────────────────────
+
+// PUT /teams/:id/transfer-captain
+router.put("/:id/transfer-captain", async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    if (isNaN(teamId)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const { newCaptainPlayerId } = req.body as { newCaptainPlayerId?: number };
+    if (!newCaptainPlayerId) { res.status(400).json({ error: "newCaptainPlayerId required" }); return; }
+
+    const playerId = req.session.playerId;
+    if (!playerId && !req.session.adminId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) { res.status(404).json({ error: "Team not found" }); return; }
+    if (!req.session.adminId && team.captainPlayerId !== Number(playerId)) {
+      res.status(403).json({ error: "Only the current captain can transfer leadership" }); return;
+    }
+
+    const [membership] = await db.select().from(teamMembersTable).where(and(
+      eq(teamMembersTable.teamId, teamId),
+      eq(teamMembersTable.playerId, newCaptainPlayerId),
+      eq(teamMembersTable.status, "active")
+    ));
+    if (!membership) { res.status(400).json({ error: "Target must be an active team member" }); return; }
+
+    await db.update(teamsTable).set({ captainPlayerId: newCaptainPlayerId, updatedAt: new Date() }).where(eq(teamsTable.id, teamId));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Failed to transfer captain" }); }
+});
+
+// PUT /teams/:id/settings — name, tag, defaultMatchVisibility (captain or admin)
+router.put("/:id/settings", async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    if (isNaN(teamId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const playerId = req.session.playerId;
+    if (!playerId && !req.session.adminId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) { res.status(404).json({ error: "Team not found" }); return; }
+    if (!req.session.adminId && team.captainPlayerId !== Number(playerId)) {
+      res.status(403).json({ error: "Only captain or admin can change team settings" }); return;
+    }
+
+    const { name, tag, defaultMatchVisibility } = req.body as {
+      name?: string; tag?: string; defaultMatchVisibility?: string;
+    };
+    const updates: Partial<typeof teamsTable.$inferInsert> = { updatedAt: new Date() };
+    if (name !== undefined) updates.name = name.trim();
+    if (tag !== undefined) {
+      const t = tag.trim().toUpperCase();
+      if (!/^[A-Z0-9]{2,5}$/.test(t)) { res.status(400).json({ error: "Tag must be 2-5 uppercase alphanumeric chars" }); return; }
+      updates.tag = t;
+    }
+    if (defaultMatchVisibility !== undefined) {
+      if (!["private", "participants", "public"].includes(defaultMatchVisibility)) {
+        res.status(400).json({ error: "defaultMatchVisibility must be private, participants, or public" }); return;
+      }
+      updates.defaultMatchVisibility = defaultMatchVisibility;
+    }
+
+    try {
+      const [row] = await db.update(teamsTable).set(updates).where(eq(teamsTable.id, teamId)).returning();
+      res.json(formatTeam(row!));
+    } catch (err: any) {
+      if (err?.code === "23505") { res.status(409).json({ error: "Team name or tag already taken" }); return; }
+      throw err;
+    }
+  } catch (err) { res.status(500).json({ error: "Failed to update team settings" }); }
+});
+
+// PUT /teams/:id/matches/visibility — bulk visibility (captain or admin)
+router.put("/:id/matches/visibility", async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    if (isNaN(teamId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const playerId = req.session.playerId;
+    if (!playerId && !req.session.adminId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) { res.status(404).json({ error: "Team not found" }); return; }
+    if (!req.session.adminId && team.captainPlayerId !== Number(playerId)) {
+      res.status(403).json({ error: "Only captain or admin can change match visibility" }); return;
+    }
+
+    const { visibility, matchIds } = req.body as { visibility: string; matchIds?: number[] };
+    if (!visibility || !["public", "private", "default"].includes(visibility)) {
+      res.status(400).json({ error: "visibility must be public, private, or default" }); return;
+    }
+
+    const visibleAfter = visibility === "public" ? new Date(0)
+      : visibility === "private" ? new Date("9999-01-01") : null;
+
+    const teamCondition = or(eq(matchesTable.teamAId, teamId), eq(matchesTable.teamBId, teamId))!;
+    const where = matchIds?.length ? and(teamCondition, inArray(matchesTable.id, matchIds))! : teamCondition;
+
+    const updated = await db.update(matchesTable)
+      .set({ visibleAfter, updatedAt: new Date() })
+      .where(where)
+      .returning({ id: matchesTable.id });
+
+    res.json({ success: true, updatedCount: updated.length });
+  } catch (err) { res.status(500).json({ error: "Failed to update visibility" }); }
 });
 
 export default router;

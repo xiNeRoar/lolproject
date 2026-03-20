@@ -17,6 +17,8 @@ export const teamsTable = pgTable("teams", {
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
+  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
+  lastMatchAt: timestamp("last_match_at"), // updated on every match submission
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

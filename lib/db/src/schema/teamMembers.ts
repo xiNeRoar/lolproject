@@ -13,6 +13,7 @@ export const teamMembersTable = pgTable("team_members", {
   role: text("role"), // top, jg, mid, adc, sup, fill, null
   status: text("status").notNull().default("active"), // active, inactive
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at"), // updated when member appears in .rofl
 });
 
 export const insertTeamMemberSchema = createInsertSchema(teamMembersTable).omit({ id: true, joinedAt: true });

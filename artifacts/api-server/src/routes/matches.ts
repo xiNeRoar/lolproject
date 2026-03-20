@@ -167,6 +167,7 @@ async function applyTeamElo(
       peakElo: Math.max(teamA.peakElo, teamAAfter),
       wins: teamAWon ? teamA.wins + 1 : teamA.wins,
       losses: teamAWon ? teamA.losses : teamA.losses + 1,
+      lastMatchAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(teamsTable.id, teamAId));
@@ -179,6 +180,7 @@ async function applyTeamElo(
       peakElo: Math.max(teamB.peakElo, teamBAfter),
       wins: !teamAWon ? teamB.wins + 1 : teamB.wins,
       losses: !teamAWon ? teamB.losses : teamB.losses + 1,
+      lastMatchAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(teamsTable.id, teamBId));
@@ -309,6 +311,10 @@ router.post("/", requireAdmin, async (req, res) => {
 
     if (!matchTitle || !sideAName || !sideBName || !winnerName) {
       res.status(400).json({ error: "matchTitle, sideAName, sideBName, and winnerName are required" });
+      return;
+    }
+    if (!validateScore(format, score)) {
+      res.status(400).json({ error: scoreError(format!) });
       return;
     }
 
@@ -505,6 +511,11 @@ router.put("/:id", requireAdmin, async (req, res) => {
     if (round !== undefined) updates.round = round;
     if (bracketSlot !== undefined) updates.bracketSlot = bracketSlot;
     if (isLosersBracket !== undefined) updates.isLosersBracket = isLosersBracket;
+
+    if (!validateScore(updates.format as string, updates.score as string)) {
+      res.status(400).json({ error: scoreError(updates.format as string) });
+      return;
+    }
 
     const [row] = await db
       .update(matchesTable)
