@@ -857,6 +857,10 @@ paths:
       operationId: getMatchPlayers
       tags: [matches]
       summary: Per-player stats for a match
+      description: >
+        Returns 10 player entries for a match. Subject to the same visibility gate as
+        GET /matches/{id}: public matches return full data to all; private matches return
+        full data to team members and admins only; non-members receive an empty array.
       parameters:
         - name: id
           in: path
@@ -865,7 +869,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: 10 player entries
+          description: Player stats (empty array if match is private and requester is not a team member)
           content:
             application/json:
               schema:

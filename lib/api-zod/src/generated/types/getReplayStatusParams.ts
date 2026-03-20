@@ -7,6 +7,6 @@
  */
 
 export type GetReplayStatusParams = {
-  matchId: number;
-  playerId: number;
+matchId: number;
+playerId: number;
 };
