@@ -258,8 +258,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Dashboard shows: active teams, matches recorded, bot online status, render queue status, recent admin actions
 
-**Current state:** Stats exist. Bot status + render queue cards not built yet (#18 R7, R8).
-**Required:** #18 (R7, R8)
+**Current state:** ✅ Complete. Bot status, render queue, recent admin actions all present in Admin Dashboard.
 
 ---
 
@@ -271,8 +270,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Review reason
 3. Lift ban → confirm
 
-**Current state:** Ban backend exists. No admin UI for banning/unbanning.
-**Required:** #18 (R5)
+**Current state:** ✅ Complete. Ban button + dialog in ManagePlayers and ManageTeams. Lift ban via admin panel.
 
 ---
 
@@ -309,23 +307,23 @@ If a feature doesn't appear in this document, it doesn't get built.
 |---------|-----------|---------------|-----|
 | J-01 Match link → understand context | 1 | broken (403) | #8, #18 R9 |
 | J-02 Discover → join | 3 | incomplete | bot invite URL |
-| J-03 Find player/team | 2 | ∞ (no search) | #23, #25 |
-| J-04 See recent match performance | 2 | 3 | #16 |
-| J-05 Watch match VOD | 3 | 5 | #16 |
+| J-03 Find player/team | 2 | 2 | ✅ #23 done |
+| J-04 See recent match performance | 2 | 2 | ✅ #16 done |
+| J-05 Watch match VOD | 3 | 3 | ✅ #16 done |
 | J-06 Request POV render | 1 | 1 | ✅ |
 | J-07 Link Riot ID | 1 | bot not built | #6 |
 | J-08 Competitive resume | 1 | 1 | ✅ |
 | J-09 Set match public | 2 | 5 | #14, #15 |
 | J-10 Set visibility default | 2 | ∞ | #14, #15 |
 | J-11 Bulk set visibility | 3 | ∞ | #14, #15 |
-| J-12 See team VODs | 1 | ∞ | #17 |
+| J-12 See team VODs | 1 | 1 | ✅ #17 done |
 | J-13 Add player to roster | 1/3 | bot not built | #4, #10, #15 |
 | J-14 Transfer captain | 1/3 | bot not built | #4, #14, #15 |
-| J-15 Check teammate link status | 1 | ∞ | #15 |
+| J-15 Check teammate link status | 1 | 1 | ✅ #15 done |
 | J-16 Find players by criteria | 2 | 2 | ✅ #22 done |
 | J-17 Verify player record | 1 | 1 | ✅ |
 | J-18 Watch player VOD | 2 | 2 | ✅ |
-| J-19 Platform health overview | 1 | partial | #18 R7,R8 |
-| J-20 Handle ban | 3 | ∞ | #18 R5 |
+| J-19 Platform health overview | 1 | 1 | ✅ #18 done |
+| J-20 Handle ban | 3 | 3 | ✅ #18 done |
 | J-21 Fix orphaned team | 3 | 3 | ✅ |
 | J-22 Evaluate → install bot | 3 | incomplete | bot invite + home stats |
