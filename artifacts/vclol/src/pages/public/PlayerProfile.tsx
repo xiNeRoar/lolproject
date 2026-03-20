@@ -5,7 +5,7 @@ import {
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, TrendingUp } from "lucide-react";
+import { Crown, ExternalLink, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -136,7 +136,7 @@ export default function PlayerProfile() {
         {badges && badges.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Badges</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><Award className="w-4 h-4 text-primary" /> Badges</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -199,7 +199,7 @@ export default function PlayerProfile() {
         {championStats && championStats.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Champion Pool</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><Crosshair className="w-4 h-4 text-primary" /> Champion Pool</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -252,7 +252,7 @@ export default function PlayerProfile() {
         {playerEvents && playerEvents.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Events</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" /> Events</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/30">
@@ -293,7 +293,7 @@ export default function PlayerProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Recent Matches</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.recentMatches?.length ? (
@@ -332,7 +332,7 @@ export default function PlayerProfile() {
 
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">VODs</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><Video className="w-4 h-4 text-primary" /> VODs</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!player.vods?.length ? (

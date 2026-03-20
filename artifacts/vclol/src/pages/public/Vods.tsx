@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, PlayCircle, ArrowRight, X } from "lucide-react";
+import { Search, PlayCircle, ArrowRight, X, Video } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 
@@ -47,7 +47,10 @@ export default function Vods() {
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-display font-bold mb-2">VOD Archive</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <Video className="w-8 h-8 text-primary" />
+          <h1 className="text-4xl font-display font-bold">VOD Archive</h1>
+        </div>
         <p className="text-muted-foreground mb-10">Study local matches, review your gameplay, and see how others perform.</p>
 
         <div className="flex flex-col gap-3 mb-10 bg-card/30 p-4 rounded-lg border border-border/50">

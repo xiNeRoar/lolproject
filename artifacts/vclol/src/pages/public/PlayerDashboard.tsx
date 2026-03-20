@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BADGE_META } from "@/lib/lol-utils";
+import { Users, Award, Bell, Settings } from "lucide-react";
 
 function LoggedOutState() {
   return (
@@ -103,7 +104,7 @@ function DashboardContent({ pid }: { pid: number }) {
 
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">My Teams</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> My Teams</CardTitle>
         </CardHeader>
         <CardContent>
           {player.teams && player.teams.length > 0 ? (
@@ -132,7 +133,7 @@ function DashboardContent({ pid }: { pid: number }) {
 
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Badges</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Award className="w-4 h-4 text-primary" /> Badges</CardTitle>
         </CardHeader>
         <CardContent>
           {!badges?.length ? (
@@ -156,7 +157,7 @@ function DashboardContent({ pid }: { pid: number }) {
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Notifications</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Bell className="w-4 h-4 text-primary" /> Notifications</CardTitle>
             {unreadCount > 0 && (
               <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{unreadCount}</span>
             )}
@@ -205,7 +206,7 @@ function DashboardContent({ pid }: { pid: number }) {
 
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Notification Settings</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /> Notification Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2">

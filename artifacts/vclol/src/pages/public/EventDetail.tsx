@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
-import { Trophy, Video, Calendar, AlertCircle, Users, MessageCircle } from "lucide-react";
+import { Trophy, Video, Calendar, AlertCircle, Users, MessageCircle, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 function EventMatches({ format, matches }: { format: string | null | undefined; matches: Match[] }) {
@@ -56,7 +56,7 @@ export default function EventDetail() {
         <div className="lg:col-span-2 space-y-12">
           
           <section>
-            <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2">Overview</h2>
+            <h2 className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Overview</h2>
             <p className="text-lg text-muted-foreground whitespace-pre-wrap">{event.shortDescription}</p>
             {event.fullDescription && (
               <div className="mt-6 text-muted-foreground whitespace-pre-wrap prose prose-invert max-w-none">

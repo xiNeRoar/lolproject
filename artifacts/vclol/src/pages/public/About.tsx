@@ -1,4 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
+import { Eye, Zap, Target } from "lucide-react";
 
 export default function About() {
   return (
@@ -13,7 +14,7 @@ export default function About() {
 
           <div className="space-y-12">
             <section>
-              <h2 className="text-2xl font-display font-semibold text-foreground mb-4">The Vision</h2>
+              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 flex items-center gap-2"><Eye className="w-5 h-5 text-primary" /> The Vision</h2>
               <p className="text-muted-foreground">
                 We believe that a healthy competitive ecosystem requires a strong grassroots foundation. Too often, local tournaments are one-off brackets that vanish once the prize pool is distributed. Our goal is to build continuity. We want to create an environment where local players can consistently compete, build verifiable match records, and develop rivalries over time.
               </p>
@@ -21,7 +22,7 @@ export default function About() {
 
             <section className="bg-card border border-border/50 p-8 rounded-lg relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 mt-0">Current Phase: Active Competition</h2>
+              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 mt-0 flex items-center gap-2"><Zap className="w-5 h-5 text-primary" /> Current Phase: Active Competition</h2>
               <p className="text-muted-foreground mb-4">
                 The platform is live. Players can register, compete on the ELO Ladder, and build a verifiable match record over time.
               </p>
@@ -34,7 +35,7 @@ export default function About() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-display font-semibold text-foreground mb-4">Why We Need This</h2>
+              <h2 className="text-2xl font-display font-semibold text-foreground mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-primary" /> Why We Need This</h2>
               <p className="text-muted-foreground">
                 Solo queue is great for mechanical practice, but it teaches bad habits for competitive play. True competitive League of Legends requires communication, draft strategy, and team cohesion. By providing a structured, recorded environment, we aim to elevate the level of play in our region.
               </p>

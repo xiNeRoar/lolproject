@@ -2,7 +2,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetTeam, useGetTeamEloHistory } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Trophy, Users, ChevronLeft } from "lucide-react";
+import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { eloBadgeColor, rankLabel } from "@/lib/lol-utils";
@@ -133,7 +133,7 @@ export default function TeamProfile() {
         {eloChartData.length > 1 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">ELO History</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> ELO History</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
@@ -217,7 +217,7 @@ export default function TeamProfile() {
                 <Card className="bg-card/40 border-border/40 mb-6">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base font-display flex items-center gap-2 text-muted-foreground">
-                      Past Members
+                      <UserMinus className="w-4 h-4" /> Past Members
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -234,7 +234,7 @@ export default function TeamProfile() {
         {team.recentMatches && team.recentMatches.length > 0 && (
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display">Recent Matches</CardTitle>
+              <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/30">
