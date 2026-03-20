@@ -40,6 +40,7 @@ export * from './healthStatus';
 export * from './ladderEntry';
 export * from './ladderResponse';
 export * from './ladderSettings';
+export * from './listAdminActions200Item';
 export * from './listMatchesParams';
 export * from './listRegistrationsParams';
 export * from './listTeamsParams';

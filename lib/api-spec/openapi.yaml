@@ -102,6 +102,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+
+  /admin/actions:
+    get:
+      operationId: listAdminActions
+      tags: [admin]
+      summary: Get last 10 admin actions
+      security:
+        - adminSession: []
+      responses:
+        "200":
+          description: Admin actions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    adminId:
+                      type: integer
+                    actionType:
+                      type: string
+                    entityType:
+                      type: string
+                    entityId:
+                      type: integer
+                      nullable: true
+                    detail:
+                      type: string
+                      nullable: true
+                    createdAt:
+                      type: string
+                  required: [id, adminId, actionType, entityType, createdAt]
+
   /admin/stats:
     get:
       operationId: getAdminStats

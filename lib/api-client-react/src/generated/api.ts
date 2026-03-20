@@ -50,6 +50,7 @@ import type {
   HealthStatus,
   LadderResponse,
   LadderSettings,
+  ListAdminActions200Item,
   ListMatchesParams,
   ListRegistrationsParams,
   ListTeamsParams,
@@ -375,6 +376,81 @@ export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError =
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getAdminMeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+/**
+ * @summary Get last 10 admin actions
+ */
+export const getListAdminActionsUrl = () => {
+
+
+  
+
+  return `/api/admin/actions`
+}
+
+export const listAdminActions = async ( options?: RequestInit): Promise<ListAdminActions200Item[]> => {
+  
+  return customFetch<ListAdminActions200Item[]>(getListAdminActionsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getListAdminActionsQueryKey = () => {
+    return [
+    `/api/admin/actions`
+    ] as const;
+    }
+
+    
+export const getListAdminActionsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminActions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminActionsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminActions>>> = ({ signal }) => listAdminActions({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminActions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminActionsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminActions>>>
+export type ListAdminActionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get last 10 admin actions
+ */
+
+export function useListAdminActions<TData = Awaited<ReturnType<typeof listAdminActions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminActionsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

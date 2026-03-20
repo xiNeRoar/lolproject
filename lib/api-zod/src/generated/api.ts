@@ -48,6 +48,21 @@ export const AdminMeResponse = zod.object({
 
 
 /**
+ * @summary Get last 10 admin actions
+ */
+export const ListAdminActionsResponseItem = zod.object({
+  "id": zod.number(),
+  "adminId": zod.number(),
+  "actionType": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.number().nullish(),
+  "detail": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAdminActionsResponse = zod.array(ListAdminActionsResponseItem)
+
+
+/**
  * @summary Admin dashboard stats
  */
 export const GetAdminStatsResponse = zod.object({

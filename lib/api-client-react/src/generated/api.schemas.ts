@@ -596,6 +596,16 @@ export interface CreateBanRequest {
   expiresAt?: string | null;
 }
 
+export type ListAdminActions200Item = {
+  id: number;
+  adminId: number;
+  actionType: string;
+  entityType: string;
+  entityId?: number | null;
+  detail?: string | null;
+  createdAt: string;
+};
+
 export type ListTeamsParams = {
 active?: boolean;
 };
