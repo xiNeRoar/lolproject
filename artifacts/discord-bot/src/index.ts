@@ -25,8 +25,9 @@ import {
 import * as registerTeam from "./commands/register-team.js";
 import * as add from "./commands/add.js";
 import * as linkRiot from "./commands/link-riot.js";
+import * as submit from "./commands/submit.js";
 
-const commands = [registerTeam, add, linkRiot];
+const commands = [registerTeam, add, linkRiot, submit];
 
 // ── Build command collection ───────────────────────────────────────────────
 
