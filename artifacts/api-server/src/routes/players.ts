@@ -44,6 +44,7 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
       status: teamMembersTable.status,
       teamName: teamsTable.name,
       teamTag: teamsTable.tag,
+      captainPlayerId: teamsTable.captainPlayerId,
     })
     .from(teamMembersTable)
     .leftJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
@@ -55,6 +56,7 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
     teamTag: r.teamTag ?? "",
     role: r.role ?? null,
     status: r.status,
+    isCaptain: r.captainPlayerId === player.id,
   }));
 
   // Aggregate stats from match_players

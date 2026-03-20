@@ -1,12 +1,12 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetMatch, useListSeasons, useGetMatchPlayers } from "@workspace/api-client-react";
+import { useGetMatch, useListSeasons, useGetMatchPlayers, useGetPlayerById } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo } from "lucide-react";
+import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -66,8 +66,26 @@ export default function MatchDetail() {
   const { data: seasons } = useListSeasons();
   const { data: matchPlayers } = useGetMatchPlayers(matchId, { query: { enabled: !!match } });
   const { playerIdNum, isLoggedIn } = useAuth();
+  const { data: playerProfile } = useGetPlayerById(playerIdNum, { query: { enabled: isLoggedIn && playerIdNum > 0 } });
   const [povRequesting, setPovRequesting] = useState(false);
+  const [povStatus, setPovStatus] = useState<{ exists: boolean; status?: string; submittedAt?: string } | null>(null);
+  const [povStatusLoading, setPovStatusLoading] = useState(false);
   const [visUpdating, setVisUpdating] = useState(false);
+
+  const teamAPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "blue" || p.teamSide === "A");
+  const teamBPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "red" || p.teamSide === "B");
+  const allPlayers = [...teamAPlayers, ...teamBPlayers];
+  const currentPlayerInMatch = allPlayers.find((p) => p.playerId === playerIdNum);
+
+  useEffect(() => {
+    if (!isLoggedIn || !currentPlayerInMatch || !playerIdNum) return;
+    setPovStatusLoading(true);
+    fetch(`${API_BASE}/api/replays/status?matchId=${matchId}&playerId=${playerIdNum}`)
+      .then(r => r.json())
+      .then(data => setPovStatus(data))
+      .catch(() => setPovStatus(null))
+      .finally(() => setPovStatusLoading(false));
+  }, [isLoggedIn, matchId, playerIdNum, !!currentPlayerInMatch]);
 
   if (isLoading) {
     return (
@@ -97,16 +115,21 @@ export default function MatchDetail() {
   const roundLabel = match.isPlayoff ? bracketRoundLabel(match.round, match.bracketSlot) : null;
 
   const vods = match.vods ?? [];
-  const teamAPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "blue" || p.teamSide === "A");
-  const teamBPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "red" || p.teamSide === "B");
-
-  const allPlayers = [...teamAPlayers, ...teamBPlayers];
-  const currentPlayerInMatch = allPlayers.find((p) => p.playerId === playerIdNum);
   const roflAvailable = !!(match as any).roflFilePath && isWithinTwoWeeks(match.createdAt);
   const roflDaysLeft = roflAvailable ? daysRemaining(match.createdAt) : 0;
 
+  const isCaptainOfMatch = !!playerProfile?.teams?.some(
+    (t: { teamId: number; isCaptain?: boolean }) =>
+      (t.teamId === match.teamAId || t.teamId === match.teamBId) && t.isCaptain
+  );
+  const canChangeVisibility = isLoggedIn && isCaptainOfMatch;
+
   const handlePovRequest = async () => {
     if (!currentPlayerInMatch) return;
+    if (povStatus?.exists && povStatus.status === "pending") {
+      toast.info("You already have a pending POV request for this match.");
+      return;
+    }
     setPovRequesting(true);
     try {
       const res = await fetch(`${API_BASE}/api/replays`, {
@@ -120,7 +143,8 @@ export default function MatchDetail() {
         }),
       });
       if (res.ok) {
-        toast.success("POV render requested! You'll be notified when it's ready.");
+        toast.success("POV render requested! Check back here for updates.");
+        setPovStatus({ exists: true, status: "pending" });
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.error || "Failed to request POV render.");
@@ -226,7 +250,7 @@ export default function MatchDetail() {
         </div>
 
         {(roflAvailable || (isLoggedIn && currentPlayerInMatch)) && (
-          <div className="flex flex-wrap gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             {roflAvailable && (
               <Button variant="outline" size="sm" className="gap-2" asChild>
                 <a href={`${API_BASE}/api/matches/${matchId}/replay`} download>
@@ -237,16 +261,46 @@ export default function MatchDetail() {
               </Button>
             )}
             {isLoggedIn && currentPlayerInMatch && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handlePovRequest}
-                disabled={povRequesting}
-              >
-                <FileVideo className="w-4 h-4" />
-                {povRequesting ? "Requesting..." : "Request My POV"}
-              </Button>
+              <>
+                {povStatusLoading ? (
+                  <Button variant="outline" size="sm" className="gap-2" disabled>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Checking...
+                  </Button>
+                ) : povStatus?.exists && povStatus.status === "pending" ? (
+                  <Button variant="outline" size="sm" className="gap-2 border-yellow-400/30 text-yellow-400" disabled>
+                    <Clock className="w-4 h-4" />
+                    POV Requested — Processing
+                  </Button>
+                ) : povStatus?.exists && povStatus.status === "done" ? (
+                  <Button variant="outline" size="sm" className="gap-2 border-green-400/30 text-green-400" disabled>
+                    <CheckCircle2 className="w-4 h-4" />
+                    POV Ready — Check VODs below
+                  </Button>
+                ) : povStatus?.exists && povStatus.status === "failed" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-red-400/30 text-red-400"
+                    onClick={handlePovRequest}
+                    disabled={povRequesting}
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    {povRequesting ? "Requesting..." : "POV Failed — Retry"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={handlePovRequest}
+                    disabled={povRequesting}
+                  >
+                    <FileVideo className="w-4 h-4" />
+                    {povRequesting ? "Requesting..." : "Request My POV"}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -388,7 +442,7 @@ export default function MatchDetail() {
           </Card>
         )}
 
-        {isLoggedIn && (
+        {canChangeVisibility && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader>
               <CardTitle className="text-base font-display flex items-center gap-2">
@@ -429,7 +483,7 @@ export default function MatchDetail() {
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                Only team captains and admins can change visibility.
+                As team captain, you can control when this match becomes publicly visible.
               </p>
             </CardContent>
           </Card>

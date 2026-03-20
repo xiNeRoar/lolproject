@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { replaySubmissionsTable, vodEntriesTable, matchesTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
@@ -57,6 +57,46 @@ router.post("/", async (req, res) => {
     res.status(201).json(formatReplay(row!));
   } catch (err) {
     res.status(500).json({ error: "Failed to submit replay" });
+  }
+});
+
+// GET /replays/status — check POV request status for a match+player (public)
+router.get("/status", async (req, res) => {
+  try {
+    const matchId = parseInt(req.query.matchId as string);
+    const playerId = parseInt(req.query.playerId as string);
+
+    if (isNaN(matchId) || isNaN(playerId)) {
+      res.status(400).json({ error: "matchId and playerId are required" });
+      return;
+    }
+
+    const [row] = await db
+      .select()
+      .from(replaySubmissionsTable)
+      .where(
+        and(
+          eq(replaySubmissionsTable.matchId, matchId),
+          eq(replaySubmissionsTable.playerId, playerId),
+          eq(replaySubmissionsTable.renderMode, "pov"),
+        )
+      )
+      .orderBy(desc(replaySubmissionsTable.submittedAt))
+      .limit(1);
+
+    if (!row) {
+      res.json({ exists: false });
+      return;
+    }
+
+    res.json({
+      exists: true,
+      status: row.status,
+      submittedAt: row.submittedAt.toISOString(),
+      processedAt: row.processedAt?.toISOString() ?? null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to check replay status" });
   }
 });
 
