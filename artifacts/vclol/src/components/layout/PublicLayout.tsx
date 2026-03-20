@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Shield, ChevronDown, User, LayoutDashboard, Users, LogOut } from "lucide-react";
+import { Menu, X, Shield, ChevronDown, User, LayoutDashboard, Users, LogOut, Settings } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -7,7 +7,7 @@ import { useGetPlayerById } from "@workspace/api-client-react";
 
 interface PlayerData {
   riotId: string;
-  teams?: Array<{ teamId: number; teamName: string; teamTag: string; role?: string | null; status?: string }>;
+  teams?: Array<{ teamId: number; teamName: string; teamTag: string; role?: string | null; status?: string; isCaptain?: boolean }>;
 }
 
 function UserDropdown({ player, playerId, onLogout }: { player?: PlayerData | null; playerId: string; onLogout: () => void }) {
@@ -93,6 +93,17 @@ function UserDropdown({ player, playerId, onLogout }: { player?: PlayerData | nu
               role="menuitem"
             >
               <Users className="w-4 h-4" /> My Team
+            </Link>
+          )}
+
+          {firstTeam?.isCaptain && (
+            <Link
+              href={`/teams/${firstTeam.teamId}/manage`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              role="menuitem"
+            >
+              <Settings className="w-4 h-4" /> Manage Team
             </Link>
           )}
 
@@ -234,6 +245,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                         className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         My Team
+                      </Link>
+                    )}
+                    {firstTeam?.isCaptain && (
+                      <Link
+                        href={`/teams/${firstTeam.teamId}/manage`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        Manage Team
                       </Link>
                     )}
                     <button

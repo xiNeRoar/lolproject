@@ -21,6 +21,7 @@ import Players from "@/pages/public/Players";
 import DevLogin from "@/pages/public/DevLogin";
 import Contact from "@/pages/public/Contact";
 import MatchDetail from "@/pages/public/MatchDetail";
+import CaptainHub from "@/pages/public/CaptainHub";
 
 import Login from "@/pages/admin/Login";
 import Dashboard from "@/pages/admin/Dashboard";
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/vods" component={Vods} />
       <Route path="/vods/:id" component={VodDetail} />
       <Route path="/teams" component={Teams} />
+      <Route path="/teams/:id/manage" component={CaptainHub} />
       <Route path="/teams/:id" component={TeamProfile} />
       <Route path="/ladder">{() => { window.location.replace("/teams"); return null; }}</Route>
       <Route path="/players" component={Players} />
