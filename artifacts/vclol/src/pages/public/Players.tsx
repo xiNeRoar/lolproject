@@ -5,9 +5,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Gamepad2, Trophy } from "lucide-react";
 
 const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"] as const;
+
+const ROLE_MAP: Record<string, string> = {
+  top: "Top",
+  jg: "Jungle",
+  jungle: "Jungle",
+  mid: "Mid",
+  adc: "ADC",
+  sup: "Support",
+  support: "Support",
+  fill: "Fill",
+};
+
+function formatRole(role: string | null | undefined): string | null {
+  if (!role) return null;
+  return ROLE_MAP[role.toLowerCase()] ?? role;
+}
+
+function winRateColor(rate: number | null | undefined): string {
+  if (rate == null) return "text-muted-foreground";
+  if (rate >= 60) return "text-green-400";
+  if (rate >= 50) return "text-foreground";
+  return "text-red-400";
+}
 
 export default function Players() {
   const { data: players, isLoading } = useListPlayers();
@@ -23,7 +46,9 @@ export default function Players() {
       list = list.filter(
         (p) =>
           p.riotId.toLowerCase().includes(q) ||
-          (p.discordUsername && p.discordUsername.toLowerCase().includes(q))
+          (p.discordUsername && p.discordUsername.toLowerCase().includes(q)) ||
+          (p.primaryTeam?.teamName && p.primaryTeam.teamName.toLowerCase().includes(q)) ||
+          (p.primaryTeam?.teamTag && p.primaryTeam.teamTag.toLowerCase().includes(q))
       );
     }
 
@@ -52,7 +77,7 @@ export default function Players() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search by Riot ID or Discord..."
+                placeholder="Search by Riot ID, Discord, or team..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -89,7 +114,7 @@ export default function Players() {
         {isLoading ? (
           <div className="space-y-3 animate-pulse">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 bg-card rounded-lg" />
+              <div key={i} className="h-20 bg-card rounded-lg" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -111,18 +136,32 @@ export default function Players() {
                       {p.riotId.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="font-medium">{p.riotId}</span>
-                      {p.discordUsername && (
-                        <span className="text-xs text-muted-foreground ml-2">{p.discordUsername}</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{p.riotId}</span>
+                        {p.primaryRole && (
+                          <Badge variant="outline" className="text-xs flex-shrink-0">{formatRole(p.primaryRole)}</Badge>
+                        )}
+                        {p.secondaryRole && (
+                          <Badge variant="outline" className="text-xs opacity-60 flex-shrink-0">{formatRole(p.secondaryRole)}</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        {p.primaryTeam?.teamName ? (
+                          <span className="truncate">{p.primaryTeam.teamName} [{p.primaryTeam.teamTag}]</span>
+                        ) : (
+                          <span className="italic">No team</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {p.primaryRole && (
-                        <Badge variant="outline" className="text-xs">{p.primaryRole}</Badge>
-                      )}
-                      {p.secondaryRole && (
-                        <Badge variant="outline" className="text-xs opacity-60">{p.secondaryRole}</Badge>
-                      )}
+                    <div className="flex items-center gap-4 flex-shrink-0 text-sm">
+                      <div className="flex items-center gap-1.5 text-muted-foreground" title="Games played">
+                        <Gamepad2 className="w-3.5 h-3.5" />
+                        <span>{p.totalGames ?? 0}</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 font-medium ${winRateColor(p.winRate)}`} title="Win rate">
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>{p.winRate != null ? `${Math.round(p.winRate)}%` : "—"}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
