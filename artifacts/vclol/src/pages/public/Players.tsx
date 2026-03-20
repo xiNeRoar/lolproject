@@ -42,10 +42,7 @@ export default function Players() {
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Users className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-display font-bold">Players</h1>
-        </div>
+        <h1 className="text-4xl font-display font-bold mb-2">Players</h1>
         <p className="text-muted-foreground mb-10">Browse all registered VCLoL players. Click any player to view their competitive profile.</p>
       </div>
 

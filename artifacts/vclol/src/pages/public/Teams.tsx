@@ -21,10 +21,7 @@ export default function Teams() {
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-display font-bold">Team Ladder</h1>
-        </div>
+        <h1 className="text-4xl font-display font-bold mb-2">Team Ladder</h1>
         <div className="flex flex-wrap items-center gap-3 mb-2">
           {data?.season ? (
             <div className="text-muted-foreground flex items-center gap-2">
