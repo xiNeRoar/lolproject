@@ -272,3 +272,18 @@ API_BASE = import.meta.env.VITE_API_URL || ""
 gameDuration: milliseconds → MM:SS
 visibleAfter null = 7-day default
 ```
+
+---
+
+## Completed Issues (this session)
+
+- **#23** Global search UI — nav search bar (desktop visible, mobile icon expand), debounced 300ms, grouped dropdown
+- **#18 R3** PlayerProfile "Is this you?" banner — shows when not logged in
+- **#18 R4** PlayerDashboard riotId pending alert — yellow warning when puuid null
+- **#18 R9** Footer "What is VCLoL?" — link to /about in footer
+- **#16** Dashboard overhaul — Recent Matches section (last 5, W/L badges), Captain quick-links, actionable notifications
+
+## API Status (known broken — #32)
+
+Working: `/api/players` (list), `/api/players/:riotId`, `/api/players/by-id/:id`, `/api/search?q=`
+Broken: `/api/teams`, `/api/teams/:id`, `/api/matches`, `/api/matches/:id` (missing DB columns from #32)

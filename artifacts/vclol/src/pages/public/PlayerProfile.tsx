@@ -5,13 +5,15 @@ import {
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
+import { Crown, ExternalLink, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video, LogIn } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
+  const { isLoggedIn } = useAuth();
   const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
   const { data: badges }        = useGetPlayerBadges(player?.id ?? 0,    { query: { enabled: !!player?.id } });
   const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id } });
@@ -53,6 +55,18 @@ export default function PlayerProfile() {
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
+
+        {!isLoggedIn && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
+              Is this you?
+            </p>
+            <Link href="/login" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex-shrink-0">
+              <LogIn className="w-3.5 h-3.5" />
+              Login with Discord
+            </Link>
+          </div>
+        )}
 
         <Card className="bg-card/40 border-border/40 mb-8 relative overflow-hidden">
           {topChampion && (

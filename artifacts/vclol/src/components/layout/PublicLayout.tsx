@@ -305,6 +305,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </p>
           </div>
           <div className="flex items-center space-x-4">
+            <Link href="/about" className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+              What is VCLoL?
+            </Link>
             <Link href="/contact" className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
               Contact
             </Link>

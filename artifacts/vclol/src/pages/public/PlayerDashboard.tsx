@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BADGE_META } from "@/lib/lol-utils";
-import { Users, Award, Bell, Settings } from "lucide-react";
+import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight } from "lucide-react";
 
 function LoggedOutState() {
   return (
@@ -50,6 +50,13 @@ function DashboardContent({ pid }: { pid: number }) {
     return { icon: "🔔", color: "text-muted-foreground" };
   }
 
+  function notifHref(n: { type: string }): string | null {
+    if (n.type === "match_result") return `/players/${encodeURIComponent(player.riotId)}`;
+    if (n.type === "season_completed") return "/teams";
+    if (n.type === "badge_earned") return `/players/${encodeURIComponent(player.riotId)}`;
+    return null;
+  }
+
   const handleSaveNotif = () => {
     if (!notifPref) return;
     updatePlayer.mutate(
@@ -65,6 +72,18 @@ function DashboardContent({ pid }: { pid: number }) {
   return (
     <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
+
+      {(player.riotId === "pending" || !player.puuid) && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-400">Riot ID not linked</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/link-riot</code> in Discord to connect your Riot account. This unlocks champion stats, match history, and more.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Card className="border-border/40 bg-card/60">
         <CardContent className="pt-6">
@@ -99,6 +118,62 @@ function DashboardContent({ pid }: { pid: number }) {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {player.teams?.some((t) => t.isCaptain) && (
+        <div className="flex flex-col gap-2">
+          {player.teams.filter((t) => t.isCaptain).map((t) => (
+            <Link key={t.teamId} href={`/teams/${t.teamId}/manage`} className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group">
+              <div className="flex items-center gap-2 text-sm">
+                <Crown className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">You captain:</span>
+                <span className="font-medium">{t.teamName}</span>
+                <span className="text-xs text-muted-foreground">[{t.teamTag}]</span>
+              </div>
+              <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-0.5 transition-transform">
+                Manage Team <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!player.recentMatches?.length ? (
+            <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No matches yet. Submit your first scrim via <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/submit</code> in Discord.
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {player.recentMatches.slice(0, 5).map((match) => {
+                const playerTeamOnA = player.teams?.some((t) => t.teamId === match.teamAId);
+                const playerTeamOnB = player.teams?.some((t) => t.teamId === match.teamBId);
+                const playerSide = playerTeamOnA ? match.sideAName : playerTeamOnB ? match.sideBName : null;
+                const won = playerSide ? match.winnerName === playerSide : false;
+                const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+                return (
+                  <Link key={match.id} href={`/matches/${match.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors">
+                    <span className={`w-8 h-8 rounded flex-shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
+                      {won ? "W" : "L"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{match.sideAName} vs {match.sideBName}</div>
+                      <div className="text-xs text-muted-foreground">{match.matchTitle}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-sm font-display font-bold">{match.score || "-"}</div>
+                      <div className="text-xs text-muted-foreground">{date}</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -170,6 +245,7 @@ function DashboardContent({ pid }: { pid: number }) {
             <div className="space-y-1">
               {notifications.slice(0, 10).map((n) => {
                 const { icon, color } = notifIcon(n.type);
+                const href = notifHref(n);
                 const timeAgo = (() => {
                   const diff = Date.now() - new Date(n.createdAt).getTime();
                   const mins = Math.floor(diff / 60000);
@@ -178,24 +254,31 @@ function DashboardContent({ pid }: { pid: number }) {
                   if (hrs < 24) return `${hrs}h ago`;
                   return `${Math.floor(hrs / 24)}d ago`;
                 })();
-                return (
-                  <div
-                    key={n.id}
-                    className={`flex items-start gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${n.isRead ? "opacity-60" : "bg-muted/40 cursor-pointer hover:bg-muted/60"}`}
-                    onClick={() => {
-                      if (!n.isRead) {
-                        markRead.mutate({ id: n.id }, {
-                          onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }),
-                        });
-                      }
-                    }}
-                  >
+                const inner = (
+                  <>
                     <span className={`text-base leading-5 flex-shrink-0 ${color}`}>{icon}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium">{n.title}</div>
                       <div className="text-muted-foreground text-xs">{n.message}</div>
                     </div>
                     <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">{timeAgo}</span>
+                  </>
+                );
+                const cls = `flex items-start gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${n.isRead ? "opacity-60" : "bg-muted/40 cursor-pointer hover:bg-muted/60"}`;
+                const handleClick = () => {
+                  if (!n.isRead) {
+                    markRead.mutate({ id: n.id }, {
+                      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }),
+                    });
+                  }
+                };
+                return href ? (
+                  <Link key={n.id} href={href} className={cls} onClick={handleClick}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={n.id} className={cls} onClick={handleClick}>
+                    {inner}
                   </div>
                 );
               })}
