@@ -1,8 +1,8 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam, useGetTeamEloHistory } from "@workspace/api-client-react";
+import { useGetTeam, useGetTeamEloHistory, useListVods } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus } from "lucide-react";
+import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Video, PlayCircle } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { eloBadgeColor, rankLabel } from "@/lib/lol-utils";
@@ -20,6 +20,7 @@ export default function TeamProfile() {
   const teamId = Number(id);
   const { data: team, isLoading, isError } = useGetTeam(teamId);
   const { data: eloHistory } = useGetTeamEloHistory(teamId, { query: { enabled: !!team } });
+  const { data: teamVods } = useListVods({ teamId }, { query: { enabled: !!team } });
 
   if (isLoading) {
     return (
@@ -232,7 +233,7 @@ export default function TeamProfile() {
         })()}
 
         {team.recentMatches && team.recentMatches.length > 0 && (
-          <Card className="bg-card/40 border-border/40">
+          <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
             </CardHeader>
@@ -269,6 +270,80 @@ export default function TeamProfile() {
             </CardContent>
           </Card>
         )}
+
+        {(() => {
+          const vods = teamVods ?? [];
+          if (vods.length === 0) return null;
+
+          function extractYtId(url: string): string | null {
+            try {
+              const u = new URL(url);
+              if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
+              if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+            } catch { /* ignore */ }
+            return null;
+          }
+
+          return (
+            <Card className="bg-card/40 border-border/40 mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Video className="w-4 h-4 text-primary" /> VODs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/30">
+                  {vods.map((vod) => {
+                    const ytId = extractYtId(vod.videoUrl);
+                    return (
+                      <div key={vod.id} className="px-6 py-4">
+                        {ytId && (
+                          <div className="mb-3 rounded-lg overflow-hidden border border-border/40 bg-black aspect-video">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              title={vod.title}
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          {!ytId && <PlayCircle className="w-5 h-5 text-muted-foreground shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <Link href={`/vods/${vod.id}`} className="text-sm font-medium hover:text-primary transition-colors">
+                              {vod.title}
+                            </Link>
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
+                              {vod.playerRiotId && (
+                                <Link href={`/players/${encodeURIComponent(vod.playerRiotId)}`} className="text-primary/80 hover:text-primary">
+                                  {vod.playerRiotId}
+                                </Link>
+                              )}
+                              {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
+                              {vod.position && <span>• {vod.position}</span>}
+                              {vod.patch && <span>• Patch {vod.patch}</span>}
+                            </div>
+                          </div>
+                          {vod.matchId && (
+                            <Link href={`/matches/${vod.matchId}`} className="text-xs text-primary hover:underline shrink-0">
+                              Match →
+                            </Link>
+                          )}
+                          {vod.videoUrl && !ytId && (
+                            <a href={vod.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline shrink-0">
+                              Watch →
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
     </PublicLayout>
   );

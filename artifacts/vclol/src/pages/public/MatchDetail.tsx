@@ -1,10 +1,11 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetMatch, useListSeasons, useGetMatchPlayers, useGetPlayerById } from "@workspace/api-client-react";
+import { useGetMatch, useListSeasons, useGetMatchPlayers, useGetPlayerById, useClaimTeamForMatch, getGetMatchQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -71,6 +72,9 @@ export default function MatchDetail() {
   const [povStatus, setPovStatus] = useState<{ exists: boolean; status?: string; submittedAt?: string } | null>(null);
   const [povStatusLoading, setPovStatusLoading] = useState(false);
   const [visUpdating, setVisUpdating] = useState(false);
+  const [claimingSide, setClaimingSide] = useState<"A" | "B" | null>(null);
+  const queryClient = useQueryClient();
+  const claimMutation = useClaimTeamForMatch();
 
   const teamAPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "blue" || p.teamSide === "A");
   const teamBPlayers = (matchPlayers ?? []).filter((p) => p.teamSide === "red" || p.teamSide === "B");
@@ -179,6 +183,24 @@ export default function MatchDetail() {
     }
   };
 
+  const captainTeams = (playerProfile?.teams ?? []).filter((t: any) => t.isCaptain);
+  const sideAUnregistered = match.teamAId == null;
+  const sideBUnregistered = match.teamBId == null;
+  const canClaimA = sideAUnregistered && captainTeams.length > 0;
+  const canClaimB = sideBUnregistered && captainTeams.length > 0;
+
+  const handleClaim = async (side: "A" | "B", teamId: number) => {
+    setClaimingSide(side);
+    try {
+      await claimMutation.mutateAsync({ id: matchId, data: { teamId } });
+      queryClient.invalidateQueries({ queryKey: getGetMatchQueryKey(matchId) });
+      toast.success("Match claimed for your team!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to claim match");
+    }
+    setClaimingSide(null);
+  };
+
   const currentVisibility = match.visibleAfter
     ? new Date(match.visibleAfter).getTime() <= 0
       ? "public"
@@ -227,7 +249,37 @@ export default function MatchDetail() {
                 ) : match.sideAName}
               </div>
               {match.teamATag && <div className="text-xs text-muted-foreground">[{match.teamATag}]</div>}
+              {sideAUnregistered && (
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
+                  <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
+                </Badge>
+              )}
               <EloDelta before={match.teamAEloBefore} after={match.teamAEloAfter} />
+              {canClaimA && (
+                <div className="mt-2">
+                  {captainTeams.length === 1 ? (
+                    <button
+                      onClick={() => handleClaim("A", captainTeams[0].teamId)}
+                      disabled={claimingSide === "A"}
+                      className="text-xs px-3 py-1 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    >
+                      {claimingSide === "A" ? "Claiming..." : `Claim as ${captainTeams[0].teamName}`}
+                    </button>
+                  ) : (
+                    <select
+                      onChange={(e) => e.target.value && handleClaim("A", Number(e.target.value))}
+                      disabled={claimingSide === "A"}
+                      className="text-xs px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Claim this side...</option>
+                      {captainTeams.map((t: any) => (
+                        <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
             </div>
             <div className={`p-5 rounded-xl border text-center ${sideBWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
               {sideBWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
@@ -239,7 +291,37 @@ export default function MatchDetail() {
                 ) : match.sideBName}
               </div>
               {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
+              {sideBUnregistered && (
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
+                  <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
+                </Badge>
+              )}
               <EloDelta before={match.teamBEloBefore} after={match.teamBEloAfter} />
+              {canClaimB && (
+                <div className="mt-2">
+                  {captainTeams.length === 1 ? (
+                    <button
+                      onClick={() => handleClaim("B", captainTeams[0].teamId)}
+                      disabled={claimingSide === "B"}
+                      className="text-xs px-3 py-1 rounded border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    >
+                      {claimingSide === "B" ? "Claiming..." : `Claim as ${captainTeams[0].teamName}`}
+                    </button>
+                  ) : (
+                    <select
+                      onChange={(e) => e.target.value && handleClaim("B", Number(e.target.value))}
+                      disabled={claimingSide === "B"}
+                      className="text-xs px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Claim this side...</option>
+                      {captainTeams.map((t: any) => (
+                        <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           {match.score && (

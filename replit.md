@@ -275,15 +275,27 @@ visibleAfter null = 7-day default
 
 ---
 
-## Completed Issues (this session)
+## Completed Issues
 
 - **#23** Global search UI — nav search bar (desktop visible, mobile icon expand), debounced 300ms, grouped dropdown
+- **#22** Players page — enriched data (team name, total games, win rate)
 - **#18 R3** PlayerProfile "Is this you?" banner — shows when not logged in
 - **#18 R4** PlayerDashboard riotId pending alert — yellow warning when puuid null
 - **#18 R9** Footer "What is VCLoL?" — link to /about in footer
+- **#18 R7** Admin Dashboard Bot Status card — `useGetBotStatus` → Online/Offline + last seen
+- **#18 R8** Admin Dashboard Render Queue card — `useGetReplayQueueStats` → pending/processing/failed
+- **#18 R1** MatchDetail "Unregistered Team" badge — yellow badge when `teamAId` or `teamBId` is null
+- **#18 R2** MatchDetail "Claim this match" CTA — captain can claim unregistered side via `useClaimTeamForMatch`
 - **#16** Dashboard overhaul — Recent Matches section (last 5, W/L badges), Captain quick-links, actionable notifications
+- **#15** CaptainHub — visibility, roster, settings, transfer captain
+- **#17** TeamProfile VOD section — `useListVods({ teamId })`, YouTube embed, match links
+
+## Issues Closed via API
+
+#15, #16, #22, #23 (closed this session). #7 was already closed.
+#17 will be closed after push. #18 has remaining sub-tasks (R5, R6, R10).
 
 ## API Status (known broken — #32)
 
-Working: `/api/players` (list), `/api/players/:riotId`, `/api/players/by-id/:id`, `/api/search?q=`
+Working: `/api/players` (list), `/api/players/:riotId`, `/api/players/by-id/:id`, `/api/search?q=`, `/api/vods`, `/api/bot-status`, `/api/replay-queue-stats`
 Broken: `/api/teams`, `/api/teams/:id`, `/api/matches`, `/api/matches/:id` (missing DB columns from #32)
