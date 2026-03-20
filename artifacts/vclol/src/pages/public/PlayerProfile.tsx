@@ -1,13 +1,14 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import {
   useGetPlayer, useGetPlayerBadges, useListSeasonChampions,
-  useGetPlayerEvents, useGetPlayerChampions,
+  useGetPlayerEvents, useGetPlayerChampions, useGetTeamEloHistory,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink } from "lucide-react";
+import { Crown, ExternalLink, TrendingUp } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
@@ -16,6 +17,9 @@ export default function PlayerProfile() {
   const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id } });
   const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id } });
   const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id } });
+
+  const primaryTeamId = player?.teams?.[0]?.teamId ?? 0;
+  const { data: eloHistory } = useGetTeamEloHistory(primaryTeamId, { query: { enabled: primaryTeamId > 0 } });
 
   const playerTeamIds = new Set((player?.teams ?? []).map((t) => t.teamId));
   const myChampionships = seasonChamps?.filter((c) => playerTeamIds.has(c.teamId)) ?? [];
@@ -145,6 +149,48 @@ export default function PlayerProfile() {
                     </span>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {eloHistory && eloHistory.length >= 2 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                ELO Trajectory
+                {player.teams?.[0] && (
+                  <span className="text-xs text-muted-foreground font-normal ml-1">
+                    via {player.teams[0].teamName}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={eloHistory.map((e, i) => ({
+                    idx: i + 1,
+                    elo: e.elo,
+                    date: new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["dataMin - 30", "dataMax + 30"]} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                      labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                      formatter={(value: number) => [`${value} ELO`, "Rating"]}
+                    />
+                    <Line type="monotone" dataKey="elo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>

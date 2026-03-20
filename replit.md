@@ -98,13 +98,14 @@ Use `useAuth()` everywhere instead of raw localStorage.
 | `/` | Home | `useListEvents`, `useListVods`, `useListMatches` — update hero copy + CTAs |
 | `/teams` | Teams (NEW) | `useGetLadder` → team leaderboard |
 | `/teams/:id` | TeamProfile (NEW) | `useGetTeam` → team detail + members + match history |
-| `/players/:riotId` | PlayerProfile | `useGetPlayer` → aggregate stats from match_players, teams list |
+| `/players` | Players | `useListPlayers` → searchable/filterable player directory |
+| `/players/:riotId` | PlayerProfile | `useGetPlayer` → aggregate stats, ELO trajectory (via team), champion pool |
 | `/matches/:id` | MatchDetail | `useGetMatch` → 10-player stats, .rofl download, POV request, visibility toggle |
 | `/events` | Events | `useListEvents` — unchanged |
 | `/events/:slug` | EventDetail | `useGetEvent` — update participants to show teams |
 | `/vods` | Vods | `useListVods` — only shows VODs from public matches (`visibleAfter <= now`) + own-team matches |
 | `/vods/:id` | VodDetail | `useGetVod` — check visibility before rendering |
-| `/dashboard` | PlayerDashboard | Simplified: team list, recent results, notifications. No ELO, no challenges. |
+| `/dashboard` | PlayerDashboard | Simplified: team list, recent results, notifications, quick links to profile/team. |
 | `/login` | PlayerLogin | Keep Discord OAuth button |
 | `/register` | Register → Landing | Replace form with "How to register via Discord bot" guide |
 | `/about` | About | Update copy |

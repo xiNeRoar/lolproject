@@ -11,7 +11,7 @@ import { SwissRoundsTable } from "@/components/brackets/SwissRoundsTable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { Trophy, Video, Calendar, AlertCircle, Users } from "lucide-react";
 
 function EventMatches({ format, matches }: { format: string | null | undefined; matches: Match[] }) {
@@ -73,14 +73,24 @@ export default function EventDetail() {
               <p className="text-muted-foreground text-sm">No registrations yet.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {registrations.map((r) => (
-                  <div key={r.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-sm">
-                    <span className="font-medium">{r.riotId}</span>
-                    {r.status && r.status !== "registered" && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">{r.status}</Badge>
-                    )}
-                  </div>
-                ))}
+                {registrations.map((r) => {
+                  const chip = (
+                    <div className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-sm",
+                      r.riotId && "hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
+                    )}>
+                      <span className="font-medium">{r.riotId ?? "Unknown"}</span>
+                      {r.status && r.status !== "registered" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{r.status}</Badge>
+                      )}
+                    </div>
+                  );
+                  return r.riotId ? (
+                    <Link key={r.id} href={`/players/${encodeURIComponent(r.riotId)}`}>{chip}</Link>
+                  ) : (
+                    <div key={r.id}>{chip}</div>
+                  );
+                })}
               </div>
             )}
           </section>

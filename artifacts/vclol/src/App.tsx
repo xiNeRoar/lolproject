@@ -17,6 +17,7 @@ import VodDetail from "@/pages/public/VodDetail";
 import Teams from "@/pages/public/Teams";
 import TeamProfile from "@/pages/public/TeamProfile";
 import PlayerProfile from "@/pages/public/PlayerProfile";
+import Players from "@/pages/public/Players";
 import DevLogin from "@/pages/public/DevLogin";
 import Contact from "@/pages/public/Contact";
 import MatchDetail from "@/pages/public/MatchDetail";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/teams" component={Teams} />
       <Route path="/teams/:id" component={TeamProfile} />
       <Route path="/ladder">{() => { window.location.replace("/teams"); return null; }}</Route>
+      <Route path="/players" component={Players} />
       <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
       <Route path="/dev-login" component={DevLogin} />

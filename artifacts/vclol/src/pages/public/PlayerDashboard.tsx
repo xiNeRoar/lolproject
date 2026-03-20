@@ -79,9 +79,23 @@ function DashboardContent({ pid }: { pid: number }) {
                   {player.secondaryRole && <span> / {player.secondaryRole}</span>}
                 </p>
               )}
+              <div className="flex items-center gap-2 mt-3">
+                <Link href={`/players/${encodeURIComponent(player.riotId)}`}>
+                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                    View Public Profile
+                  </Button>
+                </Link>
+              </div>
             </div>
             <div className="text-right text-sm space-y-1">
               {activeSeason && <div className="text-muted-foreground">{activeSeason.name}</div>}
+              {player.aggregateStats && (
+                <div className="text-xs text-muted-foreground">
+                  <span className="text-green-400">{player.aggregateStats.wins}W</span>
+                  {" / "}
+                  <span className="text-red-400">{player.aggregateStats.losses}L</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
