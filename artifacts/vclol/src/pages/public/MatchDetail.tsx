@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetMatch, useListSeasons, useGetMatchPlayers, useGetPlayerById } from "@workspace/api-client-react";
+import { useGetMatch, useListSeasons, useGetMatchPlayers, useGetPlayerById, useAdminMe } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +66,8 @@ export default function MatchDetail() {
   const { data: seasons } = useListSeasons();
   const { data: matchPlayers } = useGetMatchPlayers(matchId, { query: { enabled: !!match } });
   const { playerIdNum, isLoggedIn } = useAuth();
+  const { data: adminMe } = useAdminMe({ query: { retry: false } });
+  const isAdmin = !!adminMe?.authenticated;
   const { data: playerProfile } = useGetPlayerById(playerIdNum, { query: { enabled: isLoggedIn && playerIdNum > 0 } });
   const [povRequesting, setPovRequesting] = useState(false);
   const [povStatus, setPovStatus] = useState<{ exists: boolean; status?: string; submittedAt?: string } | null>(null);
@@ -122,7 +124,7 @@ export default function MatchDetail() {
     (t: { teamId: number; isCaptain?: boolean }) =>
       (t.teamId === match.teamAId || t.teamId === match.teamBId) && t.isCaptain
   );
-  const canChangeVisibility = isLoggedIn && isCaptainOfMatch;
+  const canChangeVisibility = isAdmin || (isLoggedIn && isCaptainOfMatch);
 
   const handlePovRequest = async () => {
     if (!currentPlayerInMatch) return;
@@ -483,7 +485,7 @@ export default function MatchDetail() {
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                As team captain, you can control when this match becomes publicly visible.
+                {isAdmin ? "Admin override: you can control match visibility." : "As team captain, you can control when this match becomes publicly visible."}
               </p>
             </CardContent>
           </Card>
