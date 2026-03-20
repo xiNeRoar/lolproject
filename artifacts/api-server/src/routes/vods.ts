@@ -12,6 +12,7 @@ import {
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { getRelatedVods } from "../lib/vodRecommendations";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -305,6 +306,7 @@ router.post("/", requireAdmin, async (req, res) => {
         playerRiotId: player?.riotId ?? null,
       })
     );
+    logAdminAction(req.session.adminId!, "create", "vod", row!.id, `Created VOD "${title}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to create VOD" });
   }
@@ -393,6 +395,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
         playerRiotId: player?.riotId ?? null,
       })
     );
+    logAdminAction(req.session.adminId!, "update", "vod", row.id, `Updated VOD "${row.title}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to update VOD" });
   }
@@ -408,6 +411,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     }
     await db.delete(vodEntriesTable).where(eq(vodEntriesTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "vod", id, `Deleted VOD #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete VOD" });
   }

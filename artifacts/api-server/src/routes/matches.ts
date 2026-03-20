@@ -4,6 +4,7 @@ import {
   matchesTable,
   matchPlayersTable,
   teamsTable,
+  teamMembersTable,
   eventsTable,
   vodEntriesTable,
   ladderSettingsTable,
@@ -14,6 +15,7 @@ import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges } from "../lib/badges";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -358,6 +360,7 @@ router.post("/", requireAdmin, async (req, res) => {
 
     const [created] = await db.select().from(matchesTable).where(eq(matchesTable.id, createdMatchId!));
     res.status(201).json(formatMatch(created!));
+    logAdminAction(req.session.adminId!, "create", "match", createdMatchId!, `Created match "${matchTitle}"`);
   } catch (err: any) {
     if (err?.code === "23505") {
       res.status(409).json({ error: "A match with this gameId already exists" });
@@ -492,6 +495,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       return;
     }
     res.json(formatMatch(row));
+    logAdminAction(req.session.adminId!, "update", "match", row.id, `Updated match "${row.matchTitle}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to update match" });
   }
@@ -507,6 +511,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     }
     await db.delete(matchesTable).where(eq(matchesTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "match", id, `Deleted match #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete match" });
   }
@@ -654,6 +659,148 @@ router.put("/:id/visibility", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update match visibility" });
+  }
+});
+
+// POST /matches/:id/claim-team — captain claims their team for one side of the match
+router.post("/:id/claim-team", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const playerId = req.session.playerId;
+    if (!playerId) {
+      res.status(401).json({ error: "Player session required" });
+      return;
+    }
+
+    const { teamId } = req.body as { teamId?: number };
+    if (!teamId) {
+      res.status(400).json({ error: "teamId is required" });
+      return;
+    }
+
+    // Find the match
+    const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, id));
+    if (!match) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    // Check that at least one side is unclaimed
+    if (match.teamAId !== null && match.teamBId !== null) {
+      res.status(400).json({ error: "This match already has both teams assigned" });
+      return;
+    }
+
+    // Verify the requesting player is captain of the given team
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) {
+      res.status(404).json({ error: "Team not found" });
+      return;
+    }
+    if (team.captainPlayerId !== playerId) {
+      res.status(403).json({ error: "Only the team captain can claim a match" });
+      return;
+    }
+
+    // Determine which side is unclaimed
+    const unclaimedSide = match.teamAId === null ? "A" : "B";
+
+    // Get match_players on the unclaimed side
+    const sidePlayers = await db
+      .select()
+      .from(matchPlayersTable)
+      .where(
+        and(
+          eq(matchPlayersTable.matchId, id),
+          eq(matchPlayersTable.teamSide, unclaimedSide)
+        )
+      );
+
+    const sidePuuids = sidePlayers
+      .map((mp) => mp.puuid)
+      .filter((p): p is string => p !== null);
+
+    // Get team members and their PUUIDs
+    const members = await db
+      .select({
+        memberId: teamMembersTable.playerId,
+        puuid: playersTable.puuid,
+      })
+      .from(teamMembersTable)
+      .leftJoin(playersTable, eq(teamMembersTable.playerId, playersTable.id))
+      .where(eq(teamMembersTable.teamId, teamId));
+
+    const memberPuuids = members
+      .map((m) => m.puuid)
+      .filter((p): p is string => p !== null);
+
+    // Count how many team member PUUIDs appear in the unclaimed side's match_players
+    const matchingPuuids = memberPuuids.filter((puuid) => sidePuuids.includes(puuid));
+
+    if (matchingPuuids.length < 3) {
+      res.status(400).json({
+        error: `Only ${matchingPuuids.length} team members matched players on the unclaimed side (need at least 3)`,
+      });
+      return;
+    }
+
+    // Assign the team to the unclaimed side
+    let eloUpdated = false;
+
+    await db.transaction(async (tx) => {
+      if (unclaimedSide === "A") {
+        await tx
+          .update(matchesTable)
+          .set({ teamAId: teamId, updatedAt: new Date() })
+          .where(eq(matchesTable.id, id));
+      } else {
+        await tx
+          .update(matchesTable)
+          .set({ teamBId: teamId, updatedAt: new Date() })
+          .where(eq(matchesTable.id, id));
+      }
+
+      // Re-read match to check if both sides now have teamIds
+      const [updatedMatch] = await tx.select().from(matchesTable).where(eq(matchesTable.id, id));
+
+      if (updatedMatch && updatedMatch.teamAId !== null && updatedMatch.teamBId !== null) {
+        // Both sides now assigned — calculate ELO retroactively
+        const [settings] = await tx.select().from(ladderSettingsTable).limit(1);
+        const kFactor = settings?.kFactor ?? 32;
+
+        const elo = await applyTeamElo(
+          tx,
+          id,
+          updatedMatch.teamAId,
+          updatedMatch.teamBId,
+          updatedMatch.winnerName,
+          updatedMatch.sideAName,
+          kFactor
+        );
+
+        // Back-fill ELO snapshot on the match row
+        await tx
+          .update(matchesTable)
+          .set({
+            teamAEloBefore: elo.teamABefore,
+            teamAEloAfter: elo.teamAAfter,
+            teamBEloBefore: elo.teamBBefore,
+            teamBEloAfter: elo.teamBAfter,
+          })
+          .where(eq(matchesTable.id, id));
+
+        eloUpdated = true;
+      }
+    });
+
+    res.json({ success: true, eloUpdated });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to claim team for match" });
   }
 });
 

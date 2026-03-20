@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { eventRegistrationsTable, eventsTable } from "@workspace/db";
 import { eq, and, ne, asc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -141,6 +142,7 @@ router.put("/:id/confirm", requireAdmin, async (req, res) => {
       return;
     }
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "update", "registration", row.id, `Confirmed registration for "${row.riotId}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to confirm registration" });
   }
@@ -164,6 +166,7 @@ router.put("/:id/withdraw", requireAdmin, async (req, res) => {
       return;
     }
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "update", "registration", row.id, `Withdrew registration for "${row.riotId}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to withdraw registration" });
   }
@@ -179,6 +182,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     }
     await db.delete(eventRegistrationsTable).where(eq(eventRegistrationsTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "registration", id, `Deleted registration #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete registration" });
   }

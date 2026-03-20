@@ -10,6 +10,7 @@ import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { softResetElo } from "../lib/elo";
 import { checkSeasonBadges } from "../lib/badges";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -83,6 +84,7 @@ router.post("/", requireAdmin, async (req, res) => {
       .returning();
 
     res.status(201).json(formatSeason(row!));
+    logAdminAction(req.session.adminId!, "create", "season", row!.id, `Created season "${name}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to create season" });
   }
@@ -136,6 +138,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       return;
     }
     res.json(formatSeason(row));
+    logAdminAction(req.session.adminId!, "update", "season", row.id, `Updated season "${row.name}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to update season" });
   }
@@ -162,6 +165,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
 
     await db.delete(seasonsTable).where(eq(seasonsTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "season", id, `Deleted season "${target.name}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete season" });
   }
@@ -195,6 +199,7 @@ router.post("/:id/activate", requireAdmin, async (req, res) => {
       .returning();
 
     res.json(formatSeason(activated!));
+    logAdminAction(req.session.adminId!, "activate", "season", id, `Activated season "${target.name}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to activate season" });
   }
@@ -278,6 +283,7 @@ router.post("/:id/complete", requireAdmin, async (req, res) => {
     }
 
     res.json(formatSeason(updated!));
+    logAdminAction(req.session.adminId!, "complete", "season", id, `Completed season "${target.name}" with ELO reset`);
   } catch (err) {
     res.status(500).json({ error: "Failed to complete season" });
   }

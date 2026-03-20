@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { eventsTable, matchesTable, vodEntriesTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -139,6 +140,7 @@ router.post("/", requireAdmin, async (req, res) => {
       .returning();
 
     res.status(201).json(formatEvent(row!));
+    logAdminAction(req.session.adminId!, "create", "event", row!.id, `Created event "${title}"`);
   } catch (err: any) {
     if (err?.code === "23505") {
       res.status(400).json({ error: "An event with this slug already exists" });
@@ -225,6 +227,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
       return;
     }
     res.json(formatEvent(row));
+    logAdminAction(req.session.adminId!, "update", "event", row.id, `Updated event "${row.title}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to update event" });
   }
@@ -240,6 +243,7 @@ router.delete("/:id/delete", requireAdmin, async (req, res) => {
     }
     await db.delete(eventsTable).where(eq(eventsTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "event", id, `Deleted event #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete event" });
   }

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { ladderSettingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -87,6 +88,7 @@ router.put("/", requireAdmin, async (req, res) => {
       .returning();
 
     res.json(formatSettings(updated!));
+    logAdminAction(req.session.adminId!, "update", "ladder_settings", updated!.id, "Updated ladder settings");
   } catch (err) {
     res.status(500).json({ error: "Failed to update ladder settings" });
   }

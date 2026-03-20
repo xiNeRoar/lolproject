@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, and, count, avg, sum, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -285,6 +286,7 @@ router.post("/", requireAdmin, async (req, res) => {
       .returning();
 
     res.status(201).json(formatPlayer(row!));
+    logAdminAction(req.session.adminId!, "create", "player", row!.id, `Created player "${riotId}"`);
   } catch (err: any) {
     if (err?.code === "23505") {
       res.status(409).json({ error: "A player with this riotId already exists" });
@@ -377,6 +379,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
       return;
     }
     res.json(formatPlayer(row));
+    logAdminAction(req.session.adminId!, "update", "player", row.id, `Updated player "${row.riotId}"`);
   } catch (err) {
     res.status(500).json({ error: "Failed to update player" });
   }
@@ -392,6 +395,7 @@ router.delete("/:id/delete", requireAdmin, async (req, res) => {
     }
     await db.delete(playersTable).where(eq(playersTable.id, id));
     res.json({ success: true });
+    logAdminAction(req.session.adminId!, "delete", "player", id, `Deleted player #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete player" });
   }
