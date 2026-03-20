@@ -202,32 +202,48 @@ export default function PlayerProfile() {
               <CardTitle className="text-base font-display">Champion Pool</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-5">
-                {championStats.map(({ champion, games }, i) => (
-                  <div key={champion} className="flex flex-col items-center gap-2">
-                    <div className={`w-14 h-14 rounded-full overflow-hidden border-2 flex-shrink-0 ${i === 0 ? "border-primary/50" : "border-border/40"}`}>
-                      <img
-                        src={champPortraitUrl(champion)}
-                        alt={champion}
-                        className="w-full h-full object-cover object-top scale-[1.4] translate-y-1"
-                        onError={(e) => {
-                          const el = e.currentTarget;
-                          el.style.display = "none";
-                          if (el.parentElement) el.parentElement.style.background = "#1e293b";
-                        }}
-                      />
+              <div className="space-y-3">
+                {championStats.map(({ champion, games, wins, avgKda }, i) => {
+                  const safeWins = wins ?? 0;
+                  const wr = games > 0 ? Math.round((safeWins / games) * 100) : 0;
+                  return (
+                    <div key={champion} className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full overflow-hidden border-2 flex-shrink-0 ${i === 0 ? "border-primary/50" : "border-border/40"}`}>
+                        <img
+                          src={champPortraitUrl(champion)}
+                          alt={champion}
+                          className="w-full h-full object-cover object-top scale-[1.4] translate-y-1"
+                          onError={(e) => {
+                            const el = e.currentTarget;
+                            el.style.display = "none";
+                            if (el.parentElement) el.parentElement.style.background = "#1e293b";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{champion}</span>
+                          {i === 0 && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                              Main
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {games} game{games !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`text-sm font-medium ${wr >= 60 ? "text-green-400" : wr >= 50 ? "text-foreground" : "text-red-400"}`}>
+                          {wr}% WR
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {avgKda != null ? `${avgKda.toFixed(1)} KDA` : "-"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center leading-tight">
-                      <div className="text-xs font-medium truncate max-w-[56px]">{champion}</div>
-                      <div className="text-[10px] text-muted-foreground">{games}G</div>
-                    </div>
-                    {i === 0 && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                        Main
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

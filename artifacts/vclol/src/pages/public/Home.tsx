@@ -100,24 +100,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats Bar ────────────────────────────────────── */}
-      <section className="border-y border-border/50 bg-card/40 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {[
-              { icon: CalendarIcon, value: events?.length ?? "—", label: "Events Hosted" },
-              { icon: Swords,       value: matches?.length ?? "—", label: "Matches Played" },
-              { icon: Video,        value: vods?.length    ?? "—", label: "VODs Archived"  },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label}>
-                <Icon className="w-4 h-4 text-primary mx-auto mb-1 opacity-70" />
-                <p className="text-2xl md:text-3xl font-bold font-display text-foreground">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-              </div>
-            ))}
+      {/* ── Stats Bar — only show when numbers are meaningful ── */}
+      {(matches?.length ?? 0) >= 10 && (
+        <section className="border-y border-border/50 bg-card/40 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              {[
+                { icon: CalendarIcon, value: events?.length ?? "—", label: "Events Hosted" },
+                { icon: Swords,       value: matches?.length ?? "—", label: "Matches Played" },
+                { icon: Video,        value: vods?.length    ?? "—", label: "VODs Archived"  },
+              ].map(({ icon: Icon, value, label }) => (
+                <div key={label}>
+                  <Icon className="w-4 h-4 text-primary mx-auto mb-1 opacity-70" />
+                  <p className="text-2xl md:text-3xl font-bold font-display text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Current Phase Banner ─────────────────────────── */}
       <section className="border-b border-primary/20 bg-primary/5 py-10">
@@ -177,7 +179,7 @@ export default function Home() {
 
       {/* ── Previews (Events + VODs) ─────────────────────── */}
       <section className="py-20 border-t border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-16">
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 gap-16 ${recentVods && recentVods.length > 0 ? "lg:grid-cols-2" : "max-w-3xl"}`}>
 
           {/* Upcoming Event */}
           <div>
@@ -222,16 +224,16 @@ export default function Home() {
             )}
           </div>
 
-          {/* Recent VODs */}
-          <div>
-            <div className="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
-              <h2 className="text-xl font-display font-bold flex items-center gap-2">
-                <Video className="text-primary w-5 h-5" /> Recent VODs
-              </h2>
-              <Link href="/vods" className="text-sm text-primary hover:underline">VOD Archive →</Link>
-            </div>
+          {/* Recent VODs — only show when there are VODs */}
+          {recentVods && recentVods.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
+                <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                  <Video className="text-primary w-5 h-5" /> Recent VODs
+                </h2>
+                <Link href="/vods" className="text-sm text-primary hover:underline">VOD Archive →</Link>
+              </div>
 
-            {recentVods && recentVods.length > 0 ? (
               <div className="space-y-3">
                 {recentVods.map((vod, i) => (
                   <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
@@ -262,12 +264,8 @@ export default function Home() {
                   </Link>
                 ))}
               </div>
-            ) : (
-              <div className="p-8 text-center border border-border/40 border-dashed rounded-lg bg-card/20">
-                <p className="text-muted-foreground text-sm">Archive is currently building.</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 

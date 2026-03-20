@@ -165,51 +165,71 @@ export default function TeamProfile() {
           </Card>
         )}
 
-        <Card className="bg-card/40 border-border/40 mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-display flex items-center gap-2">
-              <Users className="w-4 h-4" /> Roster
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {!team.members?.length ? (
-              <div className="px-6 py-8 text-center text-muted-foreground text-sm">No members listed.</div>
-            ) : (
-              <div className="divide-y divide-border/30">
-                {team.members.map((m) => (
-                  <div key={m.id} className="px-6 py-3 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      {m.playerRiotId ? (
-                        <Link href={`/players/${encodeURIComponent(m.playerRiotId)}`} className="text-sm font-medium hover:text-primary transition-colors">
-                          {m.playerRiotId}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-medium">Player #{m.playerId}</span>
-                      )}
-                      {m.playerDiscordUsername && (
-                        <div className="text-xs text-muted-foreground">{m.playerDiscordUsername}</div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {m.playerId === team.captainPlayerId && (
-                        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Captain</Badge>
-                      )}
-                      {m.role && (
-                        <Badge variant="outline" className="text-xs">{m.role}</Badge>
-                      )}
-                      <Badge
-                        variant={m.status === "active" ? "default" : "secondary"}
-                        className="text-xs capitalize"
-                      >
-                        {m.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+        {(() => {
+          const currentMembers = team.members?.filter(m => m.status === "active") ?? [];
+          const pastMembers = team.members?.filter(m => m.status !== "active") ?? [];
+
+          const renderMemberRow = (m: NonNullable<typeof team.members>[number]) => (
+            <div key={m.id} className="px-6 py-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                {m.playerRiotId ? (
+                  <Link href={`/players/${encodeURIComponent(m.playerRiotId)}`} className="text-sm font-medium hover:text-primary transition-colors">
+                    {m.playerRiotId}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium">Player #{m.playerId}</span>
+                )}
+                {m.playerDiscordUsername && (
+                  <div className="text-xs text-muted-foreground">{m.playerDiscordUsername}</div>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex items-center gap-2 shrink-0">
+                {m.playerId === team.captainPlayerId && (
+                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Captain</Badge>
+                )}
+                {m.role && (
+                  <Badge variant="outline" className="text-xs">{m.role}</Badge>
+                )}
+              </div>
+            </div>
+          );
+
+          return (
+            <>
+              <Card className="bg-card/40 border-border/40 mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-display flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Current Roster
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {currentMembers.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">No active members.</div>
+                  ) : (
+                    <div className="divide-y divide-border/30">
+                      {currentMembers.map(renderMemberRow)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {pastMembers.length > 0 && (
+                <Card className="bg-card/40 border-border/40 mb-6">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-display flex items-center gap-2 text-muted-foreground">
+                      Past Members
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-border/30 opacity-70">
+                      {pastMembers.map(renderMemberRow)}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          );
+        })()}
 
         {team.recentMatches && team.recentMatches.length > 0 && (
           <Card className="bg-card/40 border-border/40">
