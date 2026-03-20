@@ -113,9 +113,19 @@ router.get("/queue", requireAdmin, async (_req, res) => {
   }
 });
 
-// GET /replays/queue/next — render machine: next pending job (no auth; machine token TBD)
+// GET /replays/queue/next — render machine: claim next pending job (sets status=processing)
 router.get("/queue/next", async (_req, res) => {
   try {
+    // Reset stale processing jobs (>2 hours — render machine likely crashed)
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const stale = await db
+      .update(replaySubmissionsTable)
+      .set({ status: "pending" })
+      .where(and(eq(replaySubmissionsTable.status, "processing"), lte(replaySubmissionsTable.submittedAt, twoHoursAgo)))
+      .returning({ id: replaySubmissionsTable.id });
+    if (stale.length > 0)
+      console.log(`[replays] Reset ${stale.length} stale job(s) to pending`);
+
     const [row] = await db
       .select()
       .from(replaySubmissionsTable)
@@ -127,7 +137,15 @@ router.get("/queue/next", async (_req, res) => {
       res.status(204).send();
       return;
     }
-    res.json(formatReplay(row));
+
+    // Claim the job: mark as processing
+    const [claimed] = await db
+      .update(replaySubmissionsTable)
+      .set({ status: "processing" })
+      .where(eq(replaySubmissionsTable.id, row.id))
+      .returning();
+
+    res.json(formatReplay(claimed!));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch next job" });
   }
