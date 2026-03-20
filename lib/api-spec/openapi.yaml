@@ -266,6 +266,96 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: addTeamMember
+      tags: [teams]
+      summary: Add member to team (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [playerId]
+              properties:
+                playerId:
+                  type: integer
+                role:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "409":
+          description: Already a member
+
+  /teams/{id}/members/{memberId}:
+    put:
+      operationId: updateTeamMember
+      tags: [teams]
+      summary: Update member role or status (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  nullable: true
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+    delete:
+      operationId: removeTeamMember
+      tags: [teams]
+      summary: Remove member from team (admin) — sets status inactive
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   # ── Players ─────────────────────────────────────────────────
 

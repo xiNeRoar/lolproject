@@ -5,8 +5,8 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { LadderEntry } from "./ladderEntry";
-import type { Season } from "./season";
+import type { LadderEntry } from './ladderEntry';
+import type { Season } from './season';
 
 export interface LadderResponse {
   season?: Season | null;

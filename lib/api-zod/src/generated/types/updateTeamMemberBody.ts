@@ -6,9 +6,7 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export type ListMatchesParams = {
-eventId?: number;
-seasonId?: number;
-teamId?: number;
-search?: string;
+export type UpdateTeamMemberBody = {
+  role?: string | null;
+  status?: string;
 };
