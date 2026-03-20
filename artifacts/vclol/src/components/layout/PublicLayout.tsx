@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useGetPlayerById } from "@workspace/api-client-react";
+import GlobalSearch from "./GlobalSearch";
 
 interface PlayerData {
   riotId: string;
@@ -171,6 +172,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </nav>
 
             <div className="hidden md:flex items-center space-x-3">
+              <GlobalSearch />
               {playerId ? (
                 <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} />
               ) : (
@@ -188,7 +190,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               )}
             </div>
 
-            <div className="flex items-center md:hidden">
+            <div className="flex items-center gap-1 md:hidden">
+              <GlobalSearch />
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-expanded={mobileMenuOpen}
