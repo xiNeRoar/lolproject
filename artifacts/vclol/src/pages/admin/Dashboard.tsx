@@ -1,10 +1,10 @@
 import AdminLayout from "@/components/layout/AdminLayout";
-import { useGetAdminStats, useGetBotStatus, useGetReplayQueueStats } from "@workspace/api-client-react";
+import { useGetAdminStats, useGetBotStatus, useGetReplayQueueStats, useListAdminActions } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Users, Calendar, ClipboardList, Swords, Video, UserCheck, Trophy,
-  Bot, CircleDot, AlertTriangle, Clock
+  Bot, CircleDot, AlertTriangle, Clock, Activity
 } from "lucide-react";
 
 function BotStatusCard() {
@@ -138,6 +138,100 @@ function RenderQueueCard() {
   );
 }
 
+function AdminActionsCard() {
+  const { data: actions, isLoading, isError } = useListAdminActions();
+
+  const formatTime = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const actionTypeLabel = (type: string, entityType: string) => {
+    const labels: Record<string, string> = {
+      create: "Created",
+      update: "Updated",
+      delete: "Deleted",
+      ban: "Banned",
+      unban: "Unbanned",
+      create_team: "Created team",
+      update_team: "Updated team",
+      delete_team: "Deleted team",
+      create_player: "Created player",
+      update_player: "Updated player",
+      delete_player: "Deleted player",
+      ban_player: "Banned player",
+      ban_team: "Banned team",
+      lift_ban: "Lifted ban",
+      create_match: "Created match",
+      update_match: "Updated match",
+      delete_match: "Deleted match",
+      create_event: "Created event",
+      create_season: "Created season",
+    };
+    if (labels[type]) return labels[type];
+    const verb = type.replace(/_/g, " ");
+    return entityType ? `${verb} ${entityType}` : verb;
+  };
+
+  return (
+    <Card className="bg-card border border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-display flex items-center gap-2">
+          <Activity className="w-4 h-4 text-primary" /> Recent Admin Actions
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-4 w-24 bg-muted/40 rounded animate-pulse" />
+                <div className="h-3 w-16 bg-muted/40 rounded animate-pulse" />
+                <div className="h-3 w-12 bg-muted/40 rounded animate-pulse ml-auto" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm">Unable to fetch admin actions</span>
+          </div>
+        ) : !actions || actions.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">No admin actions recorded yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {actions.map((action) => (
+              <div key={action.id} className="flex items-start justify-between gap-3 py-1.5 border-b border-border/20 last:border-0">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {actionTypeLabel(action.actionType, action.entityType)}
+                    </span>
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {action.entityType}
+                    </Badge>
+                  </div>
+                  {action.detail && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{action.detail}</p>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
+                  {formatTime(action.createdAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { data: stats, isLoading } = useGetAdminStats();
 
@@ -183,6 +277,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
         <BotStatusCard />
         <RenderQueueCard />
+      </div>
+
+      <div className="mt-8">
+        <AdminActionsCard />
       </div>
     </AdminLayout>
   );
