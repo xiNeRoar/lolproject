@@ -26,6 +26,8 @@ import type {
   AdminMeResponse,
   AdminStats,
   AuthMeResponse,
+  BulkSetMatchVisibility200,
+  BulkSetMatchVisibilityBody,
   ClaimTeamForMatchBody,
   CreateBanRequest,
   CreateEventRequest,
@@ -74,9 +76,11 @@ import type {
   Team,
   TeamMember,
   TeamProfile,
+  TransferCaptainBody,
   UpdatePlayerProfileRequest,
   UpdateReplayStatusRequest,
   UpdateTeamMemberBody,
+  UpdateTeamSettingsBody,
   UpdateVisibilityRequest,
   VodDetail,
   VodEntry,
@@ -1272,6 +1276,222 @@ export const useRemoveTeamMember = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRemoveTeamMemberMutationOptions(options));
+    }
+    
+/**
+ * @summary Transfer captaincy to another active member (captain or admin)
+ */
+export const getTransferCaptainUrl = (id: number,) => {
+
+
+  
+
+  return `/api/teams/${id}/transfer-captain`
+}
+
+export const transferCaptain = async (id: number,
+    transferCaptainBody: TransferCaptainBody, options?: RequestInit): Promise<SuccessResponse> => {
+  
+  return customFetch<SuccessResponse>(getTransferCaptainUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      transferCaptainBody,)
+  }
+);}
+  
+
+
+
+export const getTransferCaptainMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transferCaptain>>, TError,{id: number;data: BodyType<TransferCaptainBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof transferCaptain>>, TError,{id: number;data: BodyType<TransferCaptainBody>}, TContext> => {
+
+const mutationKey = ['transferCaptain'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transferCaptain>>, {id: number;data: BodyType<TransferCaptainBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  transferCaptain(id,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TransferCaptainMutationResult = NonNullable<Awaited<ReturnType<typeof transferCaptain>>>
+    export type TransferCaptainMutationBody = BodyType<TransferCaptainBody>
+    export type TransferCaptainMutationError = ErrorType<void>
+
+    /**
+ * @summary Transfer captaincy to another active member (captain or admin)
+ */
+export const useTransferCaptain = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transferCaptain>>, TError,{id: number;data: BodyType<TransferCaptainBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof transferCaptain>>,
+        TError,
+        {id: number;data: BodyType<TransferCaptainBody>},
+        TContext
+      > => {
+      return useMutation(getTransferCaptainMutationOptions(options));
+    }
+    
+/**
+ * @summary Update team name, tag, or defaultMatchVisibility (captain or admin)
+ */
+export const getUpdateTeamSettingsUrl = (id: number,) => {
+
+
+  
+
+  return `/api/teams/${id}/settings`
+}
+
+export const updateTeamSettings = async (id: number,
+    updateTeamSettingsBody: UpdateTeamSettingsBody, options?: RequestInit): Promise<Team> => {
+  
+  return customFetch<Team>(getUpdateTeamSettingsUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateTeamSettingsBody,)
+  }
+);}
+  
+
+
+
+export const getUpdateTeamSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamSettings>>, TError,{id: number;data: BodyType<UpdateTeamSettingsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTeamSettings>>, TError,{id: number;data: BodyType<UpdateTeamSettingsBody>}, TContext> => {
+
+const mutationKey = ['updateTeamSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTeamSettings>>, {id: number;data: BodyType<UpdateTeamSettingsBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTeamSettings(id,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTeamSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateTeamSettings>>>
+    export type UpdateTeamSettingsMutationBody = BodyType<UpdateTeamSettingsBody>
+    export type UpdateTeamSettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Update team name, tag, or defaultMatchVisibility (captain or admin)
+ */
+export const useUpdateTeamSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTeamSettings>>, TError,{id: number;data: BodyType<UpdateTeamSettingsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTeamSettings>>,
+        TError,
+        {id: number;data: BodyType<UpdateTeamSettingsBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateTeamSettingsMutationOptions(options));
+    }
+    
+/**
+ * @summary Bulk set visibility for team's matches (captain or admin)
+ */
+export const getBulkSetMatchVisibilityUrl = (id: number,) => {
+
+
+  
+
+  return `/api/teams/${id}/matches/visibility`
+}
+
+export const bulkSetMatchVisibility = async (id: number,
+    bulkSetMatchVisibilityBody: BulkSetMatchVisibilityBody, options?: RequestInit): Promise<BulkSetMatchVisibility200> => {
+  
+  return customFetch<BulkSetMatchVisibility200>(getBulkSetMatchVisibilityUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkSetMatchVisibilityBody,)
+  }
+);}
+  
+
+
+
+export const getBulkSetMatchVisibilityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSetMatchVisibility>>, TError,{id: number;data: BodyType<BulkSetMatchVisibilityBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkSetMatchVisibility>>, TError,{id: number;data: BodyType<BulkSetMatchVisibilityBody>}, TContext> => {
+
+const mutationKey = ['bulkSetMatchVisibility'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkSetMatchVisibility>>, {id: number;data: BodyType<BulkSetMatchVisibilityBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  bulkSetMatchVisibility(id,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkSetMatchVisibilityMutationResult = NonNullable<Awaited<ReturnType<typeof bulkSetMatchVisibility>>>
+    export type BulkSetMatchVisibilityMutationBody = BodyType<BulkSetMatchVisibilityBody>
+    export type BulkSetMatchVisibilityMutationError = ErrorType<void>
+
+    /**
+ * @summary Bulk set visibility for team's matches (captain or admin)
+ */
+export const useBulkSetMatchVisibility = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSetMatchVisibility>>, TError,{id: number;data: BodyType<BulkSetMatchVisibilityBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkSetMatchVisibility>>,
+        TError,
+        {id: number;data: BodyType<BulkSetMatchVisibilityBody>},
+        TContext
+      > => {
+      return useMutation(getBulkSetMatchVisibilityMutationOptions(options));
     }
     
 /**

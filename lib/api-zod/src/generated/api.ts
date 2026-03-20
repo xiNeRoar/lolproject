@@ -311,6 +311,71 @@ export const RemoveTeamMemberResponse = zod.object({
 
 
 /**
+ * @summary Transfer captaincy to another active member (captain or admin)
+ */
+export const TransferCaptainParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const TransferCaptainBody = zod.object({
+  "newCaptainPlayerId": zod.number()
+})
+
+export const TransferCaptainResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Update team name, tag, or defaultMatchVisibility (captain or admin)
+ */
+export const UpdateTeamSettingsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateTeamSettingsBody = zod.object({
+  "name": zod.string().optional(),
+  "tag": zod.string().optional(),
+  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public')
+})
+
+export const UpdateTeamSettingsResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "tag": zod.string(),
+  "captainPlayerId": zod.number(),
+  "discordServerId": zod.string().nullish(),
+  "teamElo": zod.number(),
+  "peakElo": zod.number(),
+  "wins": zod.number(),
+  "losses": zod.number(),
+  "isActive": zod.boolean(),
+  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
+  "lastMatchAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Bulk set visibility for team's matches (captain or admin)
+ */
+export const BulkSetMatchVisibilityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BulkSetMatchVisibilityBody = zod.object({
+  "visibility": zod.string().describe('public | private | default'),
+  "matchIds": zod.array(zod.number()).nullish().describe('Optional subset of match IDs. Omit to update all team matches.')
+})
+
+export const BulkSetMatchVisibilityResponse = zod.object({
+  "success": zod.boolean().optional(),
+  "updatedCount": zod.number().optional()
+})
+
+
+/**
  * @summary List all players (admin)
  */
 export const ListPlayersResponseItem = zod.object({

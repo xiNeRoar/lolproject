@@ -620,6 +620,29 @@ export type UpdateTeamMemberBody = {
   status?: string;
 };
 
+export type TransferCaptainBody = {
+  newCaptainPlayerId: number;
+};
+
+export type UpdateTeamSettingsBody = {
+  name?: string;
+  tag?: string;
+  /** private | participants | public */
+  defaultMatchVisibility?: string;
+};
+
+export type BulkSetMatchVisibilityBody = {
+  /** public | private | default */
+  visibility: string;
+  /** Optional subset of match IDs. Omit to update all team matches. */
+  matchIds?: number[] | null;
+};
+
+export type BulkSetMatchVisibility200 = {
+  success?: boolean;
+  updatedCount?: number;
+};
+
 export type ListMatchesParams = {
 eventId?: number;
 seasonId?: number;

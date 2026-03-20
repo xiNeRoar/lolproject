@@ -393,6 +393,121 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  # ── Captain self-service (Issue #14) ─────────────────────────
+
+  /teams/{id}/transfer-captain:
+    put:
+      operationId: transferCaptain
+      tags: [teams]
+      summary: Transfer captaincy to another active member (captain or admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newCaptainPlayerId]
+              properties:
+                newCaptainPlayerId:
+                  type: integer
+      responses:
+        "200":
+          description: Captain transferred
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Target is not an active team member
+        "403":
+          description: Not the current captain
+
+  /teams/{id}/settings:
+    put:
+      operationId: updateTeamSettings
+      tags: [teams]
+      summary: Update team name, tag, or defaultMatchVisibility (captain or admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                tag:
+                  type: string
+                defaultMatchVisibility:
+                  type: string
+                  description: "private | participants | public"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "403":
+          description: Not the captain or admin
+        "409":
+          description: Name or tag already taken
+
+  /teams/{id}/matches/visibility:
+    put:
+      operationId: bulkSetMatchVisibility
+      tags: [teams]
+      summary: Bulk set visibility for team's matches (captain or admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [visibility]
+              properties:
+                visibility:
+                  type: string
+                  description: "public | private | default"
+                matchIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: "Optional subset of match IDs. Omit to update all team matches."
+                  nullable: true
+      responses:
+        "200":
+          description: Visibility updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  updatedCount:
+                    type: integer
+        "403":
+          description: Not the captain or admin
+
   # ── Players ─────────────────────────────────────────────────
 
   /players:
