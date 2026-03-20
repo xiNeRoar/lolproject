@@ -113,3 +113,81 @@ All containers across both stacks and the backup container use `restart: unless-
 - Never deploy via SSH. All management is done through the Portainer UI.
 - After schema changes, run `cd lib/db && pnpm run push` to apply migrations before deploying new API server images.
 - The NAS volume mount path (`/mnt/nas/vclol-backups`) should be adjusted to match your actual NAS mount point.
+
+---
+
+## Pre-Launch Checklist
+
+Complete every item before going live. Each checkbox must be ticked.
+
+### Discord App Setup (one-time)
+
+- [ ] Create application at https://discord.com/developers/applications
+- [ ] Copy **Application ID** → set as `DISCORD_CLIENT_ID` env var
+- [ ] Bot section → **Reset Token** → copy → set as `DISCORD_BOT_TOKEN`
+- [ ] OAuth2 → Redirects → add `https://yourdomain/auth/discord/callback`
+- [ ] Copy **Client Secret** → set as `DISCORD_CLIENT_SECRET`
+- [ ] OAuth2 URL Generator → Scopes: `bot`, `applications.commands` → Permissions: `Send Messages`, `Embed Links`, `Read Message History`, `Use Slash Commands`
+- [ ] Copy generated invite URL → update `/register` page button (remove `disabled`)
+- [ ] Set `DISCORD_REDIRECT_URI` to your production callback URL
+
+### Security
+
+- [ ] `SESSION_SECRET` set to a cryptographically random string (not the dev default `vclol-admin-secret-2024`)
+  - Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- [ ] `NODE_ENV=production` set in all container env vars
+  - This enables `cookie.secure: true` (enforced in app.ts)
+- [ ] `DISCORD_REDIRECT_URI` points to production domain (not localhost)
+
+### Storage
+
+- [ ] `ROFL_UPLOAD_DIR` volume is mounted and writable in Portainer stack
+- [ ] Estimated storage need: ~10 MB per match × expected monthly matches
+- [ ] DB backup container running with NAS volume mounted (see Database Backup section above)
+
+### Portainer Stacks
+
+- [ ] `vclol-web` stack deployed with all required env vars (see Environment Variables table)
+- [ ] `vclol-bot` stack deployed with `DISCORD_BOT_TOKEN` + `DATABASE_URL`
+- [ ] All containers showing healthy in Portainer
+- [ ] DB backup container running
+
+### Verification
+
+- [ ] `GET /api/health` returns `{"status":"ok"}`
+- [ ] `GET /api/bot-status` returns `{"online":true}` within 10 min of bot starting
+- [ ] Admin login works at `/admin/login`
+- [ ] Discord OAuth login completes end-to-end (click login → Discord → redirect back → session set)
+- [ ] Bot responds to `/register-team test T123` in a private test Discord server
+- [ ] First `/submit` with a real `.rofl` file records match in DB
+
+### Schema Migration (before first deploy and after each schema change)
+
+```bash
+cd lib/db
+# Generate migration file from current schema:
+pnpm run generate
+
+# Apply migrations to production DB:
+pnpm run migrate
+```
+
+> ⚠️ Run `pnpm run migrate` (not `pnpm run push`) in production.
+> `push` overwrites schema directly — no rollback possible.
+> `migrate` uses versioned migration files in `drizzle/migrations/`.
+
+---
+
+## Schema Change Workflow (updated for Issue #29)
+
+Old workflow (dev only): `cd lib/db && pnpm run push`
+New workflow (dev + prod safe):
+
+```bash
+# 1. Edit schema file in lib/db/src/schema/
+# 2. Generate migration file:
+cd lib/db && pnpm run generate
+# 3. Commit the generated migration file
+# 4. Apply to DB:
+pnpm run migrate
+```
