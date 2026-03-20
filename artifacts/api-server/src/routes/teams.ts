@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { teamsTable, teamMembersTable, playersTable, matchesTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
 
@@ -288,6 +289,86 @@ router.get("/:id/members", async (req, res) => {
     );
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch team members" });
+  }
+});
+
+// ── Admin Member Management ─────────────────────────────────
+
+// POST /teams/:id/members — admin add member
+router.post("/:id/members", requireAdmin, async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+    const { playerId, role } = req.body as { playerId?: number; role?: string | null };
+    if (!playerId) { res.status(400).json({ error: "playerId is required" }); return; }
+
+    // Check player exists
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, Number(playerId)));
+    if (!player) { res.status(404).json({ error: "Player not found" }); return; }
+
+    // Check not already on team
+    const [existing] = await db.select().from(teamMembersTable).where(
+      and(eq(teamMembersTable.teamId, teamId), eq(teamMembersTable.playerId, Number(playerId)), eq(teamMembersTable.status, "active"))
+    );
+    if (existing) { res.status(409).json({ error: "Player is already an active member of this team" }); return; }
+
+    const [row] = await db.insert(teamMembersTable).values({
+      teamId,
+      playerId: Number(playerId),
+      role: role ?? null,
+      status: "active",
+    }).returning();
+
+    logAdminAction(req.session.adminId!, "create", "team", teamId, `Added player ${player.riotId} (id=${playerId}) to team ${teamId}`);
+    res.status(201).json(formatMember(row!, { playerRiotId: player.riotId, playerDiscordUsername: player.discordUsername }));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add member" });
+  }
+});
+
+// PUT /teams/:id/members/:memberId — admin update member role/status
+router.put("/:id/members/:memberId", requireAdmin, async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    const memberId = parseInt(req.params.memberId as string);
+    if (isNaN(teamId) || isNaN(memberId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const { role, status } = req.body as { role?: string | null; status?: string | null };
+    const updates: Partial<typeof teamMembersTable.$inferInsert> = {};
+    if (role !== undefined) updates.role = role;
+    if (status !== undefined) updates.status = status || "active";
+
+    const [row] = await db.update(teamMembersTable).set(updates)
+      .where(and(eq(teamMembersTable.id, memberId), eq(teamMembersTable.teamId, teamId)))
+      .returning();
+
+    if (!row) { res.status(404).json({ error: "Member not found" }); return; }
+
+    logAdminAction(req.session.adminId!, "update", "team", teamId, `Updated member ${memberId} on team ${teamId}: role=${role}, status=${status}`);
+    res.json(formatMember(row));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update member" });
+  }
+});
+
+// DELETE /teams/:id/members/:memberId — admin remove member (set inactive)
+router.delete("/:id/members/:memberId", requireAdmin, async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    const memberId = parseInt(req.params.memberId as string);
+    if (isNaN(teamId) || isNaN(memberId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [row] = await db.update(teamMembersTable).set({ status: "inactive" })
+      .where(and(eq(teamMembersTable.id, memberId), eq(teamMembersTable.teamId, teamId)))
+      .returning();
+
+    if (!row) { res.status(404).json({ error: "Member not found" }); return; }
+
+    logAdminAction(req.session.adminId!, "delete", "team", teamId, `Removed member ${memberId} from team ${teamId}`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to remove member" });
   }
 });
 

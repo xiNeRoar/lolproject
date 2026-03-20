@@ -228,8 +228,47 @@ export const eventRegistrationsTable = pgTable("event_registrations", {
 - `vodEntries` — VOD records (already has matchId FK)
 - `vodTimestamps` — VOD timestamp markers
 - `replaySubmissions` — render queue
-- `notifications` — player notifications
+- `notifications` — player notifications (added `dmSent`, `dmFailed` boolean columns)
 - `playerBadges` — badge records
+
+### New Tables (Defect Remediation)
+
+#### `admin_actions`
+```typescript
+export const adminActionsTable = pgTable("admin_actions", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").notNull().references(() => adminUsersTable.id, { onDelete: "cascade" }),
+  actionType: text("action_type").notNull(), // create | update | delete | activate | complete | ban | unban
+  entityType: text("entity_type").notNull(), // team | player | match | season | event | registration | vod | ladderSettings
+  entityId: integer("entity_id"),
+  detail: text("detail"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+#### `player_bans`
+```typescript
+export const playerBansTable = pgTable("player_bans", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").references(() => playersTable.id, { onDelete: "cascade" }),
+  teamId: integer("team_id").references(() => teamsTable.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  bannedBy: integer("banned_by").notNull().references(() => adminUsersTable.id),
+  banType: text("ban_type").notNull().default("permanent"), // temporary | permanent
+  expiresAt: timestamp("expires_at"), // null = permanent
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+One of `playerId` or `teamId` must be set. Ban targets either a player or a team.
+
+#### `bot_heartbeats`
+```typescript
+export const botHeartbeatsTable = pgTable("bot_heartbeats", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+```
 
 ---
 
@@ -258,6 +297,10 @@ replay_submissions.matchId → matches.id
 notifications.playerId → players.id
 player_badges.playerId → players.id
 player_badges.seasonId → seasons.id
+admin_actions.adminId → admin_users.id
+player_bans.playerId → players.id
+player_bans.teamId → teams.id
+player_bans.bannedBy → admin_users.id
 ```
 
 ---
@@ -282,5 +325,8 @@ export * from "./seasonChampions";
 export * from "./playerBadges";
 export * from "./replaySubmissions";
 export * from "./notifications";
+export * from "./adminActions";       // NEW — audit log
+export * from "./playerBans";         // NEW — ban system
+export * from "./botHeartbeats";      // NEW — bot health monitoring
 // REMOVED: challenges, matchmakingQueue, interestSubmissions, adminScheduleSettings
 ```

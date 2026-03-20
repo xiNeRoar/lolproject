@@ -160,6 +160,13 @@ Design principle: **No explicit lifecycle management. .rofl data is the source o
 - Changing teams doesn't erase history — it adds a new chapter.
 - One player can be active in multiple teams simultaneously.
 
+### ELO and Roster Changes (Intentional Design Decision)
+Team ELO is a property of the team entity, not the aggregate of its members. When roster changes occur — additions, departures, or complete turnover — team ELO persists unchanged. This is intentional:
+- Teams are long-lived competitive identities. "Team Alpha" means something regardless of who currently plays.
+- Adjusting ELO on roster change creates perverse incentives (e.g., kick low-performers to inflate ELO, or recruit high-performers for an ELO boost that doesn't reflect team cohesion).
+- The alternative (member-average ELO) requires individual player ELO, which conflicts with the "teams own ELO" principle.
+- Over time, a team's ELO naturally adjusts through match results regardless of roster composition.
+
 ---
 
 ## 9. VOD Pipeline

@@ -559,7 +559,29 @@ export interface Notification {
   title: string;
   message: string;
   isRead?: boolean | null;
+  dmSent?: boolean | null;
+  dmFailed?: boolean | null;
   createdAt: string;
+}
+
+export interface PlayerBan {
+  id: number;
+  playerId?: number | null;
+  teamId?: number | null;
+  reason: string;
+  bannedBy: number;
+  banType: string;
+  expiresAt?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateBanRequest {
+  playerId?: number | null;
+  teamId?: number | null;
+  reason: string;
+  banType?: string | null;
+  expiresAt?: string | null;
 }
 
 export type ListTeamsParams = {
@@ -599,4 +621,21 @@ export type ListVodsParams = {
   patch?: string;
   teamId?: number;
   playerId?: number;
+};
+
+export type GetBotStatus200 = {
+  online: boolean;
+  lastSeen?: string | null;
+};
+
+export type ClaimTeamForMatchBody = {
+  teamId: number;
+};
+
+export type GetReplayQueueStats200 = {
+  pending: number;
+  processing: number;
+  failedLast24h: number;
+  oldestPendingAge?: string | null;
+  staleJobsReset: number;
 };

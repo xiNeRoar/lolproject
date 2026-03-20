@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { replaySubmissionsTable, vodEntriesTable, matchesTable } from "@workspace/db";
-import { eq, asc, and, desc } from "drizzle-orm";
+import { eq, asc, and, desc, count, lte, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
@@ -216,6 +216,56 @@ router.patch("/:id", async (req, res) => {
     res.json(formatReplay(row));
   } catch (err) {
     res.status(500).json({ error: "Failed to update replay" });
+  }
+});
+
+// GET /replays/queue/stats — render pipeline monitoring
+router.get("/queue/stats", requireAdmin, async (_req, res) => {
+  try {
+    const [pending] = await db.select({ value: count() }).from(replaySubmissionsTable).where(eq(replaySubmissionsTable.status, "pending"));
+    const [processing] = await db.select({ value: count() }).from(replaySubmissionsTable).where(eq(replaySubmissionsTable.status, "processing"));
+
+    // Failed in last 24h
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [failed] = await db.select({ value: count() }).from(replaySubmissionsTable).where(
+      and(eq(replaySubmissionsTable.status, "failed"), lte(replaySubmissionsTable.submittedAt, oneDayAgo))
+    );
+
+    // Oldest pending job age
+    const [oldest] = await db.select({ submittedAt: replaySubmissionsTable.submittedAt })
+      .from(replaySubmissionsTable)
+      .where(eq(replaySubmissionsTable.status, "pending"))
+      .orderBy(asc(replaySubmissionsTable.submittedAt))
+      .limit(1);
+
+    let oldestPendingAge: string | null = null;
+    if (oldest) {
+      const ageMs = Date.now() - oldest.submittedAt.getTime();
+      const hours = Math.floor(ageMs / 3600000);
+      const mins = Math.floor((ageMs % 3600000) / 60000);
+      oldestPendingAge = `${hours}h ${mins}m`;
+    }
+
+    // Auto-reset stale processing jobs (>2 hours)
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const staleReset = await db.update(replaySubmissionsTable)
+      .set({ status: "pending" })
+      .where(and(eq(replaySubmissionsTable.status, "processing"), lte(replaySubmissionsTable.submittedAt, twoHoursAgo)))
+      .returning();
+
+    if (staleReset.length > 0) {
+      console.log(`[replays] Reset ${staleReset.length} stale processing job(s) to pending`);
+    }
+
+    res.json({
+      pending: Number(pending?.value ?? 0),
+      processing: Number(processing?.value ?? 0),
+      failedLast24h: Number(failed?.value ?? 0),
+      oldestPendingAge,
+      staleJobsReset: staleReset.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch queue stats" });
   }
 });
 

@@ -1497,6 +1497,146 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  # ── Bans ────────────────────────────────────────────────────
+
+  /bans:
+    get:
+      operationId: listBans
+      tags: [admin]
+      summary: List active bans (admin)
+      responses:
+        "200":
+          description: Active bans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerBan"
+    post:
+      operationId: createBan
+      tags: [admin]
+      summary: Ban a player or team (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBanRequest"
+      responses:
+        "201":
+          description: Ban created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerBan"
+
+  /bans/{id}/lift:
+    put:
+      operationId: liftBan
+      tags: [admin]
+      summary: Lift a ban (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ban lifted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerBan"
+
+  # ── Bot Status ─────────────────────────────────────────────
+
+  /bot-status:
+    get:
+      operationId: getBotStatus
+      tags: [health]
+      summary: Check if Discord bot is online
+      responses:
+        "200":
+          description: Bot status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  online:
+                    type: boolean
+                  lastSeen:
+                    type: string
+                    nullable: true
+                required: [online]
+
+  # ── Match Claim ────────────────────────────────────────────
+
+  /matches/{id}/claim-team:
+    post:
+      operationId: claimTeamForMatch
+      tags: [matches]
+      summary: Claim unregistered side of a match for a team (captain)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: integer
+              required: [teamId]
+      responses:
+        "200":
+          description: Team claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Replay Queue Stats ─────────────────────────────────────
+
+  /replays/queue/stats:
+    get:
+      operationId: getReplayQueueStats
+      tags: [replays]
+      summary: Render pipeline monitoring (admin)
+      responses:
+        "200":
+          description: Queue stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pending:
+                    type: integer
+                  processing:
+                    type: integer
+                  failedLast24h:
+                    type: integer
+                  oldestPendingAge:
+                    type: string
+                    nullable: true
+                  staleJobsReset:
+                    type: integer
+                required: [pending, processing, failedLast24h, staleJobsReset]
+
 # ─────────────────────────────────────────────────────────────
 # SCHEMAS
 # ─────────────────────────────────────────────────────────────
@@ -2753,6 +2893,57 @@ components:
         isRead:
           type: boolean
           nullable: true
+        dmSent:
+          type: boolean
+          nullable: true
+        dmFailed:
+          type: boolean
+          nullable: true
         createdAt:
           type: string
       required: [id, type, title, message, createdAt]
+
+    PlayerBan:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+          nullable: true
+        teamId:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+        bannedBy:
+          type: integer
+        banType:
+          type: string
+        expiresAt:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, reason, bannedBy, banType, isActive, createdAt]
+
+    CreateBanRequest:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          nullable: true
+        teamId:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+        banType:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+          nullable: true
+      required: [reason]

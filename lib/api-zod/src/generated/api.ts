@@ -1693,6 +1693,8 @@ export const ListNotificationsResponseItem = zod.object({
   title: zod.string(),
   message: zod.string(),
   isRead: zod.boolean().nullish(),
+  dmSent: zod.boolean().nullish(),
+  dmFailed: zod.boolean().nullish(),
   createdAt: zod.string(),
 });
 export const ListNotificationsResponse = zod.array(
@@ -1708,4 +1710,84 @@ export const MarkNotificationReadParams = zod.object({
 
 export const MarkNotificationReadResponse = zod.object({
   success: zod.boolean(),
+});
+
+/**
+ * @summary List active bans (admin)
+ */
+export const ListBansResponseItem = zod.object({
+  id: zod.number(),
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  bannedBy: zod.number(),
+  banType: zod.string(),
+  expiresAt: zod.string().nullish(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListBansResponse = zod.array(ListBansResponseItem);
+
+/**
+ * @summary Ban a player or team (admin)
+ */
+export const CreateBanBody = zod.object({
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  banType: zod.string().nullish(),
+  expiresAt: zod.string().nullish(),
+});
+
+/**
+ * @summary Lift a ban (admin)
+ */
+export const LiftBanParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const LiftBanResponse = zod.object({
+  id: zod.number(),
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  bannedBy: zod.number(),
+  banType: zod.string(),
+  expiresAt: zod.string().nullish(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Check if Discord bot is online
+ */
+export const GetBotStatusResponse = zod.object({
+  online: zod.boolean(),
+  lastSeen: zod.string().nullish(),
+});
+
+/**
+ * @summary Claim unregistered side of a match for a team (captain)
+ */
+export const ClaimTeamForMatchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ClaimTeamForMatchBody = zod.object({
+  teamId: zod.number(),
+});
+
+export const ClaimTeamForMatchResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Render pipeline monitoring (admin)
+ */
+export const GetReplayQueueStatsResponse = zod.object({
+  pending: zod.number(),
+  processing: zod.number(),
+  failedLast24h: zod.number(),
+  oldestPendingAge: zod.string().nullish(),
+  staleJobsReset: zod.number(),
 });

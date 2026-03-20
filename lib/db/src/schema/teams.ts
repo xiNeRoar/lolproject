@@ -6,7 +6,7 @@ import { playersTable } from "./players";
 export const teamsTable = pgTable("teams", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
-  tag: text("tag").notNull(), // 2-5 uppercase alphanumeric, e.g. "TSM"
+  tag: text("tag").notNull().unique(), // 2-5 uppercase alphanumeric, e.g. "TSM"
   captainPlayerId: integer("captain_player_id")
     .references(() => playersTable.id, { onDelete: "set null" }),
     // nullable: allows orphaned teams when captain player is deleted

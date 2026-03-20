@@ -33,22 +33,33 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 **Who:** Any Discord user
 **What:** Creates a new team. The invoking user becomes captain.
 **Flow:**
-1. Check: does a player record exist for this Discord user? If not, create one (discordId + discordUsername, riotId = ask in DM)
-2. Validate: team name unique, tag is 2-5 uppercase alphanumeric
-3. Insert `teams` row (captainPlayerId = player.id, discordServerId = guild.id)
-4. Insert `team_members` row (teamId, playerId, role = null, status = active)
-5. Reply: "Team **{name}** [{tag}] created! Use `/add` to add your teammates."
+1. **Rate limit (Defect 17):** Check `SELECT COUNT(*) FROM teams WHERE captainPlayerId = ? AND createdAt > NOW() - INTERVAL '24 hours'`. If > 0 → "You already created a team in the last 24 hours. Try again later."
+2. Check: does a player record exist for this Discord user? If not, create one (discordId + discordUsername, riotId = "pending")
+3. Validate: team name unique, tag is 2-5 uppercase alphanumeric, tag unique
+4. Insert `teams` row (captainPlayerId = player.id, discordServerId = guild.id)
+5. Insert `team_members` row (teamId, playerId, role = null, status = active)
+6. Reply: "Team **{name}** [{tag}] created! Use `/add` to add your teammates. Link your Riot ID: `/link-riot YourName#TAG`"
 
-### `/add <@user> [role]`
+### `/add <@user|RiotName#TAG> [role]`
 **Who:** Team captain only
-**What:** Adds a Discord user to the captain's team.
+**What:** Adds a player to the captain's team. Accepts Discord mention (same server) or Riot ID (cross-server).
 **Flow:**
-1. Look up captain's team (most recent active team where captain = invoker)
-2. Check: is @user already on this team? If yes, reject
-3. Check: does a player record exist for @user? If not, create one
-4. Insert `team_members` row
-5. DM the added player: "You've been added to **{team}**. Please reply with your Riot ID (e.g. `Name#TAG`)."
-6. Reply in channel: "@user added to **{team}** as {role || 'unassigned'}."
+1. Determine input mode:
+   - Discord mention `@user` → look up player by `discordId`
+   - Text `RiotName#TAG` → look up player by `riotId`
+2. If captain has multiple active teams → Discord select menu: "Which team?"
+   If captain has one team → use that team directly.
+3. Check: is player already an active member of this team? → "Already on team."
+4. If no player record exists:
+   - Discord mention → create player: `discordId` + `discordUsername` set, `riotId = "pending"`
+   - Riot ID → create player: `riotId` set, `discordId = null`, `discordUsername = riotId`
+5. Insert `team_members` row (role = provided or null, status = active)
+6. DM the added player (if `discordId` is known):
+   "You've been added to **{team}** [{tag}] by **{captain}**.
+   • Link your Riot ID: `/link-riot YourName#TAG`
+   • If this was a mistake: `/leave`
+   • Your team: {platform URL}/teams/{teamId}"
+7. Reply in channel: "@user added to **{team}** as {role || 'unassigned'}."
 
 ### `/submit` (with .rofl file attachment)
 **Who:** Any team member
@@ -56,18 +67,63 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 **Flow:**
 1. Download the .rofl attachment (Discord allows up to 25MB for boosted servers, 8MB default)
 2. Validate: check ROFL2 magic bytes
-3. Parse metadata → extract 10 player entries
-4. Group by TEAM (100 vs 200)
-5. Match each group to a registered team by cross-referencing PUUIDs/riotIds against `team_members`
-6. If both teams identified:
-   a. Create `matches` row (set `visibleAfter = createdAt + 7 days`)
+3. Parse metadata JSON from .rofl
+4. **Validate game mode (Defect 7):**
+   - `gameMode` must be `CLASSIC` (Summoner's Rift standard)
+   - `mapId` must be `11` (Summoner's Rift)
+   - Reject with: "This replay is from {gameMode} on map {mapId}. Only Summoner's Rift custom games are accepted."
+5. **Ban check (Defect 18):** For each player in .rofl, check if their PUUID/riotId matches a banned player. If any active ban found → reject: "A participant in this match is currently banned: {reason}"
+6. Extract 10 player entries, group by TEAM (100 vs 200)
+7. **Identity resolution (Defect 2):** For each player entry:
+   a. PUUID match: `SELECT * FROM players WHERE puuid = ?` → set `match_players.playerId`
+   b. RiotId match: `SELECT * FROM players WHERE riotId = ?` → set `playerId`, update `players.puuid` from .rofl
+   c. No match: `playerId = null`, store `puuid` + `riotIdGameName` + `riotIdTagLine` on `match_players` row
+8. **Team matching:** For each side, count how many `match_players` have a `playerId` that appears in a team's `team_members`. Team with 3+ matches = identified.
+9. **Both teams identified:**
+   a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter = createdAt + 7 days`)
    b. Create 10 `match_players` rows
-   c. Calculate + update team ELO
-   d. Write `elo_history`
+   c. Calculate + update team ELO for both teams
+   d. Write `elo_history` for both teams
    e. Store .rofl file on disk
-   f. Reply: embed with match summary (teams, score, top performers)
-7. If one/both teams unidentified:
-   a. Reply: "Could not identify team for: {list of unknown players}. Ask your team captain to `/add` them, then re-submit."
+   f. Reply: embed with match summary (teams, score, ELO changes, top performers)
+   g. Mark linked vs unlinked players in embed (Defect 20)
+10. **One or both teams unidentified (Defect 1 — graceful handling):**
+    a. Create `matches` row (`teamAId` and/or `teamBId` = null for unmatched side, `sideAName`/`sideBName` from .rofl riotIds)
+    b. Create 10 `match_players` rows (same identity resolution as step 7)
+    c. **ELO NOT updated** (requires both teamIds to calculate)
+    d. Store .rofl file on disk
+    e. Reply: "✅ Match recorded (stats only — no ELO change). {Side} not identified as a registered team. Invite them: {platform URL}/register"
+    f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim ELO."
+
+### `/link-riot <RiotName#TAG>`
+**Who:** Any Discord user with a player record
+**What:** Link Riot ID to player account. Enables identity resolution and retroactive stat claiming.
+**Flow:**
+1. Parse → gameName + tagLine
+2. Find invoker's player record by `discordId`
+   - Not found → "You don't have a player record yet. Ask a team captain to `/add` you."
+3. Check `riotId` uniqueness: is this riotId linked to a DIFFERENT player?
+   - Yes → "This Riot ID is already linked to another player."
+4. If `RIOT_API_KEY` exists:
+   - Call Riot ACCOUNT-V1 API → get PUUID
+   - 404 → "This Riot ID does not exist."
+   - Success → update `players.riotId` + `players.puuid`
+5. If no API key:
+   - Update `players.riotId` only. PUUID populated from next .rofl.
+6. Retroactive claim: `UPDATE match_players SET playerId = {id} WHERE puuid = {puuid} AND playerId IS NULL`
+7. Reply: "✅ Linked as RiotName#TAG. Claimed {N} match records."
+
+### `/claim-match <matchId>`
+**Who:** Captain of a registered team
+**What:** Claim an unregistered side of a match for the captain's team (retroactive ELO).
+**Flow:**
+1. Look up match by id. Verify it has a null `teamAId` or `teamBId`.
+   - Both sides already claimed → "This match already has both teams assigned."
+2. Check: does captain's team have 3+ members whose PUUIDs appear in the unclaimed side's `match_players`?
+   - No → "Your team does not match enough players in this match."
+3. Set the null `teamAId` or `teamBId` to captain's team id.
+4. If BOTH sides now have teamIds: calculate ELO retroactively for both teams. Write `elo_history`.
+5. Reply: "✅ Match #{matchId} claimed for **{team}**. ELO updated: {team} {delta}."
 
 ### `/stats [team|player] [name]`
 **Who:** Anyone
@@ -186,6 +242,14 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 | Transfer target not on team | "Must be an active team member to become captain." |
 | Captain tries /leave | "Use `/transfer-captain` first before leaving." |
 | Not a member of any team | "You are not a member of any team." |
+| Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
+| No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |
+| Riot ID already linked | "This Riot ID is already linked to another player." |
+| Riot ID not found | "This Riot ID does not exist." |
+| Match already claimed | "This match already has both teams assigned." |
+| Team doesn't match claim | "Your team does not match enough players in this match." |
+| Participant banned | "A participant in this match is currently banned: {reason}" |
+| Invalid game mode | "This replay is from {gameMode}. Only Summoner's Rift custom games are accepted." |
 | Bot lacks permissions | "I need permission to send messages and attach embeds in this channel." |
 
 ---
@@ -206,7 +270,10 @@ artifacts/discord-bot/
 │   │   ├── roster.ts
 │   │   ├── remove.ts
 │   │   ├── transfer-captain.ts
-│   │   └── leave.ts
+│   │   ├── leave.ts
+│   │   ├── link-riot.ts
+│   │   ├── claim-match.ts
+│   │   └── visibility.ts
 │   ├── lib/
 │   │   ├── rofl-parser.ts  # .rofl binary parsing
 │   │   ├── team-matcher.ts # Match players to teams by PUUID
@@ -225,6 +292,48 @@ artifacts/discord-bot/
   }
 }
 ```
+
+---
+
+## Season Broadcast (Defect 6)
+
+Bot runs a daily check (e.g., 00:00 UTC):
+1. Query active season's `endDate`
+2. If `endDate - NOW()` ≤ 7 days: broadcast to all guilds where bot is installed
+   - 7 days: "⚠️ Season **{name}** ends in 7 days! Current top 5: ..."
+   - 3 days: "⚠️ 3 days remaining! ..."
+   - 1 day: "🔴 Season ends TOMORROW! Final standings: ..."
+3. On season complete (admin triggers via web): DM every active team captain with final standings and placement.
+
+If bot was offline on a broadcast day, on startup check if any missed (compare dates, send if within 24h).
+
+---
+
+## Notification Poller (Defect 3)
+
+Bot polls `notifications` table on startup + every 60 seconds:
+```
+SELECT * FROM notifications WHERE is_read = false AND dm_sent = false AND dm_failed = false
+```
+
+For each notification:
+1. Look up `player.discordId`
+2. If null → skip (web only)
+3. If `player.notificationPreference = "web"` → skip DM
+4. `client.users.fetch(discordId)` → `user.send(embed)`
+5. Success → `UPDATE notifications SET dm_sent = true`
+6. Failure (blocked DMs, invalid user) → `UPDATE notifications SET dm_failed = true`
+
+Batch size: 10 notifications per cycle. 1 second delay between batches (Discord rate limit: 5 DMs/second).
+
+---
+
+## Health Monitoring (Defect 13)
+
+- Bot writes heartbeat to `bot_heartbeats` table every 5 minutes
+- API server has `GET /api/bot-status`: checks if last heartbeat is within 10 minutes → `{ online: true/false, lastSeen: timestamp }`
+- Bot container Dockerfile: `HEALTHCHECK --interval=30s CMD node healthcheck.js` (checks `client.ws.ping`)
+- Portainer restart policy: `unless-stopped`
 
 ---
 

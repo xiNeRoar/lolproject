@@ -6,13 +6,14 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface Notification {
+export interface PlayerBan {
   id: number;
-  type: string;
-  title: string;
-  message: string;
-  isRead?: boolean | null;
-  dmSent?: boolean | null;
-  dmFailed?: boolean | null;
+  playerId?: number | null;
+  teamId?: number | null;
+  reason: string;
+  bannedBy: number;
+  banType: string;
+  expiresAt?: string | null;
+  isActive: boolean;
   createdAt: string;
 }

@@ -15,3 +15,6 @@ export * from "./seasonChampions";
 export * from "./playerBadges";
 export * from "./replaySubmissions";
 export * from "./notifications";
+export * from "./adminActions";
+export * from "./playerBans";
+export * from "./botHeartbeats";
