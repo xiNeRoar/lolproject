@@ -5,8 +5,9 @@ import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert } from "lucide-react";
+import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert, Info, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { champPortraitUrl } from "@/lib/lol-utils";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -68,6 +69,7 @@ export default function MatchDetail() {
   const { data: matchPlayers } = useGetMatchPlayers(matchId, { query: { enabled: !!match } });
   const { playerIdNum, isLoggedIn } = useAuth();
   const { data: playerProfile } = useGetPlayerById(playerIdNum, { query: { enabled: isLoggedIn && playerIdNum > 0 } });
+  const [showExplainer, setShowExplainer] = useState(!isLoggedIn);
   const [povRequesting, setPovRequesting] = useState(false);
   const [povStatus, setPovStatus] = useState<{ exists: boolean; status?: string; submittedAt?: string } | null>(null);
   const [povStatusLoading, setPovStatusLoading] = useState(false);
@@ -216,6 +218,25 @@ export default function MatchDetail() {
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
 
+        {showExplainer && !isLoggedIn && (
+          <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex items-start gap-3">
+            <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">What is VCLoL?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                VCLoL is a competitive 5v5 scrim platform. Teams submit replay files, and match results are automatically parsed and tracked — including ELO, champion picks, KDA, and more.
+              </p>
+              <div className="flex gap-3 mt-2">
+                <Link href="/about" className="text-xs text-primary hover:underline">Learn more</Link>
+                <Link href="/register" className="text-xs text-primary hover:underline">Join VCLoL</Link>
+              </div>
+            </div>
+            <button onClick={() => setShowExplainer(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="mb-6">
           <h1 className="text-2xl font-display font-bold mb-3">{match.matchTitle}</h1>
           <div className="flex flex-wrap gap-2">
@@ -238,23 +259,44 @@ export default function MatchDetail() {
         </div>
 
         <div className="mb-8">
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className={`p-5 rounded-xl border text-center ${sideAWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-              {sideAWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-              <div className="text-lg font-display font-bold mb-1">
+          <div className="flex items-center justify-center gap-4 sm:gap-8 py-4">
+            <div className="flex-1 text-right min-w-0">
+              <div className={`text-lg sm:text-xl font-display font-bold truncate ${sideAWon ? "text-primary" : ""}`}>
                 {match.teamAId ? (
-                  <Link href={`/teams/${match.teamAId}`} className="hover:text-primary transition-colors">
+                  <Link href={`/teams/${match.teamAId}`} className="hover:text-primary/80 transition-colors">
                     {match.sideAName}
                   </Link>
                 ) : match.sideAName}
               </div>
               {match.teamATag && <div className="text-xs text-muted-foreground">[{match.teamATag}]</div>}
+              {sideAWon && <div className="text-[10px] font-semibold text-primary uppercase tracking-wider mt-1">Winner</div>}
+            </div>
+            <div className="text-center shrink-0 px-2">
+              <div className="text-4xl sm:text-5xl font-display font-bold tracking-widest text-foreground">
+                {match.score || "—"}
+              </div>
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <div className={`text-lg sm:text-xl font-display font-bold truncate ${sideBWon ? "text-primary" : ""}`}>
+                {match.teamBId ? (
+                  <Link href={`/teams/${match.teamBId}`} className="hover:text-primary/80 transition-colors">
+                    {match.sideBName}
+                  </Link>
+                ) : match.sideBName}
+              </div>
+              {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
+              {sideBWon && <div className="text-[10px] font-semibold text-primary uppercase tracking-wider mt-1">Winner</div>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            <div className={`p-3 rounded-xl border text-center ${sideAWon ? "border-primary/20 bg-primary/5" : "border-border/40 bg-card/30"}`}>
+              <EloDelta before={match.teamAEloBefore} after={match.teamAEloAfter} />
               {sideAUnregistered && (
                 <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
                   <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
                 </Badge>
               )}
-              <EloDelta before={match.teamAEloBefore} after={match.teamAEloAfter} />
               {canClaimA && (
                 <div className="mt-2">
                   {captainTeams.length === 1 ? (
@@ -281,22 +323,13 @@ export default function MatchDetail() {
                 </div>
               )}
             </div>
-            <div className={`p-5 rounded-xl border text-center ${sideBWon ? "border-primary bg-primary/5" : "border-border/40 bg-card/30"}`}>
-              {sideBWon && <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Winner</div>}
-              <div className="text-lg font-display font-bold mb-1">
-                {match.teamBId ? (
-                  <Link href={`/teams/${match.teamBId}`} className="hover:text-primary transition-colors">
-                    {match.sideBName}
-                  </Link>
-                ) : match.sideBName}
-              </div>
-              {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
+            <div className={`p-3 rounded-xl border text-center ${sideBWon ? "border-primary/20 bg-primary/5" : "border-border/40 bg-card/30"}`}>
+              <EloDelta before={match.teamBEloBefore} after={match.teamBEloAfter} />
               {sideBUnregistered && (
                 <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
                   <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
                 </Badge>
               )}
-              <EloDelta before={match.teamBEloBefore} after={match.teamBEloAfter} />
               {canClaimB && (
                 <div className="mt-2">
                   {captainTeams.length === 1 ? (
@@ -324,11 +357,6 @@ export default function MatchDetail() {
               )}
             </div>
           </div>
-          {match.score && (
-            <div className="text-center">
-              <span className="text-3xl font-display font-bold tracking-widest">{match.score}</span>
-            </div>
-          )}
         </div>
 
         {(roflAvailable || (isLoggedIn && currentPlayerInMatch)) && (
@@ -426,7 +454,14 @@ export default function MatchDetail() {
                           ) : <span className="text-xs text-muted-foreground">Player #{p.playerId}</span>}
                           {p.teamPosition && <div className="text-[10px] text-muted-foreground">{p.teamPosition}</div>}
                         </td>
-                        <td className="px-4 py-2 text-xs">{p.champion || "-"}</td>
+                        <td className="px-4 py-2">
+                          {p.champion ? (
+                            <div className="flex items-center gap-1.5">
+                              <img src={champPortraitUrl(p.champion)} alt={p.champion} className="w-6 h-6 rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                              <span className="text-xs">{p.champion}</span>
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">-</span>}
+                        </td>
                         <td className="px-4 py-2 text-xs font-medium">
                           <span className="text-green-400">{p.kills}</span>/<span className="text-red-400">{p.deaths}</span>/<span className="text-blue-400">{p.assists}</span>
                         </td>
@@ -453,7 +488,14 @@ export default function MatchDetail() {
                           ) : <span className="text-xs text-muted-foreground">Player #{p.playerId}</span>}
                           {p.teamPosition && <div className="text-[10px] text-muted-foreground">{p.teamPosition}</div>}
                         </td>
-                        <td className="px-4 py-2 text-xs">{p.champion || "-"}</td>
+                        <td className="px-4 py-2">
+                          {p.champion ? (
+                            <div className="flex items-center gap-1.5">
+                              <img src={champPortraitUrl(p.champion)} alt={p.champion} className="w-6 h-6 rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                              <span className="text-xs">{p.champion}</span>
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">-</span>}
+                        </td>
                         <td className="px-4 py-2 text-xs font-medium">
                           <span className="text-green-400">{p.kills}</span>/<span className="text-red-400">{p.deaths}</span>/<span className="text-blue-400">{p.assists}</span>
                         </td>

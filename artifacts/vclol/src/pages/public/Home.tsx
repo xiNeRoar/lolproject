@@ -56,16 +56,16 @@ export default function Home() {
             className="max-w-xl"
           >
             <Badge variant="outline" className="mb-6 border-primary/30 text-primary bg-primary/5">
-              Lower Mainland • BC
+              NA Competitive
             </Badge>
             <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-6 text-foreground leading-tight">
-              Vancouver Competitive <br />
+              VCLoL <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
-                LoL Project
+                Competitive Platform
               </span>
             </h1>
             <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              A serious environment for local players to improve, compete, and be seen. Structured grassroots competition for the Lower Mainland.
+              A serious environment for competitive players to improve, compete, and be seen. Structured grassroots 5v5 scrims with verified results.
             </p>
             <div className="flex flex-wrap gap-4">
               {loggedIn ? (
@@ -100,9 +100,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats Bar — only show when numbers are meaningful ── */}
-      {(matches?.length ?? 0) >= 10 && (
-        <section className="border-y border-border/50 bg-card/40 py-6">
+      {/* ── Stats Bar ── */}
+      <section className="border-y border-border/50 bg-card/40 py-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-3 gap-4 text-center">
               {[
@@ -119,16 +118,15 @@ export default function Home() {
             </div>
           </div>
         </section>
-      )}
 
       {/* ── Current Phase Banner ─────────────────────────── */}
       <section className="border-b border-primary/20 bg-primary/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="mb-3">Active Competition</Badge>
-          <h2 className="text-xl font-bold font-display mb-3">Vancouver's competitive ladder is live</h2>
+          <h2 className="text-xl font-bold font-display mb-3">The competitive ladder is live</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
-            Building Vancouver's first structured competitive LoL ladder. Register your team to compete, 
-            build your team's match record, and track your team's ELO over time.
+            Structured competitive LoL ladder with ELO tracking. Register your team to compete, 
+            build your match record, and track your ELO over time.
           </p>
         </div>
       </section>
@@ -275,7 +273,7 @@ export default function Home() {
           <MessageCircle className="w-10 h-10 text-primary mx-auto mb-5 opacity-80" />
           <h2 className="text-2xl font-bold font-display mb-3">Join the Community</h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-8">
-            Get notified about upcoming events, find teammates, discuss strategies, and connect with local Vancouver / Lower Mainland players on Discord.
+            Get notified about upcoming events, find teammates, discuss strategies, and connect with competitive players on Discord.
           </p>
           <a href={import.meta.env.VITE_DISCORD_URL ?? "#"} target="_blank" rel="noopener noreferrer">
             <Button size="lg" className="font-semibold">

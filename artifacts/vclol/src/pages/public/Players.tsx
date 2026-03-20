@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { Search, Users, Gamepad2, Trophy } from "lucide-react";
+import { Search, Users, Gamepad2, Trophy, ArrowUpDown } from "lucide-react";
 
 const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"] as const;
 
@@ -32,10 +32,14 @@ function winRateColor(rate: number | null | undefined): string {
   return "text-red-400";
 }
 
+type SortKey = "name" | "games" | "winRate";
+
 export default function Players() {
   const { data: players, isLoading } = useListPlayers();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [minGames, setMinGames] = useState(0);
 
   const filtered = useMemo(() => {
     if (!players) return [];
@@ -61,14 +65,24 @@ export default function Players() {
       );
     }
 
+    if (minGames > 0) {
+      list = list.filter((p) => (p.totalGames ?? 0) >= minGames);
+    }
+
+    list = [...list].sort((a, b) => {
+      if (sortBy === "games") return (b.totalGames ?? 0) - (a.totalGames ?? 0);
+      if (sortBy === "winRate") return (b.winRate ?? 0) - (a.winRate ?? 0);
+      return a.riotId.localeCompare(b.riotId);
+    });
+
     return list;
-  }, [players, search, roleFilter]);
+  }, [players, search, roleFilter, sortBy, minGames]);
 
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-display font-bold mb-2">Players</h1>
-        <p className="text-muted-foreground mb-10">Browse all registered VCLoL players. Click any player to view their competitive profile.</p>
+        <p className="text-muted-foreground mb-10">Browse all registered players. Click any player to view their competitive profile.</p>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-16 sm:px-6 lg:px-8">
@@ -83,31 +97,56 @@ export default function Players() {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortKey)}
+                  className="bg-card border border-border/40 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="name">Name</option>
+                  <option value="games">Most Games</option>
+                  <option value="winRate">Win Rate</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                <Gamepad2 className="w-3.5 h-3.5" />
+                <input
+                  type="number"
+                  min={0}
+                  value={minGames || ""}
+                  onChange={(e) => setMinGames(Number(e.target.value) || 0)}
+                  placeholder="Min"
+                  className="w-16 bg-card border border-border/40 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setRoleFilter(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                !roleFilter
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All Roles
+            </button>
+            {ROLES.map((role) => (
               <button
-                onClick={() => setRoleFilter(null)}
+                key={role}
+                onClick={() => setRoleFilter(roleFilter === role ? null : role)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  !roleFilter
+                  roleFilter === role
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                All Roles
+                {role}
               </button>
-              {ROLES.map((role) => (
-                <button
-                  key={role}
-                  onClick={() => setRoleFilter(roleFilter === role ? null : role)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    roleFilter === role
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
@@ -122,7 +161,7 @@ export default function Players() {
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-medium mb-2">No Players Found</h3>
             <p className="text-muted-foreground">
-              {search || roleFilter ? "Try adjusting your search or filters." : "No registered players yet."}
+              {search || roleFilter || minGames > 0 ? "Try adjusting your search or filters." : "No registered players yet."}
             </p>
           </div>
         ) : (

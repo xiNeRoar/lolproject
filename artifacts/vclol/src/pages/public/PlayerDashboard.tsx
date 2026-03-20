@@ -51,7 +51,10 @@ function DashboardContent({ pid }: { pid: number }) {
   }
 
   function notifHref(n: { type: string }): string | null {
-    if (n.type === "match_result") return `/players/${encodeURIComponent(player.riotId)}`;
+    if (n.type === "match_result") {
+      const team = player.teams?.[0];
+      return team ? `/teams/${team.teamId}` : `/players/${encodeURIComponent(player.riotId)}`;
+    }
     if (n.type === "season_completed") return "/teams";
     if (n.type === "badge_earned") return `/players/${encodeURIComponent(player.riotId)}`;
     return null;

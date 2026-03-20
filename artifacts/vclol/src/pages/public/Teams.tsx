@@ -51,7 +51,8 @@ export default function Teams() {
         ) : !data?.entries?.length ? (
           <div className="text-center py-20 border border-dashed border-border rounded-lg">
             <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No ranked teams yet. Play more matches to appear here.</p>
+            <p className="text-muted-foreground mb-4">No ranked teams yet. Play more matches to appear here.</p>
+            <Link href="/register" className="text-sm text-primary hover:underline">Register your team →</Link>
           </div>
         ) : (
           <div className="space-y-3">

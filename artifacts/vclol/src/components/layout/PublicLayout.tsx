@@ -140,7 +140,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     { href: "/players", label: "Players" },
     { href: "/events", label: "Events" },
     { href: "/vods", label: "VODs" },
-    { href: "/about", label: "About" },
   ];
 
   const firstTeam = player?.teams?.[0];
@@ -298,10 +297,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-center md:text-left">
             <p className="text-sm text-muted-foreground font-display tracking-wide">
-              VANCOUVER COMPETITIVE LOL PROJECT
+              VCLoL
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              A grassroots initiative for local players. Not affiliated with Riot Games.
+              A grassroots competitive platform. Not affiliated with Riot Games.
             </p>
           </div>
           <div className="flex items-center space-x-4">

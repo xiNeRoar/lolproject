@@ -21,6 +21,7 @@ import Players from "@/pages/public/Players";
 import DevLogin from "@/pages/public/DevLogin";
 import Contact from "@/pages/public/Contact";
 import MatchDetail from "@/pages/public/MatchDetail";
+import Matches from "@/pages/public/Matches";
 import CaptainHub from "@/pages/public/CaptainHub";
 
 import Login from "@/pages/admin/Login";
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
       <Route path="/dev-login" component={DevLogin} />
+      <Route path="/matches" component={Matches} />
       <Route path="/matches/:id" component={MatchDetail} />
       
       <Route path="/admin/login" component={Login} />

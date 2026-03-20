@@ -502,12 +502,6 @@ export default function CaptainHub() {
 
   const isCaptain = team && playerIdNum > 0 && team.captainPlayerId === playerIdNum;
 
-  useEffect(() => {
-    if (!isLoading && team && !isCaptain) {
-      navigate(`/teams/${teamId}`);
-    }
-  }, [isLoading, team, isCaptain, navigate, teamId]);
-
   if (isLoading) {
     return (
       <PublicLayout>
@@ -533,7 +527,54 @@ export default function CaptainHub() {
     );
   }
 
-  if (!isCaptain) return null;
+  if (!isLoggedIn) {
+    return (
+      <PublicLayout>
+        <div className="max-w-md mx-auto px-4 pt-24 pb-16">
+          <Card className="bg-card/40 border-border/40 text-center">
+            <CardContent className="pt-8 pb-8">
+              <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4 opacity-60" />
+              <h2 className="text-xl font-display font-bold mb-3">Log in to manage this team</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Team management is available to the team captain. Log in with Discord to continue.
+              </p>
+              <Link href="/login">
+                <button
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold"
+                  style={{ backgroundColor: "#5865F2" }}
+                >
+                  Login with Discord →
+                </button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </PublicLayout>
+    );
+  }
+
+  if (!isCaptain) {
+    return (
+      <PublicLayout>
+        <div className="max-w-md mx-auto px-4 pt-24 pb-16">
+          <Card className="bg-card/40 border-border/40 text-center">
+            <CardContent className="pt-8 pb-8">
+              <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-4 opacity-60" />
+              <h2 className="text-xl font-display font-bold mb-3">Captain access only</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Only the team captain can manage this team's roster, settings, and match visibility.
+              </p>
+              <Link href={`/teams/${teamId}`}>
+                <button className="text-sm text-primary hover:underline">
+                  ← Back to team profile
+                </button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>

@@ -50,8 +50,8 @@ export default function TeamProfile() {
     ? Math.round((team.wins / (team.wins + team.losses)) * 100)
     : 0;
 
-  const eloChartData = [...(eloHistory ?? [])].reverse().map((h, i) => ({
-    match: i + 1,
+  const eloChartData = [...(eloHistory ?? [])].reverse().map((h) => ({
+    date: new Date(h.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
     elo: h.elo,
   }));
 
@@ -145,10 +145,11 @@ export default function TeamProfile() {
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="match" tick={{ fontSize: 11, fill: "#888" }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#888" }} />
                   <YAxis tick={{ fontSize: 11, fill: "#888" }} domain={["auto", "auto"]} />
                   <Tooltip
                     contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 12 }}
+                    labelFormatter={(label) => label}
                     formatter={(value: number) => [value, "ELO"]}
                   />
                   <Area
