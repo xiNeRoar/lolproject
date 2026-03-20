@@ -21,6 +21,8 @@ function formatTeam(t: typeof teamsTable.$inferSelect) {
     wins: t.wins,
     losses: t.losses,
     isActive: t.isActive,
+    defaultMatchVisibility: t.defaultMatchVisibility ?? "participants",
+    lastMatchAt: t.lastMatchAt?.toISOString() ?? null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   };
@@ -85,6 +87,7 @@ router.get("/", async (req, res) => {
 
     res.json(rows.map(formatTeam));
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to fetch teams" });
   }
 });
@@ -206,6 +209,7 @@ router.get("/:id", async (req, res) => {
       recentMatches: teamMatches.map(formatMatch),
     });
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to fetch team" });
   }
 });
@@ -267,6 +271,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     logAdminAction(req.session.adminId!, "delete", "team", id, `Deleted team id=${id}`);
     res.json({ success: true });
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to delete team" });
   }
 });
@@ -300,6 +305,7 @@ router.get("/:id/members", async (req, res) => {
       )
     );
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to fetch team members" });
   }
 });
@@ -335,6 +341,7 @@ router.post("/:id/members", requireAdmin, async (req, res) => {
     logAdminAction(req.session.adminId!, "create", "team", teamId, `Added player ${player.riotId} (id=${playerId}) to team ${teamId}`);
     res.status(201).json(formatMember(row!, { playerRiotId: player.riotId, playerDiscordUsername: player.discordUsername }));
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to add member" });
   }
 });
@@ -360,6 +367,7 @@ router.put("/:id/members/:memberId", requireAdmin, async (req, res) => {
     logAdminAction(req.session.adminId!, "update", "team", teamId, `Updated member ${memberId} on team ${teamId}: role=${role}, status=${status}`);
     res.json(formatMember(row));
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to update member" });
   }
 });
@@ -380,6 +388,7 @@ router.delete("/:id/members/:memberId", requireAdmin, async (req, res) => {
     logAdminAction(req.session.adminId!, "delete", "team", teamId, `Removed member ${memberId} from team ${teamId}`);
     res.json({ success: true });
   } catch (err) {
+    console.error("[teams]", err);
     res.status(500).json({ error: "Failed to remove member" });
   }
 });

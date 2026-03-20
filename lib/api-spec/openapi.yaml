@@ -1914,6 +1914,12 @@ components:
           type: integer
         isActive:
           type: boolean
+        defaultMatchVisibility:
+          type: string
+          description: "private | participants | public"
+        lastMatchAt:
+          type: string
+          nullable: true
         createdAt:
           type: string
         updatedAt:

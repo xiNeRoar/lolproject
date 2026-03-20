@@ -224,7 +224,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Scan list showing: riotId, team, games played, win rate — shortlist candidates
 
 **Current state:** Players page shows riotId + role badge only. No team, no games, no win rate. Must click every player to evaluate.
-**Required:** #22 (players list enrichment API), #24 (Players page UI update)
+**Required:** #22 (players list enrichment API), #22 (Players page UI — was Issue #22)
 
 ---
 
@@ -322,7 +322,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 | J-13 Add player to roster | 1/3 | bot not built | #4, #10, #15 |
 | J-14 Transfer captain | 1/3 | bot not built | #4, #14, #15 |
 | J-15 Check teammate link status | 1 | ∞ | #15 |
-| J-16 Find players by criteria | 2 | 3+ | #22, #24 |
+| J-16 Find players by criteria | 2 | 2 | ✅ #22 done |
 | J-17 Verify player record | 1 | 1 | ✅ |
 | J-18 Watch player VOD | 2 | 2 | ✅ |
 | J-19 Platform health overview | 1 | partial | #18 R7,R8 |

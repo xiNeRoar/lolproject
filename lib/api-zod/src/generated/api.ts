@@ -90,6 +90,8 @@ export const ListTeamsResponseItem = zod.object({
   "wins": zod.number(),
   "losses": zod.number(),
   "isActive": zod.boolean(),
+  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
+  "lastMatchAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -203,6 +205,8 @@ export const UpdateTeamResponse = zod.object({
   "wins": zod.number(),
   "losses": zod.number(),
   "isActive": zod.boolean(),
+  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
+  "lastMatchAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })

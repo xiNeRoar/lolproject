@@ -60,6 +60,9 @@ export interface Team {
   wins: number;
   losses: number;
   isActive: boolean;
+  /** private | participants | public */
+  defaultMatchVisibility?: string;
+  lastMatchAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
