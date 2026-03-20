@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, PlayCircle, ArrowRight, X, Video } from "lucide-react";
+import { Search, PlayCircle, ArrowRight, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 

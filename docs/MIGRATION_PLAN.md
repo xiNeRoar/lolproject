@@ -902,3 +902,107 @@ pnpm run build
 - Team ELO changes: log old/new ELO per match (already done via `elo_history` table)
 
 **Not needed for MVP:** External monitoring (Datadog, etc.), APM, distributed tracing.
+
+---
+
+## Appendix C: Unresolved Architecture Issues (Backend Agent Action Required)
+
+> These issues were identified during frontend review and require backend/schema/API changes before frontend can implement. Frontend agent will NOT act on these until backend changes land.
+
+---
+
+### C1. Team Governance — Team as Independent Entity
+
+**Problem:** Team is currently tied to a single `captainPlayerId`. There is no self-service captain transfer, no role-based team management, no team dashboard. If captain quits, the team is orphaned and requires admin intervention.
+
+**Industry standard (FACEIT / ESEA / Battlefy / Start.gg):**
+- Team is an independent entity with role-based access: Owner → Captain → Member
+- Captain transfer is self-service (captain selects new captain → confirm → done)
+- Captain can invite/kick/promote members via web UI or bot commands
+- Team has its own settings page (name, tag, visibility defaults)
+- Leaving captain must transfer ownership first (enforced)
+
+**Current state:**
+- `captainPlayerId` is the only authority model
+- Captain transfer: admin-only (ManageTeams.tsx → PUT /api/teams/:id)
+- No API endpoints for roster management (add/remove/update members)
+- No team settings page for captains
+- No self-service anything
+
+**Required backend changes:**
+1. Add `role` enum to `teamMembers`: `owner | captain | member` (or at minimum separate `owner` from `captain`)
+2. New API endpoints:
+   - `PUT /api/teams/:id/transfer-captain` — captain self-service transfer
+   - `POST /api/teams/:id/members` — invite member (captain+ only)
+   - `DELETE /api/teams/:id/members/:playerId` — remove member (captain+ only)
+   - `PUT /api/teams/:id/members/:playerId` — update member role (owner only)
+   - `PUT /api/teams/:id/settings` — team name/tag/visibility defaults
+3. Enforce: captain cannot leave team without transferring first
+4. Discord bot commands: `/transfer-captain @user`, `/promote @user`, `/demote @user`
+
+**Frontend will build (after backend lands):**
+- Captain Dashboard page with roster management UI
+- Captain transfer flow (select → confirm → done)
+- Team settings panel (name, tag, default match visibility)
+
+---
+
+### C2. VOD Visibility — Team-Level Default + Bulk Management + Per-Match Override
+
+**Problem:** Match visibility is per-match only (`visibleAfter` timestamp on `matches` table). There is no team-level default, no bulk management, no captain dashboard to control visibility across all their matches.
+
+**Industry standard:**
+- Team-level privacy default (e.g. "all our matches are private by default")
+- Bulk operations (e.g. "make all matches from Event X public")
+- Per-match override for exceptions
+- Tiered visibility: Private (team only) → Participants (both teams) → Public (everyone)
+
+**Current state:**
+- `matches.visibleAfter` — NULL = default 7 days, captain can set to far-future (private) or past (public)
+- No team-level default setting
+- No bulk visibility management
+- No captain-facing UI to manage visibility (only admin can see/change this)
+
+**Required backend changes:**
+1. Add `defaultMatchVisibility` to `teams` table: `private | participants | public` (default: `participants`)
+2. Add `PUT /api/teams/:id/matches/visibility` — bulk update visibility for team's matches
+3. Match creation: inherit team's `defaultMatchVisibility` when setting initial `visibleAfter`
+4. API should support filtering: `GET /api/matches?teamId=X&visibility=private` for captain dashboard
+
+**Frontend will build (after backend lands):**
+- Team Settings → Default Visibility toggle
+- Captain Dashboard → Match list with bulk visibility controls
+- Per-match visibility override (already partially exists in MatchDetail)
+
+---
+
+### C3. Team VOD Discovery — Dedicated VODs Section on Team Profile
+
+**Problem:** No dedicated VODs section on Team Profile page. Users must click through every individual match to find VODs.
+
+**Current state:**
+- API already supports `teamId` filter on VODs endpoint (`GET /api/vods?teamId=X`)
+- Team Profile page shows Recent Matches but no VODs section
+- This is a frontend-only fix BUT depends on visibility rules (C2) being resolved first
+
+**Required backend confirmation:**
+- Confirm `GET /api/vods?teamId=X` respects visibility rules (only returns VODs the viewer is allowed to see)
+- If not, add visibility filtering to the VODs endpoint
+
+**Frontend will build (after confirmation):**
+- TeamProfile → "Team VODs" section using `useListVods({ teamId })` hook
+- Respects same visibility rules as match visibility
+
+---
+
+### C4. Players Listing Improvements
+
+**Problem:** Players page shows minimal info — no team affiliation, no games played, no win rate.
+
+**Required backend changes:**
+- `GET /api/players/public-list` should include: team name/tag (from team_members JOIN teams), total games played (from match_players COUNT), win rate (from match_players WHERE win=true / total)
+- Or provide a separate aggregation endpoint
+
+**Frontend will build (after backend lands):**
+- Players page table columns: Riot ID, Team, Role, Games, Win Rate
+- Sort/filter by team, role, games played

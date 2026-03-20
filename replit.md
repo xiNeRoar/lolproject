@@ -1,4 +1,4 @@
-# VCLoL — Replit Reference
+# VCLoL — Replit Reference (Frontend Agent)
 
 Read this file before every session.
 
@@ -8,7 +8,7 @@ Read this file before every session.
 
 5v5 team scrim recording platform. Discord Bot handles all user actions (register team, add players, submit match results). Website is the data display layer (team profiles, player profiles, match stats, leaderboard, VOD archive, admin panel).
 
-**Your role:** Full-stack. Frontend pages/components consume API data via generated React Query hooks. Backend routes, schema files, and API endpoints are also maintained here.
+**Your role:** Frontend + Design ONLY. You own page files, components, hooks, styling, and layout. You do NOT own or edit backend routes, database schema, OpenAPI spec, or Discord bot code. If you need a backend change, document it in `docs/REQUESTS.md` for the backend agent.
 
 ---
 
@@ -41,12 +41,14 @@ Prefer generated hooks where available. For endpoints not in OpenAPI (e.g. visib
 - `replit.md` — this file
 
 **You do NOT own (never edit):**
-- `lib/db/src/schema/*` — database schema (Claude)
-- `lib/api-spec/openapi.yaml` — API spec (Claude)
+- `lib/db/src/schema/*` — database schema (Backend Agent)
+- `lib/api-spec/openapi.yaml` — API spec (Backend Agent)
 - `lib/api-client-react/src/generated/*` — auto-generated (codegen)
-- `artifacts/api-server/**` — backend routes (Claude)
-- `artifacts/discord-bot/**` — Discord bot (Claude)
-- `CLAUDE.md` — Claude's reference (Claude)
+- `artifacts/api-server/**` — backend routes (Backend Agent)
+- `artifacts/discord-bot/**` — Discord bot (Backend Agent)
+- `CLAUDE.md` — Backend Agent's reference
+- `docs/SCHEMA_CONTRACT.md` — Backend Agent's schema contract
+- `docs/BOT_SPEC.md` — Backend Agent's bot spec
 
 ---
 
@@ -130,6 +132,118 @@ Use `useAuth()` everywhere instead of raw localStorage.
 
 ---
 
+## Design System — Unified Standard
+
+### DS-1: Page Titles (h1)
+
+```
+Listing pages (Teams/Players/Events/Vods):
+  text-4xl font-display font-bold mb-2
+  NO icons. Ever.
+
+Marketing pages (Home/About/Contact):
+  text-4xl md:text-5xl font-display font-bold mb-6
+  NO icons.
+
+Detail pages (PlayerProfile/TeamProfile/VodDetail):
+  text-2xl to text-3xl font-display font-bold
+  NO icons.
+```
+
+### DS-2: Section Headers — CardTitle (inside Card components)
+
+```
+className="text-base font-display flex items-center gap-2"
+Icon: w-4 h-4 text-primary (ALWAYS required)
+Every CardTitle MUST have a Lucide icon.
+```
+
+### DS-3: Section Headers — h2 (free-standing, e.g. EventDetail/About)
+
+```
+className="text-2xl font-display font-semibold mb-4 border-b border-border pb-2 flex items-center gap-2"
+Icon: w-5 h-5 text-primary
+```
+
+### DS-4: Cards
+
+```
+Standard content:    bg-card/40 border-border/40
+Auth/elevated:       bg-card/60 border-border/40
+Subtle/nested:       bg-card/30 border-border/40
+NEVER use border-border/50 on public pages.
+```
+
+### DS-5: Empty States
+
+```
+List page (full page empty):
+  Container: border border-dashed border-border rounded-lg py-20 text-center
+  Icon: w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50
+  Title: text-xl font-medium mb-2
+  Description: text-muted-foreground text-sm
+
+Inline section empty (inside a Card):
+  px-6 py-8 text-center text-muted-foreground text-sm
+  No icon, no container
+```
+
+### DS-6: Loading States
+
+```
+List page:   5 rows of h-16 bg-card rounded-xl with animate-pulse
+Detail page: 2 blocks (h-40 + h-48) bg-card rounded-xl with animate-pulse
+Grid page:   Grid of h-48/h-72 bg-card rounded-xl with animate-pulse
+NEVER use text "Loading..." on public pages.
+```
+
+### DS-7: Text Colors
+
+```
+text-primary           — accent, links, interactive elements
+text-yellow-400        — gold, peak values, captain badge
+text-purple-400        — special rankings
+text-green-400         — wins, positive values
+text-red-400           — losses, negative values
+text-blue-400          — info links
+text-muted-foreground  — secondary/body text
+NO -500 variants. Ever.
+```
+
+### DS-8: Icon Sizing
+
+```
+CardTitle section icons:           w-4 h-4 text-primary
+Page h1 titles:                    NO icons
+About/EventDetail h2 prose icons:  w-5 h-5 text-primary
+```
+
+### DS-9: Intentional Design Exceptions (NOT violations)
+
+- Home hero title uses `text-5xl md:text-6xl` — marketing page treatment
+- Register step headers use numbered circles — onboarding pattern, icons redundant
+- Home CTA/hero banners skip icons — visual hierarchy via background treatment
+- EventDetail uses h2 with border-b instead of CardTitle — free-standing sections
+- Admin pages use `bg-card` solid + `border-border/50` for tables — separate admin scope
+
+---
+
+## Pending Frontend Fixes (Approved Rules, Not Yet Executed)
+
+These are violations of the Design System standard above. Do NOT execute until explicitly approved.
+
+| # | File | Issue | Fix |
+|---|---|---|---|
+| 1 | PlayerDashboard.tsx | 4 CardTitles missing `font-display` | Add `font-display` to all 4 CardTitle classNames |
+| 2 | TeamProfile.tsx | Current Roster icon missing `text-primary` | Add `text-primary` to Users icon |
+| 3 | VodDetail.tsx | Timestamps + Related VODs icons missing `text-primary` | Add `text-primary` to Clock and Video icons |
+| 4 | Events.tsx | Card uses `border-border/50` | Change to `border-border/40` |
+| 5 | Contact.tsx | Card uses `border-border/50` and `bg-card` solid | Change to `bg-card/40 border-border/40` |
+| 6 | Vods.tsx | Empty state missing icon | Add Video icon to empty state |
+| 7 | EventDetail.tsx | Loading uses text "Loading event..." | Replace with pulse skeleton blocks |
+
+---
+
 ## Utility Files
 
 - `src/lib/lol-utils.ts` — CHAMP_IDS, champPortraitUrl, eloBadgeColor, rankLabel, rankIcon, BADGE_META, ROLES
@@ -139,11 +253,16 @@ Use `useAuth()` everywhere instead of raw localStorage.
 
 ## Handoff Protocol
 
-1. Claude pushes backend work with commit `[HANDOFF-REPLIT] Phase X done — <description>`
+1. Backend Agent pushes backend work with commit `[HANDOFF-REPLIT] Phase X done — <description>`
 2. User tells you to pull
 3. You run `pnpm install` then check generated hooks in `lib/api-client-react/src/generated/`
 4. Build frontend pages using those hooks
 5. When done, commit with `[HANDOFF-CLAUDE] <description of what you did and what you need next>`
+
+If you need a backend change:
+- Do NOT edit route/schema files
+- Create or append to `docs/REQUESTS.md` with the request details
+- Backend Agent picks it up in next session
 
 ---
 
@@ -162,13 +281,11 @@ All DB schema changes from SCHEMA_CONTRACT.md have been applied:
 - Dropped tables: `challenges`, `matchmaking_queue`, `interest_submissions`, `admin_schedule_settings`
 - Seed data: 2 teams (Alpha/Beta), 10 players, 4 matches, 1 event, 1 VOD — all 5v5
 
-## Design System
+## Important Constants
 
-- Dark theme (charcoal + steel blue). CSS vars in `src/index.css`.
-- Primary: `hsl(210 80% 55%)` (blue)
-- Cards: `bg-card/40 border-border/40`
-- Tables: `bg-card border border-border/50 rounded-lg overflow-x-auto`
-- Thead: `text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50`
-- Rows: `border-b border-border/20 hover:bg-muted/20`
-- Empty states: centered icon + text in dashed border container
-- Loading: `animate-pulse` skeleton blocks
+- **gameDuration**: stored as milliseconds — divide by 60000/1000 for MM:SS display
+- **ELO history API path**: `/api/elo-history/team/:teamId` (NOT `/api/teams/:id/elo-history`)
+- **Seed data IDs**: Team Alpha id=8, Team Beta id=9; players ids 39-48; xiNe#NA1=id39 (captain, mid)
+- **Champion API**: `GET /api/players/:id/champions` returns `{champion, games, wins, avgKda}`
+- **Codegen command**: `pnpm --filter @workspace/api-spec run codegen`
+- **DB push**: Use direct `psql` SQL instead of `pnpm --filter @workspace/db run push`
