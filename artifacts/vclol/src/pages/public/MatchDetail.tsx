@@ -163,7 +163,7 @@ export default function MatchDetail() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ visibility }),
+        body: JSON.stringify({ visibility, playerId: playerIdNum }),
       });
       if (res.ok) {
         toast.success(`Match visibility set to ${visibility}.`);
