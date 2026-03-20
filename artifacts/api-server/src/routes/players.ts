@@ -181,11 +181,44 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
 
 // ── Routes ───────────────────────────────────────────────────
 
-// GET /players — list all players (admin)
+// GET /players — list all players, enriched with team + stats (Issue #20)
 router.get("/", async (_req, res) => {
   try {
-    const rows = await db.select().from(playersTable).orderBy(playersTable.riotId);
-    res.json(rows.map(formatPlayer));
+    const players = await db
+      .select()
+      .from(playersTable)
+      .orderBy(playersTable.riotId);
+
+    const enriched = await Promise.all(players.map(async (p) => {
+      const [member] = await db
+        .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag })
+        .from(teamMembersTable)
+        .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+        .where(and(eq(teamMembersTable.playerId, p.id), eq(teamMembersTable.status, "active")))
+        .orderBy(desc(teamMembersTable.joinedAt))
+        .limit(1);
+
+      const [stats] = await db
+        .select({
+          totalGames: count(matchPlayersTable.id),
+          wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} = true THEN 1 ELSE 0 END`),
+        })
+        .from(matchPlayersTable)
+        .where(eq(matchPlayersTable.playerId, p.id));
+
+      const totalGames = Number(stats?.totalGames ?? 0);
+      const wins = Number(stats?.wins ?? 0);
+      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : null;
+
+      return {
+        ...formatPlayer(p),
+        primaryTeam: member ? { teamId: member.teamId, teamName: member.teamName, teamTag: member.teamTag } : null,
+        totalGames,
+        winRate,
+      };
+    }));
+
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch players" });
   }

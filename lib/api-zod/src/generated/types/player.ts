@@ -5,11 +5,15 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
+import type { PlayerPrimaryTeam } from './playerPrimaryTeam';
 
 export interface Player {
   id: number;
   riotId: string;
   discordUsername: string;
+  primaryTeam?: PlayerPrimaryTeam;
+  totalGames?: number;
+  winRate?: number | null;
   discordId?: string | null;
   puuid?: string | null;
   primaryRole?: string | null;

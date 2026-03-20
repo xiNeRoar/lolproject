@@ -18,6 +18,7 @@ import playerBadgesRouter from "./playerBadges";
 import replaysRouter from "./replays";
 import notificationsRouter from "./notifications";
 import bansRouter from "./bans";
+import searchRouter from "./search";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use("/player-badges", playerBadgesRouter);
 router.use("/replays", replaysRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/bans", bansRouter);
+router.use("/search", searchRouter);
 
 export default router;

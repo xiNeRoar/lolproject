@@ -136,10 +136,19 @@ export interface TeamProfile {
   updatedAt: string;
 }
 
+export type PlayerPrimaryTeam = {
+  teamId?: number;
+  teamName?: string;
+  teamTag?: string;
+} | null;
+
 export interface Player {
   id: number;
   riotId: string;
   discordUsername: string;
+  primaryTeam?: PlayerPrimaryTeam;
+  totalGames?: number;
+  winRate?: number | null;
   discordId?: string | null;
   puuid?: string | null;
   primaryRole?: string | null;
@@ -648,5 +657,41 @@ export type GetReplayQueueStats200 = {
   failedLast24h: number;
   oldestPendingAge?: string | null;
   staleJobsReset: number;
+};
+
+export type GlobalSearchParams = {
+/**
+ * @minLength 2
+ */
+q: string;
+};
+
+export type GlobalSearch200TeamsItem = {
+  type?: string;
+  id?: number;
+  name?: string;
+  tag?: string;
+  teamElo?: number;
+};
+
+export type GlobalSearch200PlayersItem = {
+  type?: string;
+  id?: number;
+  riotId?: string;
+  primaryRole?: string | null;
+};
+
+export type GlobalSearch200EventsItem = {
+  type?: string;
+  id?: number;
+  title?: string;
+  slug?: string;
+  format?: string | null;
+};
+
+export type GlobalSearch200 = {
+  teams?: GlobalSearch200TeamsItem[];
+  players?: GlobalSearch200PlayersItem[];
+  events?: GlobalSearch200EventsItem[];
 };
 

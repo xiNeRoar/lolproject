@@ -298,6 +298,13 @@ export const ListPlayersResponseItem = zod.object({
   "id": zod.number(),
   "riotId": zod.string(),
   "discordUsername": zod.string(),
+  "primaryTeam": zod.object({
+  "teamId": zod.number().optional(),
+  "teamName": zod.string().optional(),
+  "teamTag": zod.string().optional()
+}).nullish(),
+  "totalGames": zod.number().optional(),
+  "winRate": zod.number().nullish(),
   "discordId": zod.string().nullish(),
   "puuid": zod.string().nullish(),
   "primaryRole": zod.string().nullish(),
@@ -563,6 +570,13 @@ export const UpdatePlayerResponse = zod.object({
   "id": zod.number(),
   "riotId": zod.string(),
   "discordUsername": zod.string(),
+  "primaryTeam": zod.object({
+  "teamId": zod.number().optional(),
+  "teamName": zod.string().optional(),
+  "teamTag": zod.string().optional()
+}).nullish(),
+  "totalGames": zod.number().optional(),
+  "winRate": zod.number().nullish(),
   "discordId": zod.string().nullish(),
   "puuid": zod.string().nullish(),
   "primaryRole": zod.string().nullish(),
@@ -606,6 +620,13 @@ export const UpdatePlayerProfileResponse = zod.object({
   "id": zod.number(),
   "riotId": zod.string(),
   "discordUsername": zod.string(),
+  "primaryTeam": zod.object({
+  "teamId": zod.number().optional(),
+  "teamName": zod.string().optional(),
+  "teamTag": zod.string().optional()
+}).nullish(),
+  "totalGames": zod.number().optional(),
+  "winRate": zod.number().nullish(),
   "discordId": zod.string().nullish(),
   "puuid": zod.string().nullish(),
   "primaryRole": zod.string().nullish(),
@@ -1859,6 +1880,41 @@ export const GetReplayQueueStatsResponse = zod.object({
   "failedLast24h": zod.number(),
   "oldestPendingAge": zod.string().nullish(),
   "staleJobsReset": zod.number()
+})
+
+
+/**
+ * @summary Global search across teams, players, events
+ */
+export const globalSearchQueryQMin = 2;
+
+
+
+export const GlobalSearchQueryParams = zod.object({
+  "q": zod.coerce.string().min(globalSearchQueryQMin)
+})
+
+export const GlobalSearchResponse = zod.object({
+  "teams": zod.array(zod.object({
+  "type": zod.string().optional(),
+  "id": zod.number().optional(),
+  "name": zod.string().optional(),
+  "tag": zod.string().optional(),
+  "teamElo": zod.number().optional()
+})).optional(),
+  "players": zod.array(zod.object({
+  "type": zod.string().optional(),
+  "id": zod.number().optional(),
+  "riotId": zod.string().optional(),
+  "primaryRole": zod.string().nullish()
+})).optional(),
+  "events": zod.array(zod.object({
+  "type": zod.string().optional(),
+  "id": zod.number().optional(),
+  "title": zod.string().optional(),
+  "slug": zod.string().optional(),
+  "format": zod.string().nullish()
+})).optional()
 })
 
 
