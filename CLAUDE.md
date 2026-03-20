@@ -5,79 +5,113 @@
 5v5 team scrim recording platform. Discord bot produces all data (.rofl parse → match record → ELO). Website displays it.
 
 **Docs:** `docs/PRD_v3.md` · `docs/BOT_SPEC.md` · `docs/SCHEMA_CONTRACT.md` · `docs/USER_JOURNEYS.md` · `docs/DEPLOYMENT.md`
-**Issues:** https://github.com/xiNeRoar/lolproject/issues
-**GitHub token:** stored in git remote URL (already configured)
 
 ---
 
-## Mandatory Behaviors — Follow Every Session Without Being Told
+## Step 0 — Run this at the start of EVERY session (no exceptions)
 
-### 1. Before touching any code
+```python
+import json, urllib.request, subprocess, re
 
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'",
+    shell=True
+).decode().strip()
+REPO = "xiNeRoar/lolproject"
+
+def gh(path):
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{REPO}/{path}",
+        headers={"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    )
+    with urllib.request.urlopen(req) as r:
+        return json.load(r)
+
+open_issues = gh("issues?state=open&per_page=50")
+closed = {i['number'] for i in gh("issues?state=closed&per_page=100")}
+
+mine = [i for i in open_issues if "claude" in [l['name'] for l in i['labels']]]
+mine.sort(key=lambda i: ((i.get('milestone') or {}).get('number', 99), i['number']))
+
+def blocked(issue):
+    refs = re.findall(r'[Bb]locked by[:\s#]+(\d+)', issue.get('body', '') or '')
+    return any(int(n) not in closed for n in refs)
+
+next_issue = next((i for i in mine if not blocked(i)), None)
+
+if next_issue:
+    ms = (next_issue.get('milestone') or {}).get('title', 'none')
+    print(f"NEXT: #{next_issue['number']} [{ms}] {next_issue['title']}")
+    print(f"URL: {next_issue['html_url']}")
+else:
+    print("No unblocked Claude issues. All done or waiting on Replit.")
 ```
-git fetch origin variant
-git checkout FETCH_HEAD -- .
+
+Then fetch latest code:
+```bash
+git fetch origin variant && git checkout FETCH_HEAD -- .
 ```
 
-Read the assigned issue(s) completely. Read CLAUDE.md completely. Then start.
+**Read the issue completely. Then start work.**
 
-### 2. If you discover a problem that has no GitHub Issue
+---
+
+## Step 1 — If you discover a problem that has NO issue yet
 
 Open one BEFORE fixing it:
 
 ```python
-import json, urllib.request
+import json, urllib.request, subprocess
 
-TOKEN = # read from git remote: git remote get-url origin | grep -o 'ghp_[^@]*'
-REPO = "xiNeRoar/lolproject"
+TOKEN = subprocess.check_output(
+    "git remote get-url origin | grep -o 'ghp_[^@]*'", shell=True
+).decode().strip()
 
 data = json.dumps({
-    "title": "[Claude] Short description of problem",
-    "labels": ["claude", "backend"],          # + "bug" if applicable
-    "milestone": MILESTONE_NUMBER,             # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
+    "title": "[Claude] One-line description",
+    "labels": ["claude", "backend"],   # add "bug" if applicable
+    "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
     "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ..."
 }).encode()
+
 req = urllib.request.Request(
-    f"https://api.github.com/repos/{REPO}/issues", data=data,
+    f"https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
     headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
 )
 with urllib.request.urlopen(req) as r:
-    issue = json.load(r)
-    print(f"Opened #{issue['number']}")
+    d = json.load(r)
+    print(f"Opened #{d['number']}: {d['title']}")
 ```
 
-Milestone numbers: 1=Bot MVP, 2=Web V1, 3=VOD Pipeline, 4=Polish.
+---
 
-### 3. Commit format — always
+## Step 2 — Commit format (every time)
 
-```
+```bash
 git add -A
-git commit -m "brief description of change
+git commit -m "short description
 
-closes #N"    ← every issue you completed
+closes #N"      ← this automatically closes the issue
 git push origin variant
 ```
 
-### 4. After completing an issue — update the relevant doc
+---
 
-| What changed | Update this doc |
+## Step 3 — After completing an issue, update the relevant doc in the same commit
+
+| What changed | Update this |
 |---|---|
-| Schema (table/column added) | `docs/SCHEMA_CONTRACT.md` |
+| Schema column/table added | `docs/SCHEMA_CONTRACT.md` |
 | Bot command added/changed | `docs/BOT_SPEC.md` |
 | New API endpoint | `lib/api-spec/openapi.yaml` → run codegen |
-| New env var required | `docs/DEPLOYMENT.md` |
+| New env var | `docs/DEPLOYMENT.md` |
 | User journey step count changed | `docs/USER_JOURNEYS.md` |
-| Architecture principle changed | `CLAUDE.md` |
 
-Doc updates go in the same commit as the code change.
+---
 
-### 5. Close the issue via commit — never manually
+## Step 4 — Check docs/REQUESTS.md each session
 
-`closes #N` in commit message automatically closes the issue when pushed.
-
-### 6. If Replit left a request in docs/REQUESTS.md
-
-Read it, open a GitHub Issue for it, do the work, commit `closes #N`, clear the request from REQUESTS.md.
+If Replit left a backend request: open a GitHub Issue for it, do the work, clear the entry from REQUESTS.md. All in one commit.
 
 ---
 
@@ -114,16 +148,9 @@ pnpm monorepo
 ```
 teams (teamElo, wins, losses, isActive, captainPlayerId nullable, lastMatchAt)
   └── team_members (playerId, role, status: active/inactive)
-
 matches (teamAId, teamBId, visibleAfter, resultSource, roflFilePath)
   └── match_players (10 rows: PUUID, champion, KDA, CS, items, win)
-
-elo_history (teamId, elo, delta, reason, matchId)
-seasons → matches | events → matches
-notifications (playerId, type, dmSent, dmFailed)
-admin_actions (adminId, actionType, entityType, entityId, detail)
-player_bans (playerId or teamId, reason, banType, expiresAt, isActive)
-bot_heartbeats (timestamp)
+elo_history · seasons · events · notifications · admin_actions · player_bans · bot_heartbeats
 ```
 
 ---
@@ -131,32 +158,20 @@ bot_heartbeats (timestamp)
 ## Auth
 
 **Admin:** `req.session.adminId` (iron-session)
-**Player (stub):** localStorage — being replaced in Issue #7
+**Player (stub):** localStorage → being replaced in Issue #7
 **Player (target):** Discord OAuth → `req.session.playerId`
-Routes `/auth/discord` + `/auth/discord/callback` already exist.
 
 ---
 
 ## Visibility Rules
 
 ```
-match.visibleAfter = null        → public 7 days after createdAt
-match.visibleAfter = new Date(0) → always public
-match.visibleAfter = 9999-01-01  → permanent private
+visibleAfter = null        → public 7 days after createdAt
+visibleAfter = new Date(0) → always public
+visibleAfter = 9999-01-01  → permanent private
 ```
 
-Private match access: check `team_members` (NOT `match_players`).
-Non-members get redacted response `{...match, matchPlayers:[], vods:[], _private:true}` — never 403.
-
----
-
-## Key Constants
-
-```
-Seed: Team Alpha id=8, Beta id=9. Players 39-48. xiNe#NA1=id39.
-ELO history: GET /api/elo-history/team/:teamId
-gameDuration: milliseconds
-```
+Private match: check `team_members` (NOT `match_players`). Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 403.
 
 ---
 
@@ -170,13 +185,10 @@ gameDuration: milliseconds
 
 ---
 
-## Issue Priority Order (when no specific issue assigned)
-
-Work top-to-bottom within the current milestone. Current milestone = lowest-numbered incomplete milestone.
+## Key Constants
 
 ```
-Bot MVP:  #1 → #2 → #3 #4 #6 (parallel) → #5 (needs #1+#2) → #24 #25 #27 (parallel) → #26 (needs #14)
-Web V1:   #8 #9 #10 #11 #12 #13 #28 #29 #31 (parallel) → #14 → #30
-VOD:      #19
-Polish:   #20 #21 (parallel)
+Seed: Team Alpha id=8, Beta id=9. Players 39-48. xiNe#NA1=id39.
+ELO history: GET /api/elo-history/team/:teamId
+gameDuration: milliseconds
 ```
