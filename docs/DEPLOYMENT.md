@@ -114,6 +114,26 @@ All containers across both stacks and the backup container use `restart: unless-
 - After schema changes, run `cd lib/db && pnpm run push` to apply migrations before deploying new API server images.
 - The NAS volume mount path (`/mnt/nas/vclol-backups`) should be adjusted to match your actual NAS mount point.
 
+
+---
+
+## Automatic Schema Migrations
+
+The API server runs schema migrations automatically on every startup via `artifacts/api-server/src/lib/runStartupMigrations.ts`.
+
+This uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` — safe to run repeatedly. No manual SQL required after deploy.
+
+**To apply a schema change in production:** restart the API server container in Portainer. The migration runs before the server accepts any requests. Server logs confirm:
+```
+[migration] Running startup migrations...
+[migration] ✅ All schema columns verified
+```
+
+**Columns currently managed by startup migration:**
+- `team_members.last_active_at` — updated when member appears in .rofl
+- `teams.last_match_at` — updated on every match submission
+- `teams.default_match_visibility` — captain preference (private/participants/public)
+
 ---
 
 ## Pre-Launch Checklist
