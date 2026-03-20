@@ -550,12 +550,32 @@ router.delete("/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// GET /matches/:id/players — per-player stats
+// GET /matches/:id/players — per-player stats (visibility-gated)
 router.get("/:id/players", async (req, res) => {
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, id));
+    if (!match) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    // Visibility gate: same logic as GET /:id
+    const isAdmin = !!req.session.adminId;
+    const visible = isVisible(match);
+    const pid = req.session.playerId ? Number(req.session.playerId) : null;
+    const memberAccess = (!visible && !isAdmin && pid)
+      ? await isMemberOfMatch(pid, match) : false;
+    const canSeeStats = isAdmin || visible || memberAccess;
+
+    if (!canSeeStats) {
+      // Return empty array — consistent with GET /:id redacted response
+      res.json([]);
       return;
     }
 
@@ -571,6 +591,7 @@ router.get("/:id/players", async (req, res) => {
 
     res.json(rows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)));
   } catch (err) {
+    console.error("[matches]", err);
     res.status(500).json({ error: "Failed to fetch match players" });
   }
 });
