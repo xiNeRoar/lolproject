@@ -7,7 +7,7 @@ Never edit: schema, OpenAPI, backend routes, `CLAUDE.md`, `docs/` (except `docs/
 
 ---
 
-## Step 0 — Run this at the start of EVERY session (no exceptions)
+## MANDATORY: Run at the start of every session before anything else
 
 ```python
 import json, urllib.request, subprocess, re
@@ -28,7 +28,6 @@ def gh(path):
 
 open_issues = gh("issues?state=open&per_page=50")
 closed = {i['number'] for i in gh("issues?state=closed&per_page=100")}
-
 mine = [i for i in open_issues if "replit" in [l['name'] for l in i['labels']]]
 mine.sort(key=lambda i: ((i.get('milestone') or {}).get('number', 99), i['number']))
 
@@ -37,27 +36,23 @@ def blocked(issue):
     return any(int(n) not in closed for n in refs)
 
 next_issue = next((i for i in mine if not blocked(i)), None)
-
 if next_issue:
     ms = (next_issue.get('milestone') or {}).get('title', 'none')
     print(f"NEXT: #{next_issue['number']} [{ms}] {next_issue['title']}")
-    print(f"URL: {next_issue['html_url']}")
 else:
-    print("No unblocked Replit issues. All done or waiting on Claude.")
+    print("No unblocked Replit issues.")
+    for i in mine: print(f"  BLOCKED: #{i['number']} {i['title']}")
 ```
 
-Then fetch latest code:
-```bash
-git fetch origin variant && git checkout FETCH_HEAD -- . && pnpm install
-```
+Then: `git fetch origin variant && git checkout FETCH_HEAD -- . && pnpm install`
 
-**Read the issue completely. Check `docs/USER_JOURNEYS.md` for the journey it serves. Then start.**
+Read the issue. Check `docs/USER_JOURNEYS.md` for the journey it serves and its step-count constraint. Then start.
 
 ---
 
-## Step 1 — If you discover a frontend problem with no issue yet
+## MANDATORY: When you find ANY frontend problem, gap, or improvement
 
-Open one BEFORE fixing it:
+**Do not fix silently. Open a GitHub Issue first, every time.**
 
 ```python
 import json, urllib.request, subprocess
@@ -68,13 +63,12 @@ TOKEN = subprocess.check_output(
 
 data = json.dumps({
     "title": "[Replit] One-line description",
-    "labels": ["replit", "frontend"],  # add "bug" if applicable
+    "labels": ["replit", "frontend"],  # add "bug" if it's a bug
     "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
     "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ..."
 }).encode()
-
 req = urllib.request.Request(
-    f"https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
+    "https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
     headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
 )
 with urllib.request.urlopen(req) as r:
@@ -82,11 +76,14 @@ with urllib.request.urlopen(req) as r:
     print(f"Opened #{d['number']}: {d['title']}")
 ```
 
+This applies to: UI bugs, UX gaps, broken journeys, missing empty states, missing loading states — anything. If it's worth fixing, it needs an issue first.
+
 ---
 
-## Step 2 — If you need a backend change
+## MANDATORY: When you need a backend change
 
-Write to `docs/REQUESTS.md`:
+Write to `docs/REQUESTS.md` AND open a GitHub Issue (labels: `claude, backend`):
+
 ```markdown
 ## Request: [title]
 **Needed for:** Issue #N
@@ -95,11 +92,11 @@ Write to `docs/REQUESTS.md`:
 **Response shape:** { field: type }
 ```
 
-Then open a GitHub Issue (same script as Step 1, labels: `claude, backend`).
+Do NOT edit backend files. Claude picks this up next session.
 
 ---
 
-## Step 3 — Commit format (every time)
+## MANDATORY: Commit format — every time
 
 ```bash
 git add -A
@@ -111,20 +108,18 @@ git push origin variant
 
 ---
 
-## Step 4 — After completing an issue
+## MANDATORY: After every issue — update docs and validate design
 
-Check `docs/USER_JOURNEYS.md` — verify the journey now meets its step-count constraint.
-If step count improved, update the doc in the same commit.
+**Update `docs/USER_JOURNEYS.md`** if the journey step count improved.
 
----
+**replit.md is a living document.** If you learn something about the design system, discover a pattern that should be standardized, or find a rule that's missing — update replit.md in the same commit. You own this file.
 
-## Step 5 — Design validation before every commit
-
-- [ ] Follows Design System (DS-1 through DS-9 below)
-- [ ] Has loading state (animate-pulse, never "Loading...")
-- [ ] Has empty state (dashed border + icon + text)
-- [ ] Mobile-responsive (375px width)
-- [ ] Uses `useAuth()` hook, never raw localStorage
+**Design validation before every commit:**
+- [ ] Follows DS-1 through DS-9 below
+- [ ] Loading state: animate-pulse skeletons (never text "Loading...")
+- [ ] Empty state: dashed border + icon + description
+- [ ] Mobile-responsive at 375px
+- [ ] Uses `useAuth()`, never raw localStorage
 - [ ] Mutations use `toast` from sonner, never silent
 
 ---
@@ -133,7 +128,8 @@ If step count improved, update the doc in the same commit.
 
 React 19 + Vite + Wouter + Tailwind CSS 4 + shadcn/ui + Recharts + Framer Motion
 Fonts: Outfit (`font-display`) + Inter (body)
-API: `@workspace/api-client-react` generated hooks only. No manual `fetch()` except for endpoints not in OpenAPI.
+API: `@workspace/api-client-react` generated hooks only.
+Exception: endpoints not in OpenAPI may use `fetch(\`${API_BASE}/api/...\`)`.
 
 ---
 

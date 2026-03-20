@@ -8,7 +8,7 @@
 
 ---
 
-## Step 0 — Run this at the start of EVERY session (no exceptions)
+## MANDATORY: Run at the start of every session before anything else
 
 ```python
 import json, urllib.request, subprocess, re
@@ -29,7 +29,6 @@ def gh(path):
 
 open_issues = gh("issues?state=open&per_page=50")
 closed = {i['number'] for i in gh("issues?state=closed&per_page=100")}
-
 mine = [i for i in open_issues if "claude" in [l['name'] for l in i['labels']]]
 mine.sort(key=lambda i: ((i.get('milestone') or {}).get('number', 99), i['number']))
 
@@ -38,27 +37,23 @@ def blocked(issue):
     return any(int(n) not in closed for n in refs)
 
 next_issue = next((i for i in mine if not blocked(i)), None)
-
 if next_issue:
     ms = (next_issue.get('milestone') or {}).get('title', 'none')
     print(f"NEXT: #{next_issue['number']} [{ms}] {next_issue['title']}")
-    print(f"URL: {next_issue['html_url']}")
 else:
-    print("No unblocked Claude issues. All done or waiting on Replit.")
+    print("No unblocked Claude issues.")
+    for i in mine: print(f"  BLOCKED: #{i['number']} {i['title']}")
 ```
 
-Then fetch latest code:
-```bash
-git fetch origin variant && git checkout FETCH_HEAD -- .
-```
+Then: `git fetch origin variant && git checkout FETCH_HEAD -- .`
 
-**Read the issue completely. Then start work.**
+Read the issue completely. Then start.
 
 ---
 
-## Step 1 — If you discover a problem that has NO issue yet
+## MANDATORY: When you find ANY problem, gap, or improvement during work
 
-Open one BEFORE fixing it:
+**Do not fix silently. Open a GitHub Issue first, every time.**
 
 ```python
 import json, urllib.request, subprocess
@@ -69,13 +64,12 @@ TOKEN = subprocess.check_output(
 
 data = json.dumps({
     "title": "[Claude] One-line description",
-    "labels": ["claude", "backend"],   # add "bug" if applicable
+    "labels": ["claude", "backend"],   # add "bug" if it's a bug
     "milestone": 2,                    # 1=Bot MVP 2=Web V1 3=VOD 4=Polish
     "body": "**Problem:** ...\n\n**What to do:** ...\n\n**Acceptance criteria:**\n- [ ] ..."
 }).encode()
-
 req = urllib.request.Request(
-    f"https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
+    "https://api.github.com/repos/xiNeRoar/lolproject/issues", data=data,
     headers={"Authorization": f"token {TOKEN}", "Content-Type": "application/json"}
 )
 with urllib.request.urlopen(req) as r:
@@ -83,33 +77,41 @@ with urllib.request.urlopen(req) as r:
     print(f"Opened #{d['number']}: {d['title']}")
 ```
 
+This applies to: bugs you notice, missing features, doc gaps, security issues, performance problems — anything. If it's worth fixing, it needs an issue first.
+
 ---
 
-## Step 2 — Commit format (every time)
+## MANDATORY: Commit format — every time
 
 ```bash
 git add -A
-git commit -m "short description
+git commit -m "short description of what changed
 
-closes #N"      ← this automatically closes the issue
+closes #N"      ← automatically closes the issue on GitHub
 git push origin variant
 ```
 
 ---
 
-## Step 3 — After completing an issue, update the relevant doc in the same commit
+## MANDATORY: After every issue — update docs in the same commit
 
-| What changed | Update this |
+Every completed issue requires updating the corresponding doc. No exceptions.
+
+| What changed | Update this file |
 |---|---|
-| Schema column/table added | `docs/SCHEMA_CONTRACT.md` |
-| Bot command added/changed | `docs/BOT_SPEC.md` |
-| New API endpoint | `lib/api-spec/openapi.yaml` → run codegen |
-| New env var | `docs/DEPLOYMENT.md` |
-| User journey step count changed | `docs/USER_JOURNEYS.md` |
+| Schema column or table added/changed | `docs/SCHEMA_CONTRACT.md` |
+| Bot command added, changed, or clarified | `docs/BOT_SPEC.md` |
+| New or changed API endpoint | `lib/api-spec/openapi.yaml` → run codegen |
+| New environment variable required | `docs/DEPLOYMENT.md` |
+| User journey step count improved | `docs/USER_JOURNEYS.md` |
+| Architecture principle changed | `CLAUDE.md` itself |
+| Ownership rule changed | `CLAUDE.md` itself |
+
+**CLAUDE.md is a living document.** If you learn something that should change how future sessions work — a principle, a constant, a rule — update CLAUDE.md in the same commit. You own this file.
 
 ---
 
-## Step 4 — Check docs/REQUESTS.md each session
+## MANDATORY: Check docs/REQUESTS.md each session
 
 If Replit left a backend request: open a GitHub Issue for it, do the work, clear the entry from REQUESTS.md. All in one commit.
 
@@ -121,7 +123,7 @@ If Replit left a backend request: open a GitHub Issue for it, do the work, clear
 2. **Every team ELO change writes to `elo_history`.** Reason: `match`, `season_reset`, `manual_admin`, `registration`.
 3. **Teams own ELO. Players do not.**
 4. **Bot is the only data producer.** All match data from .rofl parse.
-5. **Read source before answering.** Never guess schema or route signatures.
+5. **Read actual source files before answering.** Never guess schema or route signatures.
 6. **No SSH. Portainer only.**
 
 ---
@@ -171,17 +173,18 @@ visibleAfter = new Date(0) → always public
 visibleAfter = 9999-01-01  → permanent private
 ```
 
-Private match: check `team_members` (NOT `match_players`). Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 403.
+Private match access: check `team_members` (NOT `match_players`).
+Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 403.
 
 ---
 
 ## Ownership
 
-**Claude owns:** `lib/db/src/schema/` · `lib/api-spec/openapi.yaml` · `artifacts/api-server/` · `artifacts/discord-bot/` · `docs/` (except replit.md) · `CLAUDE.md`
+**Claude owns (Replit never edits):**
+`lib/db/src/schema/` · `lib/api-spec/openapi.yaml` · `artifacts/api-server/` · `artifacts/discord-bot/` · `docs/` (except replit.md) · `CLAUDE.md`
 
-**Replit owns:** `artifacts/vclol/src/` · `replit.md`
-
-**Never edit each other's files.**
+**Replit owns (Claude never edits):**
+`artifacts/vclol/src/` · `replit.md`
 
 ---
 
