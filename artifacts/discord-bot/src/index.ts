@@ -26,8 +26,12 @@ import * as registerTeam from "./commands/register-team.js";
 import * as add from "./commands/add.js";
 import * as linkRiot from "./commands/link-riot.js";
 import * as submit from "./commands/submit.js";
+import * as claimMatch from "./commands/claim-match.js";
+import * as visibility from "./commands/visibility.js";
+import * as leave from "./commands/leave.js";
+import * as transferCaptain from "./commands/transfer-captain.js";
 
-const commands = [registerTeam, add, linkRiot, submit];
+const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain];
 
 // ── Build command collection ───────────────────────────────────────────────
 
