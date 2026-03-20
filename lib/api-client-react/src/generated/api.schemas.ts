@@ -186,6 +186,7 @@ export interface PlayerTeamEntry {
   teamTag: string;
   role?: string | null;
   status: string;
+  isCaptain: boolean;
 }
 
 export interface PlayerChampionStats {

@@ -1791,7 +1791,9 @@ components:
           nullable: true
         status:
           type: string
-      required: [teamId, teamName, teamTag, status]
+        isCaptain:
+          type: boolean
+      required: [teamId, teamName, teamTag, status, isCaptain]
 
     PlayerAggregateStats:
       type: object

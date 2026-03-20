@@ -300,6 +300,7 @@ export const GetPlayerByIdResponse = zod.object({
       teamTag: zod.string(),
       role: zod.string().nullish(),
       status: zod.string(),
+      isCaptain: zod.boolean(),
     }),
   ),
   aggregateStats: zod.object({
@@ -405,6 +406,7 @@ export const GetPlayerResponse = zod.object({
       teamTag: zod.string(),
       role: zod.string().nullish(),
       status: zod.string(),
+      isCaptain: zod.boolean(),
     }),
   ),
   aggregateStats: zod.object({
