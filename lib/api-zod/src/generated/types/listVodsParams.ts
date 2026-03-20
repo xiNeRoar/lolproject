@@ -7,13 +7,13 @@
  */
 
 export type ListVodsParams = {
-eventId?: number;
-format?: string;
-roleTag?: string;
-search?: string;
-champion?: string;
-position?: string;
-patch?: string;
-teamId?: number;
-playerId?: number;
+  eventId?: number;
+  format?: string;
+  roleTag?: string;
+  search?: string;
+  champion?: string;
+  position?: string;
+  patch?: string;
+  teamId?: number;
+  playerId?: number;
 };

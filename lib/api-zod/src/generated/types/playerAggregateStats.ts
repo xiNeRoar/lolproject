@@ -5,7 +5,7 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { PlayerChampionStats } from './playerChampionStats';
+import type { PlayerChampionStats } from "./playerChampionStats";
 
 export interface PlayerAggregateStats {
   totalGames: number;

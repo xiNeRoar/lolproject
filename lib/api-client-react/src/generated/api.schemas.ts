@@ -298,11 +298,11 @@ export interface MatchPlayerEntry {
   createdAt: string;
 }
 
-export type MatchDetail = Match & ({
+export type MatchDetail = Match & {
   eventSlug?: string | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
-});
+};
 
 export interface CreateMatchRequest {
   teamAId?: number | null;
@@ -322,13 +322,13 @@ export interface CreateMatchRequest {
   isLosersBracket?: boolean | null;
 }
 
-export type UpdateVisibilityRequestVisibility = typeof UpdateVisibilityRequestVisibility[keyof typeof UpdateVisibilityRequestVisibility];
-
+export type UpdateVisibilityRequestVisibility =
+  (typeof UpdateVisibilityRequestVisibility)[keyof typeof UpdateVisibilityRequestVisibility];
 
 export const UpdateVisibilityRequestVisibility = {
-  public: 'public',
-  private: 'private',
-  default: 'default',
+  public: "public",
+  private: "private",
+  default: "default",
 } as const;
 
 export interface UpdateVisibilityRequest {
@@ -607,7 +607,7 @@ export type ListAdminActions200Item = {
 };
 
 export type ListTeamsParams = {
-active?: boolean;
+  active?: boolean;
 };
 
 export type AddTeamMemberBody = {
@@ -644,15 +644,15 @@ export type BulkSetMatchVisibility200 = {
 };
 
 export type ListMatchesParams = {
-eventId?: number;
-seasonId?: number;
-teamId?: number;
-search?: string;
+  eventId?: number;
+  seasonId?: number;
+  teamId?: number;
+  search?: string;
 };
 
 export type GetReplayStatusParams = {
-matchId: number;
-playerId: number;
+  matchId: number;
+  playerId: number;
 };
 
 export type GetReplayStatus200 = {
@@ -663,19 +663,19 @@ export type GetReplayStatus200 = {
 };
 
 export type ListRegistrationsParams = {
-eventId?: number;
+  eventId?: number;
 };
 
 export type ListVodsParams = {
-eventId?: number;
-format?: string;
-roleTag?: string;
-search?: string;
-champion?: string;
-position?: string;
-patch?: string;
-teamId?: number;
-playerId?: number;
+  eventId?: number;
+  format?: string;
+  roleTag?: string;
+  search?: string;
+  champion?: string;
+  position?: string;
+  patch?: string;
+  teamId?: number;
+  playerId?: number;
 };
 
 export type GetBotStatus200 = {
@@ -696,10 +696,10 @@ export type GetReplayQueueStats200 = {
 };
 
 export type GlobalSearchParams = {
-/**
- * @minLength 2
- */
-q: string;
+  /**
+   * @minLength 2
+   */
+  q: string;
 };
 
 export type GlobalSearch200TeamsItem = {
@@ -730,4 +730,3 @@ export type GlobalSearch200 = {
   players?: GlobalSearch200PlayersItem[];
   events?: GlobalSearch200EventsItem[];
 };
-

@@ -5,8 +5,8 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { Match } from './match';
-import type { VodEntry } from './vodEntry';
+import type { Match } from "./match";
+import type { VodEntry } from "./vodEntry";
 
 export interface EventDetail {
   id: number;
