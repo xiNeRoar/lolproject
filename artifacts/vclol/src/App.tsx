@@ -59,7 +59,7 @@ function Router() {
       <Route path="/players" component={Players} />
       <Route path="/players/:riotId" component={PlayerProfile} />
       <Route path="/contact" component={Contact} />
-      <Route path="/dev-login" component={DevLogin} />
+      {import.meta.env.DEV && <Route path="/dev-login" component={DevLogin} />}
       <Route path="/matches" component={Matches} />
       <Route path="/matches/:id" component={MatchDetail} />
       

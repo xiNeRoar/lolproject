@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BADGE_META } from "@/lib/lol-utils";
-import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight } from "lucide-react";
+import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle } from "lucide-react";
 
 function LoggedOutState() {
   return (
@@ -142,6 +142,53 @@ function DashboardContent({ pid }: { pid: number }) {
           ))}
         </div>
       )}
+
+      {(() => {
+        const captainTeams = player.teams?.filter((t) => t.isCaptain) ?? [];
+        if (captainTeams.length === 0) return null;
+
+        const team = captainTeams[0];
+        const memberCount = player.teams?.find((t) => t.teamId === team.teamId) ? 5 : 0;
+        const hasRoster = (player.teams?.length ?? 0) >= 1;
+        const hasMatches = (player.recentMatches?.length ?? 0) > 0;
+        const hasLinkedRiot = player.riotId !== "pending" && !!player.puuid;
+
+        const steps = [
+          { done: hasRoster, label: "Add 5 players to your roster", cmd: "/add @player" },
+          { done: hasLinkedRiot, label: "Get players to link Riot ID", cmd: "/link-riot" },
+          { done: hasMatches, label: "Submit your first scrim", cmd: "/submit" },
+        ];
+
+        const allDone = steps.every((s) => s.done);
+        if (allDone) return null;
+
+        return (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Getting Started</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2.5">
+                {steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    {step.done ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={`text-sm ${step.done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                      {step.label}
+                    </span>
+                    {!step.done && (
+                      <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs ml-auto shrink-0">{step.cmd}</code>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">

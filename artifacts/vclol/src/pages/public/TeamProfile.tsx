@@ -2,10 +2,12 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetTeam, useGetTeamEloHistory, useListVods } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Video, PlayCircle } from "lucide-react";
+import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Video, PlayCircle, Settings } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { eloBadgeColor, rankLabel } from "@/lib/lol-utils";
+import { useAuth } from "@/hooks/use-auth";
 
 function EloDelta({ before, after }: { before: number | null | undefined; after: number | null | undefined }) {
   if (before == null || after == null) return null;
@@ -18,9 +20,11 @@ function EloDelta({ before, after }: { before: number | null | undefined; after:
 export default function TeamProfile() {
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
+  const { playerIdNum } = useAuth();
   const { data: team, isLoading, isError } = useGetTeam(teamId);
   const { data: eloHistory } = useGetTeamEloHistory(teamId, { query: { enabled: !!team } });
   const { data: teamVods } = useListVods({ teamId }, { query: { enabled: !!team } });
+  const isCaptain = team?.captainPlayerId === playerIdNum;
 
   if (isLoading) {
     return (
@@ -83,6 +87,13 @@ export default function TeamProfile() {
                     <Badge variant="secondary" className="text-xs">Inactive</Badge>
                   )}
                 </div>
+                {isCaptain && (
+                  <Link href={`/teams/${teamId}/manage`}>
+                    <Button variant="outline" size="sm" className="text-xs gap-1.5 mt-2">
+                      <Settings className="w-3.5 h-3.5" /> Manage Team
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               <div className="flex gap-6 flex-shrink-0">
@@ -254,6 +265,8 @@ export default function TeamProfile() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">vs {oppName}</div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
+                          <span className="w-1 h-1 rounded-full bg-border inline-block" />
                           {match.matchTitle}
                           {match.isPlayoff && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>

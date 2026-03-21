@@ -2,11 +2,36 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useListMatches } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Swords } from "lucide-react";
+import { Swords, Search, ArrowUpDown } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export default function Matches() {
   const { data: matches, isLoading } = useListMatches();
+  const [search, setSearch] = useState("");
+  const [sortNewest, setSortNewest] = useState(true);
+
+  const filtered = useMemo(() => {
+    if (!matches) return [];
+    let list = [...matches];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(
+        (m) =>
+          m.sideAName.toLowerCase().includes(q) ||
+          m.sideBName.toLowerCase().includes(q) ||
+          (m.matchTitle?.toLowerCase().includes(q))
+      );
+    }
+    list.sort((a, b) => {
+      const da = new Date(a.createdAt).getTime();
+      const db = new Date(b.createdAt).getTime();
+      return sortNewest ? db - da : da - db;
+    });
+    return list;
+  }, [matches, search, sortNewest]);
 
   return (
     <PublicLayout>
@@ -30,44 +55,77 @@ export default function Matches() {
             <Link href="/register" className="text-sm text-primary hover:underline">Register your team to start competing →</Link>
           </div>
         ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground mb-3">{matches.length} match{matches.length !== 1 ? "es" : ""}</p>
-            {matches.map((match) => {
-              const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
-              const aWon = match.winnerName === match.sideAName;
-              const bWon = match.winnerName === match.sideBName;
-              return (
-                <Link key={match.id} href={`/matches/${match.id}`}>
-                  <Card className="bg-card/40 border-border/40 hover:border-primary/50 transition-colors cursor-pointer">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`font-medium truncate ${aWon ? "text-primary" : ""}`}>{match.sideAName}</span>
-                          <span className="text-muted-foreground text-sm">vs</span>
-                          <span className={`font-medium truncate ${bWon ? "text-primary" : ""}`}>{match.sideBName}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                          <span className="truncate">{match.matchTitle}</span>
-                          {match.isPlayoff && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>
-                          )}
-                          {match.format && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">{match.format}</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 shrink-0">
-                        {match.score && (
-                          <span className="text-lg font-display font-bold">{match.score}</span>
-                        )}
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{date}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
+          <>
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search by team name..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 bg-background"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortNewest(!sortNewest)}
+                className="gap-1.5 shrink-0"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {sortNewest ? "Newest first" : "Oldest first"}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              {filtered.length} match{filtered.length !== 1 ? "es" : ""}
+              {search && ` matching "${search}"`}
+            </p>
+
+            {filtered.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <p className="text-muted-foreground text-sm">No matches found matching "{search}".</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((match) => {
+                  const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+                  const aWon = match.winnerName === match.sideAName;
+                  const bWon = match.winnerName === match.sideBName;
+                  return (
+                    <Link key={match.id} href={`/matches/${match.id}`}>
+                      <Card className="bg-card/40 border-border/40 hover:border-primary/50 transition-colors cursor-pointer">
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`font-medium truncate ${aWon ? "text-primary" : ""}`}>{match.sideAName}</span>
+                              <span className="text-muted-foreground text-sm">vs</span>
+                              <span className={`font-medium truncate ${bWon ? "text-primary" : ""}`}>{match.sideBName}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                              <span className="truncate">{match.matchTitle}</span>
+                              {match.isPlayoff && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>
+                              )}
+                              {match.format && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0">{match.format}</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 shrink-0">
+                            {match.score && (
+                              <span className="text-lg font-display font-bold">{match.score}</span>
+                            )}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{date}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </PublicLayout>

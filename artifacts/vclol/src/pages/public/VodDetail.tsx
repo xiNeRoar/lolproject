@@ -200,20 +200,15 @@ export default function VodDetail() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Timestamps */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Timestamps
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!vod.timestamps?.length ? (
-                <div className="px-6 py-6 text-center text-muted-foreground text-sm">
-                  No timestamps added yet.
-                </div>
-              ) : (
+        <div className={`grid grid-cols-1 ${vod.timestamps?.length ? "lg:grid-cols-2" : ""} gap-6`}>
+          {vod.timestamps && vod.timestamps.length > 0 && (
+            <Card className="bg-card/40 border-border/40">
+              <CardHeader>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Timestamps
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="divide-y divide-border/30">
                   {vod.timestamps.map((ts) => (
                     <button
@@ -233,9 +228,9 @@ export default function VodDetail() {
                     </button>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Related VODs */}
           <Card className="bg-card/40 border-border/40">

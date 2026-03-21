@@ -119,6 +119,42 @@ export default function Home() {
           </div>
         </section>
 
+      {/* ── Recent Matches ── */}
+      {matches && matches.length > 0 && (
+        <section className="py-10 border-b border-border/40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                <Swords className="text-primary w-5 h-5" /> Recent Matches
+              </h2>
+              <Link href="/matches" className="text-sm text-primary hover:underline">All Matches →</Link>
+            </div>
+            <div className="space-y-2">
+              {matches.slice(0, 5).map((match) => {
+                const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+                const aWon = match.winnerName === match.sideAName;
+                const bWon = match.winnerName === match.sideBName;
+                return (
+                  <Link key={match.id} href={`/matches/${match.id}`}>
+                    <div className="flex items-center gap-4 px-4 py-3 rounded-lg bg-card/30 border border-border/40 hover:border-primary/40 transition-colors cursor-pointer">
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className={`font-medium text-sm truncate ${aWon ? "text-primary" : ""}`}>{match.sideAName}</span>
+                        <span className="text-muted-foreground text-xs">vs</span>
+                        <span className={`font-medium text-sm truncate ${bWon ? "text-primary" : ""}`}>{match.sideBName}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {match.score && <span className="text-sm font-display font-bold">{match.score}</span>}
+                        <span className="text-xs text-muted-foreground">{date}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── Current Phase Banner ─────────────────────────── */}
       <section className="border-b border-primary/20 bg-primary/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -271,15 +307,15 @@ export default function Home() {
       <section className="py-16 border-t border-border/40 bg-card/30">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <MessageCircle className="w-10 h-10 text-primary mx-auto mb-5 opacity-80" />
-          <h2 className="text-2xl font-bold font-display mb-3">Join the Community</h2>
+          <h2 className="text-2xl font-bold font-display mb-3">Discord Bot</h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-8">
-            Get notified about upcoming events, find teammates, discuss strategies, and connect with competitive players on Discord.
+            Use slash commands in any Discord server to register your team, add players, and submit match replays. The bot works in your existing server — no need to join ours.
           </p>
-          <a href={import.meta.env.VITE_DISCORD_URL ?? "#"} target="_blank" rel="noopener noreferrer">
+          <Link href="/register">
             <Button size="lg" className="font-semibold">
-              <MessageCircle className="mr-2 w-4 h-4" /> Join Discord Server
+              Get Started <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
-          </a>
+          </Link>
         </div>
       </section>
     </PublicLayout>

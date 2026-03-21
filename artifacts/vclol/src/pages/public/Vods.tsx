@@ -48,7 +48,7 @@ export default function Vods() {
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-display font-bold mb-2">VOD Archive</h1>
-        <p className="text-muted-foreground mb-10">Study local matches, review your gameplay, and see how others perform.</p>
+        <p className="text-muted-foreground mb-10">Study competitive scrim footage, review your gameplay, and see how top teams perform.</p>
 
         <div className="flex flex-col gap-3 mb-10 bg-card/30 p-4 rounded-lg border border-border/50">
           <div className="flex flex-col md:flex-row gap-3">

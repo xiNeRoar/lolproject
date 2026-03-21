@@ -9,14 +9,14 @@ export default function About() {
         
         <div className="prose prose-invert prose-blue max-w-none">
           <p className="text-xl text-muted-foreground leading-relaxed mb-10">
-            The Vancouver Competitive LoL Project was created to solve a simple problem: the gap between standard solo queue and highly structured, often inaccessible semi-pro leagues.
+            VCLoL was created to solve a simple problem: the gap between standard solo queue and highly structured, often inaccessible semi-pro leagues.
           </p>
 
           <div className="space-y-12">
             <section>
               <h2 className="text-2xl font-display font-semibold text-foreground mb-4 flex items-center gap-2"><Eye className="w-5 h-5 text-primary" /> The Vision</h2>
               <p className="text-muted-foreground">
-                We believe that a healthy competitive ecosystem requires a strong grassroots foundation. Too often, local tournaments are one-off brackets that vanish once the prize pool is distributed. Our goal is to build continuity. We want to create an environment where local players can consistently compete, build verifiable match records, and develop rivalries over time.
+                We believe that a healthy competitive ecosystem requires a strong grassroots foundation. Too often, tournaments are one-off brackets that vanish once the prize pool is distributed. Our goal is to build continuity. We want to create an environment where competitive players can consistently compete, build verifiable match records, and develop rivalries over time.
               </p>
             </section>
 
@@ -37,7 +37,7 @@ export default function About() {
             <section>
               <h2 className="text-2xl font-display font-semibold text-foreground mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-primary" /> Why We Need This</h2>
               <p className="text-muted-foreground">
-                Solo queue is great for mechanical practice, but it teaches bad habits for competitive play. True competitive League of Legends requires communication, draft strategy, and team cohesion. By providing a structured, recorded environment, we aim to elevate the level of play in our region.
+                Solo queue is great for mechanical practice, but it teaches bad habits for competitive play. True competitive League of Legends requires communication, draft strategy, and team cohesion. By providing a structured, recorded environment, we aim to elevate the level of competitive grassroots play across North America.
               </p>
             </section>
           </div>

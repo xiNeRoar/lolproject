@@ -11,6 +11,111 @@ import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useAuth } from "@/hooks/use-auth";
 
+function EloTrajectory({ teams }: { teams: Array<{ teamId: number; teamName: string }> }) {
+  return <EloTrajectoryInner teams={teams} />;
+}
+
+function EloTrajectoryInner({ teams }: { teams: Array<{ teamId: number; teamName: string }> }) {
+  const COLORS = ["hsl(var(--primary))", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
+  const t0 = useGetTeamEloHistory(teams[0]?.teamId ?? 0);
+  const t1 = useGetTeamEloHistory(teams[1]?.teamId ?? 0);
+  const t2 = useGetTeamEloHistory(teams[2]?.teamId ?? 0);
+  const t3 = useGetTeamEloHistory(teams[3]?.teamId ?? 0);
+  const t4 = useGetTeamEloHistory(teams[4]?.teamId ?? 0);
+
+  const allResults = [t0, t1, t2, t3, t4].slice(0, teams.length);
+  const teamsWithHistory = teams
+    .map((team, i) => ({ team, history: allResults[i]?.data ?? [] }))
+    .filter((t) => t.history.length >= 2);
+
+  if (teamsWithHistory.length === 0) return null;
+
+  if (teamsWithHistory.length === 1) {
+    const { team, history } = teamsWithHistory[0];
+    return (
+      <Card className="bg-card/40 border-border/40 mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-display flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            ELO Trajectory
+            <span className="text-xs text-muted-foreground font-normal ml-1">via {team.teamName}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history.map((e) => ({
+                elo: e.elo,
+                date: new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["dataMin - 30", "dataMax + 30"]} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                  labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                  formatter={(value: number) => [`${value} ELO`, "Rating"]}
+                />
+                <Line type="monotone" dataKey="elo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const mergedData: Record<string, unknown>[] = [];
+  teamsWithHistory.forEach(({ team, history }) => {
+    history.forEach((e) => {
+      const date = new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+      let existing = mergedData.find((d) => d.date === date);
+      if (!existing) {
+        existing = { date };
+        mergedData.push(existing);
+      }
+      (existing as Record<string, unknown>)[team.teamName] = e.elo;
+    });
+  });
+
+  return (
+    <Card className="bg-card/40 border-border/40 mb-6">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-display flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" />
+          ELO Trajectory
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-3 mb-3">
+          {teamsWithHistory.map(({ team }, i) => (
+            <div key={team.teamId} className="flex items-center gap-1.5 text-xs">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+              <span className="text-muted-foreground">{team.teamName}</span>
+            </div>
+          ))}
+        </div>
+        <div className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={mergedData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["dataMin - 30", "dataMax + 30"]} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+              />
+              {teamsWithHistory.map(({ team }, i) => (
+                <Line key={team.teamId} type="monotone" dataKey={team.teamName} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
   const { isLoggedIn } = useAuth();
@@ -20,8 +125,7 @@ export default function PlayerProfile() {
   const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id } });
   const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id } });
 
-  const primaryTeamId = player?.teams?.[0]?.teamId ?? 0;
-  const { data: eloHistory } = useGetTeamEloHistory(primaryTeamId, { query: { enabled: primaryTeamId > 0 } });
+  const allTeams = player?.teams ?? [];
 
   const playerTeamIds = new Set((player?.teams ?? []).map((t) => t.teamId));
   const myChampionships = seasonChamps?.filter((c) => playerTeamIds.has(c.teamId)) ?? [];
@@ -168,47 +272,7 @@ export default function PlayerProfile() {
           </Card>
         )}
 
-        {eloHistory && eloHistory.length >= 2 && (
-          <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                ELO Trajectory
-                {player.teams?.[0] && (
-                  <span className="text-xs text-muted-foreground font-normal ml-1">
-                    via {player.teams[0].teamName}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-48 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={eloHistory.map((e, i) => ({
-                    idx: i + 1,
-                    elo: e.elo,
-                    date: new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} domain={["dataMin - 30", "dataMax + 30"]} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                      labelStyle={{ color: "hsl(var(--muted-foreground))" }}
-                      formatter={(value: number) => [`${value} ELO`, "Rating"]}
-                    />
-                    <Line type="monotone" dataKey="elo" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {allTeams.length > 0 && <EloTrajectory teams={allTeams} />}
 
         {championStats && championStats.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
