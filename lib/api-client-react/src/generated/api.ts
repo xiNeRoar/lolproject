@@ -68,6 +68,8 @@ import type {
   PlayerEventParticipation,
   PlayerProfile,
   RegisterPlayerRequest,
+  RegisterTeamForEvent201,
+  RegisterTeamForEventBody,
   ReplaySubmission,
   Season,
   SeasonChampion,
@@ -3192,6 +3194,79 @@ export const useUpdateEvent = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateEventMutationOptions(options));
+    }
+    
+/**
+ * Called by the /register-event Discord bot command. Validates event is open, team exists, requestor is captain, and team is not already registered.
+ * @summary Register a team for an event (bot-facing)
+ */
+export const getRegisterTeamForEventUrl = (idOrSlug: string,) => {
+
+
+  
+
+  return `/api/events/${idOrSlug}/register-team`
+}
+
+export const registerTeamForEvent = async (idOrSlug: string,
+    registerTeamForEventBody: RegisterTeamForEventBody, options?: RequestInit): Promise<RegisterTeamForEvent201> => {
+  
+  return customFetch<RegisterTeamForEvent201>(getRegisterTeamForEventUrl(idOrSlug),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      registerTeamForEventBody,)
+  }
+);}
+  
+
+
+
+export const getRegisterTeamForEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerTeamForEvent>>, TError,{idOrSlug: string;data: BodyType<RegisterTeamForEventBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerTeamForEvent>>, TError,{idOrSlug: string;data: BodyType<RegisterTeamForEventBody>}, TContext> => {
+
+const mutationKey = ['registerTeamForEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerTeamForEvent>>, {idOrSlug: string;data: BodyType<RegisterTeamForEventBody>}> = (props) => {
+          const {idOrSlug,data} = props ?? {};
+
+          return  registerTeamForEvent(idOrSlug,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterTeamForEventMutationResult = NonNullable<Awaited<ReturnType<typeof registerTeamForEvent>>>
+    export type RegisterTeamForEventMutationBody = BodyType<RegisterTeamForEventBody>
+    export type RegisterTeamForEventMutationError = ErrorType<void>
+
+    /**
+ * @summary Register a team for an event (bot-facing)
+ */
+export const useRegisterTeamForEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerTeamForEvent>>, TError,{idOrSlug: string;data: BodyType<RegisterTeamForEventBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerTeamForEvent>>,
+        TError,
+        {idOrSlug: string;data: BodyType<RegisterTeamForEventBody>},
+        TContext
+      > => {
+      return useMutation(getRegisterTeamForEventMutationOptions(options));
     }
     
 /**

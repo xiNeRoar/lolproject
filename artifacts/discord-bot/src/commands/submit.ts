@@ -175,16 +175,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       let teamBEloBefore: number | null = null;
       let teamBEloAfter: number | null = null;
 
-      if (sideA.teamId && sideB.teamId) {
-        const [teamA] = await tx
-          .select({ teamElo: teamsTable.teamElo })
-          .from(teamsTable)
-          .where(eq(teamsTable.id, sideA.teamId));
-        const [teamB] = await tx
-          .select({ teamElo: teamsTable.teamElo })
-          .from(teamsTable)
-          .where(eq(teamsTable.id, sideB.teamId));
+      // Fetch team settings (ELO + defaultMatchVisibility) for both sides
+      const [teamA] = sideA.teamId
+        ? await tx
+            .select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
+        : [undefined];
+      const [teamB] = sideB.teamId
+        ? await tx
+            .select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
+        : [undefined];
 
+      if (sideA.teamId && sideB.teamId) {
         const eloA = teamA?.teamElo ?? 1000;
         const eloB = teamB?.teamElo ?? 1000;
 
@@ -202,7 +205,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
 
       // Create match row
-      const visibleAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      // Derive visibleAfter from team's defaultMatchVisibility setting.
+      // Priority: sideA setting → sideB setting → 7-day default.
+      const resolvedVis = teamA?.defaultMatchVisibility ?? teamB?.defaultMatchVisibility ?? "default";
+      const visibleAfter = resolvedVis === "public"
+        ? new Date(0)                              // always public
+        : resolvedVis === "private"
+          ? new Date("9999-01-01T00:00:00Z")       // permanent private
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day default
       const [createdMatch] = await tx
         .insert(matchesTable)
         .values({

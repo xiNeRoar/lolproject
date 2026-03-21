@@ -1227,6 +1227,20 @@ export const UpdateEventResponse = zod.object({
 
 
 /**
+ * Called by the /register-event Discord bot command. Validates event is open, team exists, requestor is captain, and team is not already registered.
+ * @summary Register a team for an event (bot-facing)
+ */
+export const RegisterTeamForEventParams = zod.object({
+  "idOrSlug": zod.coerce.string().describe('Event numeric ID or URL slug')
+})
+
+export const RegisterTeamForEventBody = zod.object({
+  "teamId": zod.number(),
+  "captainPlayerId": zod.number()
+})
+
+
+/**
  * @summary Delete event (admin)
  */
 export const DeleteEventParams = zod.object({

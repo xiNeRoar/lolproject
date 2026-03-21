@@ -664,6 +664,21 @@ export type GetReplayStatus200 = {
   processedAt?: string | null;
 };
 
+export type RegisterTeamForEventBody = {
+  teamId: number;
+  captainPlayerId: number;
+};
+
+export type RegisterTeamForEvent201 = {
+  id?: number;
+  eventId?: number;
+  eventTitle?: string;
+  teamId?: number;
+  teamName?: string;
+  teamTag?: string;
+  status?: string;
+};
+
 export type ListRegistrationsParams = {
 eventId?: number;
 };

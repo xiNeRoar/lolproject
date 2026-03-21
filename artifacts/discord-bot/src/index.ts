@@ -30,8 +30,9 @@ import * as claimMatch from "./commands/claim-match.js";
 import * as visibility from "./commands/visibility.js";
 import * as leave from "./commands/leave.js";
 import * as transferCaptain from "./commands/transfer-captain.js";
+import * as registerEvent from "./commands/register-event.js";
 
-const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain];
+const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain, registerEvent];
 
 // ── Build command collection ───────────────────────────────────────────────
 

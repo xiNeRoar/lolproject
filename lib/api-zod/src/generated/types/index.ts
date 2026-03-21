@@ -62,6 +62,8 @@ export * from './playerPrimaryTeam';
 export * from './playerProfile';
 export * from './playerTeamEntry';
 export * from './registerPlayerRequest';
+export * from './registerTeamForEvent201';
+export * from './registerTeamForEventBody';
 export * from './replaySubmission';
 export * from './season';
 export * from './seasonChampion';

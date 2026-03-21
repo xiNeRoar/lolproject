@@ -167,6 +167,32 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 2. Set `team_members.status = 'inactive'` (don't delete — preserve history)
 3. Reply: "@user removed from **{team}**."
 
+### `/register-event <event>`
+**Who:** Team captain only
+**What:** Register the captain's team for a VCLoL event.
+**Parameters:**
+- `event` (required): Event numeric ID or URL slug (e.g. `spring-2025` or `3`)
+
+**Flow:**
+1. Resolve invoking Discord user → player record (error if not registered)
+2. Find team where player is captain and team is active (error if not captain of any team)
+3. POST `/api/events/{event}/register-team` with `{ teamId, captainPlayerId }`
+4. API validates: event open, team exists, not already registered
+5. Success embed: team name, event name, status "Registered"
+
+**Success reply:**
+> ✅ **[VST] Vancouver Storm** has been registered for **Spring 2025 Ladder**.
+> An admin will confirm your registration.
+
+**Error cases:**
+- Not registered on VCLoL → "You are not registered on VCLoL. Use `/register-team` first."
+- Not a captain → "You are not the captain of any active team."
+- Event closed → "Registration for "{event}" is closed."
+- Already registered → "[VST] is already registered for "{event}"."
+- Event not found → error from API
+
+---
+
 ### `/transfer-captain <@user>`
 **Who:** Current team captain only
 **What:** Transfer captain role to another active team member.
@@ -287,6 +313,7 @@ artifacts/discord-bot/
 │   │   ├── stats.ts
 │   │   ├── roster.ts
 │   │   ├── remove.ts
+│   │   ├── register-event.ts
 │   │   ├── transfer-captain.ts
 │   │   ├── leave.ts
 │   │   ├── link-riot.ts

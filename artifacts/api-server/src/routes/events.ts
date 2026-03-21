@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { eventsTable, matchesTable, vodEntriesTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eventsTable, matchesTable, vodEntriesTable, eventRegistrationsTable, teamsTable, playersTable } from "@workspace/db";
+import { eq, asc, and } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
 
@@ -246,6 +246,95 @@ router.delete("/:id/delete", requireAdmin, async (req, res) => {
     logAdminAction(req.session.adminId!, "delete", "event", id, `Deleted event #${id}`);
   } catch (err) {
     res.status(500).json({ error: "Failed to delete event" });
+  }
+});
+
+// POST /events/:idOrSlug/register-team — bot-facing team event registration (#70)
+// Called by /register-event Discord bot command. No admin auth required.
+// Validates: event open, team exists, requestor is captain, not already registered.
+router.post("/:idOrSlug/register-team", async (req, res) => {
+  try {
+    const { idOrSlug } = req.params;
+    const { teamId, captainPlayerId } = req.body as {
+      teamId?: number;
+      captainPlayerId?: number;
+    };
+
+    if (!teamId || !captainPlayerId) {
+      res.status(400).json({ error: "teamId and captainPlayerId are required" });
+      return;
+    }
+
+    // Resolve event by numeric id or slug
+    const numId = parseInt(idOrSlug);
+    const [event] = isNaN(numId)
+      ? await db.select().from(eventsTable).where(eq(eventsTable.slug, idOrSlug))
+      : await db.select().from(eventsTable).where(eq(eventsTable.id, numId));
+
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
+    if (event.registrationStatus === "closed") {
+      res.status(409).json({ error: `Registration for "${event.title}" is closed.` });
+      return;
+    }
+
+    // Verify team and captain
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) {
+      res.status(404).json({ error: "Team not found" });
+      return;
+    }
+    if (team.captainPlayerId !== captainPlayerId) {
+      res.status(403).json({ error: "Only the team captain can register for an event." });
+      return;
+    }
+
+    // Duplicate check
+    const [existing] = await db
+      .select({ id: eventRegistrationsTable.id })
+      .from(eventRegistrationsTable)
+      .where(and(
+        eq(eventRegistrationsTable.eventId, event.id),
+        eq(eventRegistrationsTable.teamId, teamId),
+      ));
+    if (existing) {
+      res.status(409).json({ error: `[${team.tag}] is already registered for "${event.title}".` });
+      return;
+    }
+
+    // Get captain's player record for registration fields
+    const [captain] = await db.select().from(playersTable).where(eq(playersTable.id, captainPlayerId));
+    if (!captain) {
+      res.status(404).json({ error: "Captain player record not found" });
+      return;
+    }
+
+    const [row] = await db.insert(eventRegistrationsTable).values({
+      eventId:                  event.id,
+      teamId,
+      riotId:                   captain.riotId,
+      discordUsername:          captain.discordUsername ?? captain.riotId,
+      currentRank:              "Unranked",
+      city:                     "N/A",
+      availabilityConfirmation: "confirmed",
+      status:                   "registered",
+      playerId:                 captainPlayerId,
+    }).returning();
+
+    res.status(201).json({
+      id:         row!.id,
+      eventId:    event.id,
+      eventTitle: event.title,
+      teamId,
+      teamName:   team.name,
+      teamTag:    team.tag,
+      status:     "registered",
+    });
+  } catch (err) {
+    console.error("[events] register-team error:", err);
+    res.status(500).json({ error: "Failed to register team" });
   }
 });
 

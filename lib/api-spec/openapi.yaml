@@ -1067,6 +1067,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/Event"
 
+  /events/{idOrSlug}/register-team:
+    post:
+      operationId: registerTeamForEvent
+      tags: [events]
+      summary: Register a team for an event (bot-facing)
+      description: Called by the /register-event Discord bot command. Validates event is open, team exists, requestor is captain, and team is not already registered.
+      parameters:
+        - name: idOrSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event numeric ID or URL slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teamId, captainPlayerId]
+              properties:
+                teamId:
+                  type: integer
+                captainPlayerId:
+                  type: integer
+      responses:
+        "201":
+          description: Team registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  eventId:
+                    type: integer
+                  eventTitle:
+                    type: string
+                  teamId:
+                    type: integer
+                  teamName:
+                    type: string
+                  teamTag:
+                    type: string
+                  status:
+                    type: string
+        "400":
+          description: Missing required fields
+        "403":
+          description: Not the team captain
+        "404":
+          description: Event or team not found
+        "409":
+          description: Registration closed or team already registered
+
   /events/{id}/delete:
     delete:
       operationId: deleteEvent
