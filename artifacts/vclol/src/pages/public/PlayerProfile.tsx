@@ -394,25 +394,26 @@ export default function PlayerProfile() {
                           {won ? "W" : "L"}
                         </span>
                         {champ ? (
-                          <div className="w-8 h-8 rounded overflow-hidden border border-border/40 shrink-0">
-                            <img
-                              src={champPortraitUrl(champ)}
-                              alt={champ}
-                              className="w-full h-full object-cover object-top scale-[1.4] translate-y-1"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                            />
+                          <div className="shrink-0 flex flex-col items-center gap-0.5 w-10">
+                            <div className="w-8 h-8 rounded overflow-hidden border border-border/40">
+                              <img
+                                src={champPortraitUrl(champ)}
+                                alt={champ}
+                                className="w-full h-full object-cover object-top scale-[1.1]"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground leading-tight truncate w-full text-center">{champ}</span>
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded bg-muted/30 border border-border/40 shrink-0" />
+                          <div className="w-10 shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{match.matchTitle}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            {champ && <span className="text-foreground/70">{champ}</span>}
-                            {champ && <span>·</span>}
+                          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
                             <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
                             <span>·</span>
-                            {match.sideAName} vs {match.sideBName}
+                            <span className="truncate">{match.sideAName} vs {match.sideBName}</span>
                             {match.isPlayoff && (
                               <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>
                             )}
