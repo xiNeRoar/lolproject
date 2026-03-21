@@ -42,9 +42,10 @@ Format: one section per request.
 ---
 
 ## Request: Add `bracketSize` or `totalRounds` to Event/Match response
-**Needed for:** Issue #106 (conditional — only if owner approves dynamic bracket labels)
+**Needed for:** Issue #106
+**Status:** ✅ Approved by owner — dynamic bracket labels confirmed
 **Endpoint:** Extend `GET /api/matches/:id` response OR `GET /api/events/:idOrSlug` response
-**Why:** Frontend needs to dynamically calculate bracket round labels (Quarter Final, Semi Final, Grand Final) based on bracket size. Currently hardcoded for 8-team brackets which is incorrect for other sizes.
+**Why:** Frontend needs to dynamically calculate bracket round labels (Quarter Final, Semi Final, Grand Final) based on bracket size. Currently hardcoded for 8-team brackets which is incorrect for other sizes (4-team, 16-team).
 **Response shape addition:**
 ```yaml
 bracketSize:
@@ -52,4 +53,13 @@ bracketSize:
   nullable: true
   description: Number of teams in the bracket (4, 8, 16). Used to calculate round labels dynamically.
 ```
-**Note:** This request is conditional on owner decision. If owner prefers generic "Round N" labels, no backend change needed.
+**Frontend will use this for:**
+```tsx
+function bracketRoundLabel(round, totalRounds) {
+  const roundsFromFinal = totalRounds - round;
+  if (roundsFromFinal === 0) return "Grand Final";
+  if (roundsFromFinal === 1) return "Semi Final";
+  if (roundsFromFinal === 2) return "Quarter Final";
+  return `Round of ${Math.pow(2, roundsFromFinal + 1)}`;
+}
+```
