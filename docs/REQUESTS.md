@@ -102,7 +102,7 @@ function bracketRoundLabel(round, totalRounds) {
 ---
 
 ## Request: Add `champion` field to PlayerProfile recentMatches response
-**Needed for:** Issue #80 | **Backend issue:** TBD
+**Needed for:** Issue #80 | **Backend issue:** #113
 **Endpoint:** `GET /api/players/:id` → `recentMatches[]`
 **Why:** Frontend wants to show the champion played in each recent match on PlayerProfile. Currently `recentMatches` uses the `Match` schema which has no per-player champion info. The champion data exists in `match_players.championId` but isn't surfaced in the player profile response.
 **Spec change:** Add a `playerChampion` field to the match objects returned in `recentMatches`:
@@ -117,7 +117,7 @@ playerChampion:
 ---
 
 ## Request: Add `vodCount` field to Match list response
-**Needed for:** Issue #88 | **Backend issue:** TBD
+**Needed for:** Issue #88 | **Backend issue:** #114
 **Endpoint:** `GET /api/matches` → each match object
 **Why:** Frontend wants to show a VOD badge on the Matches list page when a match has associated VODs. Currently no way to know if a match has VODs without fetching each match individually.
 **Spec change:** Add `vodCount` to Match schema:
@@ -132,7 +132,7 @@ vodCount:
 ---
 
 ## Request: Add `discordUrl` field to Event schema
-**Needed for:** Issue #98 | **Backend issue:** TBD
+**Needed for:** Issue #98 | **Backend issue:** #115
 **Endpoint:** `GET /api/events/:idOrSlug`
 **Why:** Frontend EventDetail page has a "Join Discord" button that links to the event's Discord server. Currently Event schema has no Discord URL field.
 **Spec change:** Add `discordUrl` to Event schema:
