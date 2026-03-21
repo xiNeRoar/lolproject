@@ -248,10 +248,7 @@ export default function TeamProfile() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
-                <div className="flex items-center gap-3">
-                  <Link href={`/watch?teamId=${teamId}`} className="text-xs text-primary hover:underline">Watch VODs →</Link>
-                  <Link href={`/matches?teamId=${teamId}`} className="text-xs text-primary hover:underline">All Matches →</Link>
-                </div>
+                <Link href={`/matches?teamId=${teamId}`} className="text-xs text-primary hover:underline">View All →</Link>
               </div>
             </CardHeader>
             <CardContent className="p-0">
