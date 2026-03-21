@@ -30,9 +30,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. MatchDetail page is self-explanatory: shows teams, result, stats, AND a "What is VCLoL?" micro-explainer
 
-**Current state:** Page exists, but no explainer. Private matches return 403 with no context.
-**Required:** First-visit explainer banner. Private match shows redacted result (teams + winner) with "Stats visible [date]" message instead of 403.
-**Issue:** #18 (R9), #8
+**Current state:** Private matches return redacted result (teams + winner, no stats) — not 403. ✅ #8 done. Explainer banner still missing.
+**Required:** First-visit explainer banner for unauthenticated visitors. Private match visibleAfter countdown message.
+**Issue:** #40 (explainer banner)
 
 ---
 
@@ -296,8 +296,8 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Visit /register — see bot guide and install instructions
 3. Click "Add Bot to Discord" → OAuth flow
 
-**Current state:** Home page exists but no social proof (active team count not prominent). /register exists but bot invite link is placeholder.
-**Required:** Real bot invite URL. Home page should show active team/match counts prominently.
+**Current state:** Home stats always visible ✅ #41. Discord link previews now show team/match/player info ✅ #56. Bot invite button still placeholder (blocked on Discord app setup).
+**Required:** Real bot invite URL (#37).
 
 ---
 
@@ -305,7 +305,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 
 | Journey | Max Steps | Current Steps | Gap |
 |---------|-----------|---------------|-----|
-| J-01 Match link → understand context | 1 | broken (403) | #8, #18 R9 |
+| J-01 Match link → understand context | 1 | partial | #40 (explainer banner pending) |
 | J-02 Discover → join | 3 | incomplete | bot invite URL |
 | J-03 Find player/team | 2 | 2 | ✅ #23 done |
 | J-04 See recent match performance | 2 | 2 | ✅ #16 done |
@@ -326,4 +326,4 @@ If a feature doesn't appear in this document, it doesn't get built.
 | J-19 Platform health overview | 1 | 1 | ✅ #18 done |
 | J-20 Handle ban | 3 | 3 | ✅ #18 done |
 | J-21 Fix orphaned team | 3 | 3 | ✅ |
-| J-22 Evaluate → install bot | 3 | incomplete | bot invite + home stats |
+| J-22 Evaluate → install bot | 3 | partial | ✅ #41 stats, ✅ #56 OG previews; bot invite URL pending #37 |
