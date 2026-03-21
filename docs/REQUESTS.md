@@ -6,7 +6,7 @@ Format: one section per request.
 ---
 
 ## Request: Add `type` filter to `GET /api/vods`
-**Needed for:** Issue #95
+**Needed for:** Issue #95 | **Backend issue:** #109
 **Endpoint:** `GET /api/vods?type=spectator|pov|all`
 **Why:** Frontend needs to distinguish spectator VODs (playerId IS NULL, full match footage) from POV VODs (playerId IS NOT NULL, player-specific). Currently no way to filter by VOD type.
 **Spec change:** Add `type` query parameter to `GET /vods` in openapi.yaml:
@@ -26,7 +26,7 @@ Format: one section per request.
 ---
 
 ## Request: Add `playerId` filter to `GET /api/matches`
-**Needed for:** Issue #96
+**Needed for:** Issue #96 | **Backend issue:** #110
 **Endpoint:** `GET /api/matches?playerId=39`
 **Why:** Frontend needs a "View all matches" link from PlayerProfile. Currently `GET /api/matches` supports `teamId`, `eventId`, `seasonId`, `search` but NOT `playerId`. Without this, there's no way to list all matches a specific player participated in.
 **Spec change:** Add `playerId` query parameter to `GET /matches` in openapi.yaml:
@@ -42,7 +42,7 @@ Format: one section per request.
 ---
 
 ## Request: Add `bracketSize` or `totalRounds` to Event/Match response
-**Needed for:** Issue #106
+**Needed for:** Issue #106 | **Backend issue:** #111
 **Status:** ✅ Approved by owner — dynamic bracket labels confirmed
 **Endpoint:** Extend `GET /api/matches/:id` response OR `GET /api/events/:idOrSlug` response
 **Why:** Frontend needs to dynamically calculate bracket round labels (Quarter Final, Semi Final, Grand Final) based on bracket size. Currently hardcoded for 8-team brackets which is incorrect for other sizes (4-team, 16-team).
