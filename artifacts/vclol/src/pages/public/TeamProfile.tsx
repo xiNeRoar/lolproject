@@ -1,8 +1,8 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam, useGetTeamEloHistory, useListVods } from "@workspace/api-client-react";
+import { useGetTeam, useGetTeamEloHistory } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Video, PlayCircle, Settings } from "lucide-react";
+import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Settings } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -23,7 +23,6 @@ export default function TeamProfile() {
   const { playerIdNum } = useAuth();
   const { data: team, isLoading, isError } = useGetTeam(teamId);
   const { data: eloHistory } = useGetTeamEloHistory(teamId, { query: { enabled: !!team } });
-  const { data: teamVods } = useListVods({ teamId }, { query: { enabled: !!team } });
   const isCaptain = team?.captainPlayerId === playerIdNum;
 
   if (isLoading) {
@@ -249,7 +248,10 @@ export default function TeamProfile() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
-                <Link href={`/matches?teamId=${teamId}`} className="text-xs text-primary hover:underline">View All →</Link>
+                <div className="flex items-center gap-3">
+                  <Link href={`/watch?teamId=${teamId}`} className="text-xs text-primary hover:underline">Watch VODs →</Link>
+                  <Link href={`/matches?teamId=${teamId}`} className="text-xs text-primary hover:underline">All Matches →</Link>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -288,71 +290,6 @@ export default function TeamProfile() {
           </Card>
         )}
 
-        {(() => {
-          const vods = teamVods ?? [];
-          if (vods.length === 0) return null;
-
-          function extractYtId(url: string): string | null {
-            try {
-              const u = new URL(url);
-              if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
-              if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
-            } catch { /* ignore */ }
-            return null;
-          }
-
-          return (
-            <Card className="bg-card/40 border-border/40 mb-6">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-display flex items-center gap-2">
-                  <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vods.map((vod) => {
-                    const ytId = extractYtId(vod.videoUrl);
-                    const isPlayerPov = !!vod.playerId;
-                    return (
-                      <Link key={vod.id} href={`/watch/${vod.id}`} className="group block">
-                        <div className="rounded-lg overflow-hidden border border-border/40 bg-black aspect-video relative">
-                          {ytId ? (
-                            <img
-                              src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-                              alt={vod.title}
-                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted/20">
-                              <PlayCircle className="w-10 h-10 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
-                              <PlayCircle className="w-6 h-6 text-white" />
-                            </div>
-                          </div>
-                          <Badge className={`absolute top-2 left-2 text-[10px] ${isPlayerPov ? "bg-blue-400/20 text-blue-400 border-blue-400/30" : "bg-primary/20 text-primary border-primary/30"}`}>
-                            {isPlayerPov ? "Player POV" : "Spectator"}
-                          </Badge>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{vod.title}</p>
-                          <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
-                            {vod.playerRiotId && <span className="text-primary/80">{vod.playerRiotId}</span>}
-                            {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
-                            {vod.position && <span>• {vod.position}</span>}
-                            {vod.patch && <span>• Patch {vod.patch}</span>}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })()}
       </div>
     </PublicLayout>
   );

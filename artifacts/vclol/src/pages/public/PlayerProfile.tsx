@@ -7,7 +7,7 @@ import { getTeamEloHistory, getGetTeamEloHistoryQueryKey } from "@workspace/api-
 import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
+import { Crown, TrendingUp, Award, Crosshair, CalendarDays, Swords } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -374,7 +374,10 @@ export default function PlayerProfile() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
-                <Link href="/matches" className="text-xs text-primary hover:underline">View All →</Link>
+                <div className="flex items-center gap-3">
+                  <Link href={`/watch?playerId=${player.id}`} className="text-xs text-primary hover:underline">Watch VODs →</Link>
+                  <Link href="/matches" className="text-xs text-primary hover:underline">All Matches →</Link>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -414,43 +417,6 @@ export default function PlayerProfile() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2"><Video className="w-4 h-4 text-primary" /> VODs</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!player.vods?.length ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No VODs available yet.</div>
-              ) : (
-                <div className="divide-y divide-border/30">
-                  {player.vods.map((vod) => (
-                    <div key={vod.id} className="px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/vods/${vod.id}`} className="text-sm font-medium truncate block hover:text-primary transition-colors">
-                          {vod.title}
-                        </Link>
-                        <div className="text-xs text-muted-foreground flex gap-2">
-                          {vod.champion && <span>{vod.champion}</span>}
-                          {vod.position && <span>· {vod.position}</span>}
-                          {vod.patch && <span>· Patch {vod.patch}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {vod.matchId && (
-                          <Link href={`/matches/${vod.matchId}`} className="text-xs text-primary hover:underline">
-                            Match →
-                          </Link>
-                        )}
-                        <Link href={`/vods/${vod.id}`}>
-                          <PlayCircle className="w-3 h-3 text-muted-foreground" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </PublicLayout>
