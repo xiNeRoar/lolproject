@@ -316,7 +316,7 @@ function TeamSettingsSection({ team, teamId }: { team: any; teamId: number }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(team.name);
   const [tag, setTag] = useState(team.tag);
-  const [defaultVis, setDefaultVis] = useState(team.defaultMatchVisibility || "participants");
+  const [defaultVis, setDefaultVis] = useState(team.defaultMatchVisibility || "public");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -373,7 +373,7 @@ function TeamSettingsSection({ team, teamId }: { team: any; teamId: number }) {
             className="w-full px-3 py-2 rounded-md bg-muted/30 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="public">Public</option>
-            <option value="participants">Participants Only</option>
+            <option value="default">Default (7-day delay)</option>
             <option value="private">Private</option>
           </select>
         </div>
@@ -522,7 +522,7 @@ export default function CaptainHub() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">Team not found.</p>
-          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">← Back</button>
+          <Link href={`/teams/${teamId}`} className="text-primary hover:underline text-sm mt-2 inline-block">← Back to Team</Link>
         </div>
       </PublicLayout>
     );

@@ -42,9 +42,9 @@ export default function TeamProfile() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">Team not found.</p>
-          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">
-            ← Back
-          </button>
+          <Link href="/teams" className="text-primary hover:underline text-sm mt-2 inline-block">
+            ← Back to Ranking
+          </Link>
         </div>
       </PublicLayout>
     );
@@ -62,12 +62,12 @@ export default function TeamProfile() {
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
-        <button
-          onClick={() => window.history.back()}
+        <Link
+          href="/teams"
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6"
         >
-          <ChevronLeft className="w-4 h-4" /> Back
-        </button>
+          <ChevronLeft className="w-4 h-4" /> Ranking
+        </Link>
 
         <Card className="bg-card/40 border-border/40 mb-8">
           <CardContent className="p-8">

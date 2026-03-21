@@ -25,7 +25,7 @@ export default function NotFound() {
             <p className="text-sm text-muted-foreground mb-4">Looking for something specific?</p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link href="/teams" className="text-sm text-primary hover:underline flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5" /> Ladder
+                <Trophy className="w-3.5 h-3.5" /> Ranking
               </Link>
               <Link href="/players" className="text-sm text-primary hover:underline flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Players

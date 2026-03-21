@@ -1,4 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
+import { Link } from "wouter";
 import { Mail, MessageSquare } from "lucide-react";
 
 export default function Contact() {
@@ -18,7 +19,7 @@ export default function Contact() {
             <h3 className="text-xl font-bold mb-2">Discord</h3>
             <p className="text-muted-foreground mb-6">The primary hub for all project communication and team coordination.</p>
             <p className="text-sm font-medium border border-border/50 bg-background px-4 py-2 rounded">
-              Join via the Discord link on our Register page
+              Join via the Discord link on our <Link href="/register" className="text-primary hover:underline">Register page</Link>
             </p>
           </div>
 

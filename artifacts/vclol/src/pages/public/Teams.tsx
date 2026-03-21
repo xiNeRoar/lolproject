@@ -21,7 +21,7 @@ export default function Teams() {
   return (
     <PublicLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-display font-bold mb-2">Team Ladder</h1>
+        <h1 className="text-4xl font-display font-bold mb-2">Ranking</h1>
         <div className="flex flex-wrap items-center gap-3 mb-2">
           {data?.season ? (
             <div className="text-muted-foreground flex items-center gap-2">
@@ -126,11 +126,11 @@ export default function Teams() {
 
       <div className="max-w-7xl mx-auto px-4 pb-16 sm:px-6 lg:px-8">
         <div className="border border-border/30 rounded-xl p-6 bg-card/20">
-          <h3 className="text-lg font-display font-semibold mb-4">How the Ladder Works</h3>
+          <h3 className="text-lg font-display font-semibold mb-4">How the Ranking Works</h3>
           {settings ? (
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• ELO system: each match is worth ±{settings.kFactor} points (varies by opponent ELO)</li>
-              <li>• Minimum <span className="text-foreground">{settings.minMatchesForDisplay} matches</span> required to appear on the ladder</li>
+              <li>• Minimum <span className="text-foreground">{settings.minMatchesForDisplay} matches</span> required to appear in the ranking</li>
               <li>• Top <span className="text-foreground">{playoffSize} teams</span> qualify for season playoffs</li>
               <li>• Default match format: <span className="text-foreground">{settings.defaultMatchFormat}</span></li>
             </ul>

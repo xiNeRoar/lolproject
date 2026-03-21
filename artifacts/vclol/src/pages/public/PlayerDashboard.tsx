@@ -167,8 +167,7 @@ function DashboardContent({ pid }: { pid: number }) {
         if (captainTeams.length === 0) return null;
 
         const team = captainTeams[0];
-        const memberCount = player.teams?.find((t) => t.teamId === team.teamId) ? 5 : 0;
-        const hasRoster = (player.teams?.length ?? 0) >= 1;
+        const hasRoster = (team.memberCount ?? 0) >= 5;
         const hasMatches = (player.recentMatches?.length ?? 0) > 0;
         const hasLinkedRiot = player.riotId !== "pending" && !!player.puuid;
 

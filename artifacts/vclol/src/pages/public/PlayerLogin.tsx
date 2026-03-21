@@ -37,7 +37,7 @@ export default function PlayerLogin() {
               Login with Discord
             </a>
             <p className="text-xs text-muted-foreground text-center">
-              Your Riot ID is your competitive identity on this platform.
+              Login with Discord to access your player dashboard.
             </p>
             <p className="text-sm text-muted-foreground">
               New player?{" "}

@@ -92,14 +92,14 @@ export default function Register() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 bg-card/40">
+          <Card className="border-border/40 bg-card/60">
             <CardContent className="pt-6 pb-6">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-display font-bold text-primary/70 shrink-0">
-                  3.5
+                <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-lg font-display font-bold text-primary shrink-0">
+                  4
                 </div>
                 <div>
-                  <h2 className="text-lg font-display font-bold mb-1">Link Riot Accounts</h2>
+                  <h2 className="text-xl font-display font-bold mb-1">Link Riot Accounts</h2>
                   <p className="text-sm text-muted-foreground">
                     Each player should use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/link-riot RiotName#TAG</code> in
                     Discord to connect their Riot account. This unlocks champion stats, KDA, and CS tracking.
@@ -116,7 +116,7 @@ export default function Register() {
             <CardContent className="pt-6 pb-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-lg font-display font-bold text-primary shrink-0">
-                  4
+                  5
                 </div>
                 <div>
                   <h2 className="text-xl font-display font-bold mb-1">Submit Replays</h2>

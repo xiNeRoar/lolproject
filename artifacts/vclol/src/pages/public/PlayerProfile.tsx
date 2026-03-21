@@ -146,9 +146,9 @@ export default function PlayerProfile() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">Player not found.</p>
-          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">
-            ← Back
-          </button>
+          <Link href="/players" className="text-primary hover:underline text-sm mt-2 inline-block">
+            ← Back to Players
+          </Link>
         </div>
       </PublicLayout>
     );

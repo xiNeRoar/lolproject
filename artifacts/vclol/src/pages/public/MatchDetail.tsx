@@ -109,7 +109,7 @@ export default function MatchDetail() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">Match not found.</p>
-          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">← Back</button>
+          <Link href="/matches" className="text-primary hover:underline text-sm mt-2 inline-block">← Back to Matches</Link>
         </div>
       </PublicLayout>
     );
@@ -214,9 +214,9 @@ export default function MatchDetail() {
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
-        <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> Back
-        </button>
+        <Link href="/matches" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Matches
+        </Link>
 
         {showExplainer && !isLoggedIn && (
           <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex items-start gap-3">

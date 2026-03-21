@@ -1,4 +1,6 @@
 import PublicLayout from "@/components/layout/PublicLayout";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import { Eye, Zap, Target } from "lucide-react";
 
 export default function About() {
@@ -40,6 +42,12 @@ export default function About() {
                 Solo queue is great for mechanical practice, but it teaches bad habits for competitive play. True competitive League of Legends requires communication, draft strategy, and team cohesion. By providing a structured, recorded environment, we aim to elevate the level of competitive grassroots play across North America.
               </p>
             </section>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link href="/register">
+              <Button size="lg" className="text-base px-8">Join VCLoL →</Button>
+            </Link>
           </div>
         </div>
       </div>

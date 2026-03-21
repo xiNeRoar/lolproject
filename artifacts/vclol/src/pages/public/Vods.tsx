@@ -177,7 +177,7 @@ export default function Vods() {
                         )}
                         {vod.patch && (
                           <span className="text-[10px] text-muted-foreground self-center">
-                            P{vod.patch}
+                            Patch {vod.patch}
                           </span>
                         )}
                       </div>
