@@ -136,10 +136,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/teams", label: "Ladder" },
+    { href: "/teams", label: "Ranking" },
     { href: "/players", label: "Players" },
     { href: "/events", label: "Events" },
-    { href: "/vods", label: "VODs" },
+    { href: "/vods", label: "Watch" },
   ];
 
   const firstTeam = player?.teams?.[0];
