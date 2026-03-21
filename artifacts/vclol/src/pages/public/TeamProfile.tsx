@@ -305,55 +305,47 @@ export default function TeamProfile() {
             <Card className="bg-card/40 border-border/40 mb-6">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-display flex items-center gap-2">
-                  <Video className="w-4 h-4 text-primary" /> VODs
+                  <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-border/30">
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {vods.map((vod) => {
                     const ytId = extractYtId(vod.videoUrl);
+                    const isPlayerPov = !!vod.playerId;
                     return (
-                      <div key={vod.id} className="px-6 py-4">
-                        {ytId && (
-                          <div className="mb-3 rounded-lg overflow-hidden border border-border/40 bg-black aspect-video">
-                            <iframe
-                              src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
-                              className="w-full h-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                              title={vod.title}
+                      <Link key={vod.id} href={`/watch/${vod.id}`} className="group block">
+                        <div className="rounded-lg overflow-hidden border border-border/40 bg-black aspect-video relative">
+                          {ytId ? (
+                            <img
+                              src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+                              alt={vod.title}
+                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                             />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-3">
-                          {!ytId && <PlayCircle className="w-5 h-5 text-muted-foreground shrink-0" />}
-                          <div className="flex-1 min-w-0">
-                            <Link href={`/vods/${vod.id}`} className="text-sm font-medium hover:text-primary transition-colors">
-                              {vod.title}
-                            </Link>
-                            <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
-                              {vod.playerRiotId && (
-                                <Link href={`/players/${encodeURIComponent(vod.playerRiotId)}`} className="text-primary/80 hover:text-primary">
-                                  {vod.playerRiotId}
-                                </Link>
-                              )}
-                              {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
-                              {vod.position && <span>• {vod.position}</span>}
-                              {vod.patch && <span>• Patch {vod.patch}</span>}
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                              <PlayCircle className="w-10 h-10 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
+                              <PlayCircle className="w-6 h-6 text-white" />
                             </div>
                           </div>
-                          {vod.matchId && (
-                            <Link href={`/matches/${vod.matchId}`} className="text-xs text-primary hover:underline shrink-0">
-                              Match →
-                            </Link>
-                          )}
-                          {vod.videoUrl && !ytId && (
-                            <a href={vod.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline shrink-0">
-                              Watch →
-                            </a>
-                          )}
+                          <Badge className={`absolute top-2 left-2 text-[10px] ${isPlayerPov ? "bg-blue-400/20 text-blue-400 border-blue-400/30" : "bg-primary/20 text-primary border-primary/30"}`}>
+                            {isPlayerPov ? "Player POV" : "Spectator"}
+                          </Badge>
                         </div>
-                      </div>
+                        <div className="mt-2">
+                          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{vod.title}</p>
+                          <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
+                            {vod.playerRiotId && <span className="text-primary/80">{vod.playerRiotId}</span>}
+                            {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
+                            {vod.position && <span>• {vod.position}</span>}
+                            {vod.patch && <span>• Patch {vod.patch}</span>}
+                          </div>
+                        </div>
+                      </Link>
                     );
                   })}
                 </div>
