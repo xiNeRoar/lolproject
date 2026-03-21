@@ -50,8 +50,9 @@ function DashboardContent({ pid }: { pid: number }) {
     return { icon: "🔔", color: "text-muted-foreground" };
   }
 
-  function notifHref(n: { type: string }): string | null {
+  function notifHref(n: { type: string; entityId?: number | null }): string | null {
     if (n.type === "match_result") {
+      if (n.entityId) return `/matches/${n.entityId}`;
       const team = player.teams?.[0];
       return team ? `/teams/${team.teamId}` : `/players/${encodeURIComponent(player.riotId)}`;
     }
