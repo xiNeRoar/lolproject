@@ -2,8 +2,13 @@ import express, { type Express } from "express";
 import cors from "cors";
 import session from "express-session";
 import rateLimit from "express-rate-limit";
-import { join } from "path";
+import { join, dirname } from "path";
 import { existsSync } from "fs";
+import { fileURLToPath } from "url";
+
+// ESM-compatible __dirname (not available natively in ES modules)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import router from "./routes";
 import { createOgMiddleware } from "./lib/ogMiddleware";
 
@@ -72,7 +77,7 @@ if (hasStaticFiles) {
   app.use(express.static(STATIC_DIR, { index: false }));
 
   // 3. SPA fallback — all non-API routes serve index.html
-  app.get("*", (_req, res) => {
+  app.get("/{*path}", (_req, res) => {
     res.sendFile(join(STATIC_DIR, "index.html"));
   });
 } else if (isProduction) {
