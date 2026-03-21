@@ -144,3 +144,100 @@ discordUrl:
 ```
 **Backend logic:** Add column to events table, return in GET response. Optional field, null by default.
 
+---
+
+## Request: Add `gameNumber` and `vodType` fields to VOD schema + BO series support
+**Needed for:** Issue #108 (Matches/Watch overlap) + VOD architecture improvements | **Backend issue:** #116
+**Status:** Design finalized — see full UX spec below
+
+### Problem
+The current VOD schema cannot properly represent BO3/BO5 series or distinguish between spectator and team-side POV recordings:
+
+1. **No game number** — A BO3 match links 3 spectator VODs to the same `matchId`, but there's no way to tell which is Game 1/2/3
+2. **No VOD type distinction** — `playerId = NULL` means spectator, `playerId ≠ NULL` means player POV. But there's no concept of "Team A's spectator view" vs "Team B's spectator view"
+3. **No series format** — Match has no `bestOf` field to indicate BO1/BO3/BO5
+
+### Spec changes
+
+**Add to VodEntry / VodDetail / CreateVodRequest schemas:**
+```yaml
+gameNumber:
+  type: integer
+  nullable: true
+  description: "Game number within a BO series (1, 2, 3...). NULL for BO1 or standalone VODs."
+
+vodType:
+  type: string
+  enum: [spectator, team-pov, player-pov]
+  nullable: true
+  description: "spectator = neutral/full match view. team-pov = one team's perspective (requires teamId). player-pov = individual player POV (requires playerId). NULL treated as spectator for backwards compat."
+
+teamId:
+  type: integer
+  nullable: true
+  description: "For team-pov VODs, which team's perspective this recording is from."
+```
+
+**Add to Match schema:**
+```yaml
+bestOf:
+  type: integer
+  nullable: true
+  description: "Series format: 1 = BO1, 3 = BO3, 5 = BO5. NULL treated as BO1."
+
+score:
+  type: string
+  nullable: true
+  description: "Series score e.g. '2-1', '3-2'. NULL for BO1."
+```
+
+### Backend logic
+- Add columns to `vods` table: `gameNumber` (int, nullable), `vodType` (text, nullable), `teamId` (int, nullable, FK to teams)
+- Add columns to `matches` table: `bestOf` (int, nullable, default 1), `score` (text, nullable)
+- When creating VODs via Discord bot, populate `gameNumber` if match is BO3/BO5
+- `vodType` defaults: if `playerId` is set → `player-pov`, else → `spectator`
+- Backwards compat: existing VODs with NULL `vodType` treated as spectator
+
+### Frontend UX design (what Replit will build once backend is ready)
+
+**MatchDetail VODs section — grouped by game, then by type:**
+```
+VODs (6)
+
+Game 1
+  📺 Full Match (Spectator)
+  👥 Team A POV  ·  👥 Team B POV
+
+Game 2
+  📺 Full Match (Spectator)
+
+Player POVs
+  🎮 PlayerName (Jinx vs Thresh · Bot) — Game 1
+  🎮 PlayerName (Ahri vs Syndra · Mid) — Game 2
+```
+
+Key UX rules:
+- Group by `gameNumber` first, then by `vodType`
+- Player POVs collected in separate section (not every player has one — only those who requested)
+- BO1 matches: no "Game 1" header, just flat list
+- Each VOD row: YouTube embed or thumbnail + title + metadata
+- Player POV rows link to player profile
+
+**Watch page (`/watch`) — pure VOD archive:**
+- Search + filter by type (Spectator / Player POV), team, event, champion, position
+- Card grid with YouTube thumbnails
+- Badge shows VOD type: "Spectator" / "Player POV" / "Team POV"
+- No match data display — just link to match page via "Match →"
+
+**Matches page (`/matches`) — match records only:**
+- No VOD badges or VOD-related UI (removed per #108)
+- Pure match listing: teams, score, date, event
+
+### Files to change
+- `lib/api-spec/openapi.yaml` — schema changes above
+- `lib/db/src/schema/vods.ts` — add columns
+- `lib/db/src/schema/matches.ts` — add `bestOf`, `score` columns
+- `artifacts/api-server/src/routes/vods.ts` — handle new fields in CRUD
+- `artifacts/api-server/src/routes/matches.ts` — return new fields
+- Run `pnpm run generate` after spec change + `db:push`
+
