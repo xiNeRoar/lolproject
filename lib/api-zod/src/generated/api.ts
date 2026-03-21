@@ -453,7 +453,8 @@ export const GetPlayerByIdResponse = zod.object({
   "teamTag": zod.string(),
   "role": zod.string().nullish(),
   "status": zod.string(),
-  "isCaptain": zod.boolean()
+  "isCaptain": zod.boolean(),
+  "memberCount": zod.number().describe('Number of active members on this team')
 })),
   "aggregateStats": zod.object({
   "totalGames": zod.number(),
@@ -552,7 +553,8 @@ export const GetPlayerResponse = zod.object({
   "teamTag": zod.string(),
   "role": zod.string().nullish(),
   "status": zod.string(),
-  "isCaptain": zod.boolean()
+  "isCaptain": zod.boolean(),
+  "memberCount": zod.number().describe('Number of active members on this team')
 })),
   "aggregateStats": zod.object({
   "totalGames": zod.number(),

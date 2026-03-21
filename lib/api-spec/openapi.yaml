@@ -2415,7 +2415,10 @@ components:
           type: string
         isCaptain:
           type: boolean
-      required: [teamId, teamName, teamTag, status, isCaptain]
+        memberCount:
+          type: integer
+          description: Number of active members on this team
+      required: [teamId, teamName, teamTag, status, isCaptain, memberCount]
 
     PlayerAggregateStats:
       type: object

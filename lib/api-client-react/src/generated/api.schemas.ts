@@ -199,6 +199,8 @@ export interface PlayerTeamEntry {
   role?: string | null;
   status: string;
   isCaptain: boolean;
+  /** Number of active members on this team */
+  memberCount: number;
 }
 
 export interface PlayerChampionStats {

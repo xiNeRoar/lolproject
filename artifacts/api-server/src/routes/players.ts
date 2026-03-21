@@ -10,7 +10,7 @@ import {
   eventRegistrationsTable,
   eventsTable,
 } from "@workspace/db";
-import { eq, desc, and, count, avg, sum, sql } from "drizzle-orm";
+import { eq, desc, and, count, avg, sum, sql, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
 
@@ -51,6 +51,23 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
     .leftJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
     .where(eq(teamMembersTable.playerId, player.id));
 
+  // Fetch active member counts for all teams the player belongs to
+  const teamIds = [...new Set(memberRows.map((r) => r.teamId))];
+  const memberCounts: Record<number, number> = {};
+  if (teamIds.length > 0) {
+    const countRows = await db
+      .select({ teamId: teamMembersTable.teamId, cnt: count() })
+      .from(teamMembersTable)
+      .where(and(
+        inArray(teamMembersTable.teamId, teamIds),
+        eq(teamMembersTable.status, "active"),
+      ))
+      .groupBy(teamMembersTable.teamId);
+    for (const row of countRows) {
+      memberCounts[row.teamId] = Number(row.cnt);
+    }
+  }
+
   const teams = memberRows.map((r) => ({
     teamId: r.teamId,
     teamName: r.teamName ?? "",
@@ -58,6 +75,7 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
     role: r.role ?? null,
     status: r.status,
     isCaptain: r.captainPlayerId === player.id,
+    memberCount: memberCounts[r.teamId] ?? 0,
   }));
 
   // Aggregate stats from match_players
