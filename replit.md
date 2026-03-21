@@ -281,7 +281,7 @@ visibleAfter null = 7-day default
 - **#22** Players page — enriched data (team name, total games, win rate)
 - **#18 R1** MatchDetail "Unregistered Team" badge — yellow badge when `teamAId` or `teamBId` is null
 - **#18 R2** MatchDetail "Claim this match" CTA — captain can claim unregistered side via `useClaimTeamForMatch`
-- **#18 R3** PlayerProfile "Is this you?" banner — shows when not logged in
+- **#18 R3** PlayerProfile "Is this you?" banner — ~~shows when not logged in~~ REMOVED in #101
 - **#18 R4** PlayerDashboard riotId pending alert — yellow warning when puuid null
 - **#18 R5** ManagePlayers + ManageTeams ban button — `useCreateBan`/`useLiftBan`/`useListBans`, ban dialog, banned badge, lift ban
 - **#18 R6** ManageTeams member management — expandable members panel, `useListTeamMembers`/`useAddTeamMember`/`useUpdateTeamMember`/`useRemoveTeamMember`
@@ -308,10 +308,25 @@ visibleAfter null = 7-day default
 - **#52** Champion icons — `champPortraitUrl()` + name in both team player stats tables
 - **#53** About removed from nav — footer-only via "What is VCLoL?"
 - **#58** Nav labels — "Ladder"→"Ranking", "VODs"→"Watch" (per owner preference)
+- **#89** Register page `<a>` → `<Link>` — no full page reload on "Log in here" navigation
+- **#91** VodDetail ExternalLink → PlayCircle icon swap
+- **#92** Events badge sentence case — `.charAt(0).toUpperCase() + .slice(1)` replaces `toUpperCase()`
+- **#93** Dashboard notification icon dedup — match_result → ⚔️ (was duplicate 🔔)
+- **#95** VOD page team filter dropdown — `teamIdFilter` state + `All Teams` select via `useGetLadder`
+- **#96** "View All →" links — TeamProfile → `/matches?teamId=X`, PlayerProfile → `/matches`
+- **#97** CaptainHub raw checkbox → Shadcn `<Checkbox>` component
+- **#99** Full -500 → -400 color migration across 6+ files (CaptainHub, TeamProfile, MatchDetail, PlayerProfile, DevLogin, MatchList, lol-utils)
+- **#100** Teams page mobile W/L visible — removed `hidden` from W/L column, only Win Rate hidden on mobile
+- **#101** "Is this you?" banner removed from PlayerProfile (supersedes #18 R3)
+- **#102** Register page "Already registered? Log in here →" link added at bottom
+- **#103** MatchDetail claim explanation text — "Captains: link your team to this side for ELO tracking"
+- **#104** GlobalSearch keyboard nav — ArrowUp/Down/Enter, highlightedIndex, scrollIntoView, ARIA combobox/listbox/option
+- **#105** PlayerProfile VOD row ExternalLink → PlayCircle icon
+- **#107** Dashboard quick stats grid — Record (W/L), Win Rate %, Avg KDA below player card
 
 ## Issues Closed via API
 
-#15, #16, #17, #18, #22, #23, #32, #34, #37, #39, #40, #41, #42, #43, #45, #46, #47, #48, #49, #50, #51, #52, #53, #58. #7 was already closed.
+#15, #16, #17, #18, #22, #23, #32, #34, #37, #39, #40, #41, #42, #43, #45, #46, #47, #48, #49, #50, #51, #52, #53, #58, #89, #90, #91, #92, #93, #95, #96, #97, #99, #100, #101, #102, #103, #104, #105, #107. #7 was already closed.
 
 ## API Status
 
