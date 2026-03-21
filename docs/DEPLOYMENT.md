@@ -8,12 +8,13 @@ VCLoL runs as two Portainer stacks plus a database backup container. All contain
 
 ## Stack 1: `vclol-web`
 
-Contains the API server and the VCLoL frontend (Vite SPA).
+Contains the API server. Express serves **both** the API and the compiled Vite SPA, including OG tag injection for Discord/social link previews.
 
 | Service | Image | Port | Notes |
 |---------|-------|------|-------|
-| `api-server` | `vclol-api:latest` | 3000 | Express API |
-| `vclol` | `vclol-frontend:latest` | 5173 | Vite production build served via static server |
+| `api-server` | `vclol-api:latest` | 3000 | Express API + SPA static serving + OG meta tags |
+
+**Note:** The separate `vclol-frontend` container has been removed. Build the Vite SPA separately (`pnpm --filter @workspace/vclol build`), mount the output (`dist/public`) into the `api-server` container, and set `STATIC_DIR` to its path.
 
 Both services connect to the shared PostgreSQL database via `DATABASE_URL`.
 
@@ -85,6 +86,8 @@ gunzip -c /mnt/nas/vclol-backups/vclol_20260320_030000.sql.gz | psql -h $DB_HOST
 | `DISCORD_BOT_TOKEN` | Yes | -- | Discord bot token |
 | `RIOT_API_KEY` | No | -- | Phase 2: validates Riot ID exists |
 | `ROFL_UPLOAD_DIR` | No | `./uploads/rofl` | Where .rofl files are stored |
+| `STATIC_DIR` | No | `../vclol/dist/public` | Path to compiled Vite SPA output (for consolidated serving). |
+| `VITE_SITE_URL` | No | `https://vclol.gg` | Canonical base URL used in OG meta tags. Set to your production domain. |
 | `PORT` | No | `3000` | API server port |
 
 For the backup container, set the `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables separately (or derive them from `DATABASE_URL`).
