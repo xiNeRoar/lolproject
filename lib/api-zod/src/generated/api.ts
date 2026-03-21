@@ -1863,6 +1863,7 @@ export const ListNotificationsResponseItem = zod.object({
   "type": zod.string(),
   "title": zod.string(),
   "message": zod.string(),
+  "entityId": zod.number().nullish().describe('Reference ID for the notification subject (e.g. matchId for match_result, eventId for event notifications)'),
   "isRead": zod.boolean().nullish(),
   "dmSent": zod.boolean().nullish(),
   "dmFailed": zod.boolean().nullish(),

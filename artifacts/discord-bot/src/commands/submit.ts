@@ -327,6 +327,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             type: "match_result",
             title: "Match recorded",
             message: `${sideAName} vs ${sideBName} — ${winnerName} won (${duration})`,
+            entityId: match.id,
             isRead: false,
             dmSent: false,
             dmFailed: false,

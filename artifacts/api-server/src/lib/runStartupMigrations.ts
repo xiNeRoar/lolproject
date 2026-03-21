@@ -22,6 +22,9 @@ export async function runStartupMigrations(): Promise<void> {
 
       ALTER TABLE teams
         ADD COLUMN IF NOT EXISTS default_match_visibility TEXT DEFAULT 'participants';
+
+      ALTER TABLE notifications
+        ADD COLUMN IF NOT EXISTS entity_id INTEGER DEFAULT NULL;
     `);
 
     // Verify all columns exist
@@ -32,14 +35,17 @@ export async function runStartupMigrations(): Promise<void> {
         (SELECT COUNT(*) FROM information_schema.columns
          WHERE table_name='teams' AND column_name='last_match_at') AS has_last_match_at,
         (SELECT COUNT(*) FROM information_schema.columns
-         WHERE table_name='teams' AND column_name='default_match_visibility') AS has_default_visibility
+         WHERE table_name='teams' AND column_name='default_match_visibility') AS has_default_visibility,
+        (SELECT COUNT(*) FROM information_schema.columns
+         WHERE table_name='notifications' AND column_name='entity_id') AS has_notification_entity_id
     `);
 
     const row = result.rows[0];
     const allPresent =
       Number(row.has_last_active_at) > 0 &&
       Number(row.has_last_match_at) > 0 &&
-      Number(row.has_default_visibility) > 0;
+      Number(row.has_default_visibility) > 0 &&
+      Number(row.has_notification_entity_id) > 0;
 
     if (allPresent) {
       console.log("[migration] ✅ All schema columns verified");

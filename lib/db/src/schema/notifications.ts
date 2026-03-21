@@ -7,6 +7,7 @@ export const notificationsTable = pgTable("notifications", {
   type: text("type").notNull(),
   title: text("title").notNull(),
   message: text("message").notNull(),
+  entityId: integer("entity_id"),  // e.g. matchId for match_result, eventId for event notifications
   isRead: boolean("is_read").notNull().default(false),
   dmSent: boolean("dm_sent").notNull().default(false),
   dmFailed: boolean("dm_failed").notNull().default(false),

@@ -11,6 +11,8 @@ export interface Notification {
   type: string;
   title: string;
   message: string;
+  /** Reference ID for the notification subject (e.g. matchId for match_result, eventId for event notifications) */
+  entityId?: number | null;
   isRead?: boolean | null;
   dmSent?: boolean | null;
   dmFailed?: boolean | null;
