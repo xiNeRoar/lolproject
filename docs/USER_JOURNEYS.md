@@ -30,9 +30,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. MatchDetail page is self-explanatory: shows teams, result, stats, AND a "What is VCLoL?" micro-explainer
 
-**Current state:** Private matches return redacted result (teams + winner, no stats) — not 403. ✅ #8 done. Explainer banner still missing.
-**Required:** First-visit explainer banner for unauthenticated visitors. Private match visibleAfter countdown message.
-**Issue:** #40 (explainer banner)
+**Current state:** ✅ Complete. Private matches return redacted result (#8). First-visit explainer banner added (#40). Step count: 1.
 
 ---
 
@@ -44,9 +42,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Go to /register — see bot guide + Discord invite link
 3. Add bot to their server
 
-**Current state:** /register exists (bot guide). Bot invite button is disabled (placeholder).
-**Required:** Real bot invite URL in /register.
-**Issue:** Bot must be deployed and invite link configured.
+**Current state:** ✅ Complete. /register exists with bot guide. Bot invite link enabled (#37). Step count: 3.
 
 ---
 
@@ -103,8 +99,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Type `/link-riot RiotName#TAG` in Discord
 
-**Current state:** Command exists in BOT_SPEC. Bot not built yet.
-**Required:** #6
+**Current state:** ✅ /link-riot command built and deployed (#6). Step count: 1.
 
 ---
 
@@ -284,8 +279,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Visit /register — see bot guide and install instructions
 3. Click "Add Bot to Discord" → OAuth flow
 
-**Current state:** Home stats always visible ✅ #41. Discord link previews now show team/match/player info ✅ #56. Bot invite button still placeholder (blocked on Discord app setup).
-**Required:** Real bot invite URL (#37).
+**Current state:** ✅ Complete. Home stats visible (#41), OG link previews (#56), bot invite link enabled (#37). Step count: 3.
 
 ---
 
@@ -293,20 +287,20 @@ If a feature doesn't appear in this document, it doesn't get built.
 
 | Journey | Max Steps | Current Steps | Gap |
 |---------|-----------|---------------|-----|
-| J-01 Match link → understand context | 1 | partial | #40 (explainer banner pending) |
-| J-02 Discover → join | 3 | incomplete | bot invite URL |
+| J-01 Match link → understand context | 1 | 1 | ✅ #8 + #40 done |
+| J-02 Discover → join | 3 | 3 | ✅ #37 done |
 | J-03 Find player/team | 2 | 2 | ✅ #23 done |
 | J-04 See recent match performance | 2 | 2 | ✅ #16 done |
 | J-05 Watch match VOD | 3 | 3 | ✅ #16 done |
 | J-06 Request POV render | 1 | 1 | ✅ |
-| J-07 Link Riot ID | 1 | bot not built | #6 |
+| J-07 Link Riot ID | 1 | 1 | ✅ #6 done |
 | J-08 Competitive resume | 1 | 1 | ✅ |
-| J-09 Set match public | 2 | 5 | #14, #15 |
-| J-10 Set visibility default | 2 | ∞ | #14, #15 |
-| J-11 Bulk set visibility | 3 | ∞ | #14, #15 |
+| J-09 Set match public | 2 | 2 | ✅ #14 + #15 done |
+| J-10 Set visibility default | 2 | 2 | ✅ #14 + #15 done |
+| J-11 Bulk set visibility | 3 | 3 | ✅ #14 + #15 done |
 | J-12 See team VODs | 1 | 1 | ✅ #17 done |
-| J-13 Add player to roster | 1/3 | bot not built | #4, #10, #15 |
-| J-14 Transfer captain | 1/3 | bot not built | #4, #14, #15 |
+| J-13 Add player to roster | 1/3 | 1/3 | ✅ #4 + #10 + #15 done |
+| J-14 Transfer captain | 1/3 | 1/3 | ✅ #4 + #14 + #15 done |
 | J-15 Check teammate link status | 1 | 1 | ✅ #15 done |
 | J-16 Find players by criteria | 2 | 2 | ✅ #22 done |
 | J-17 Verify player record | 1 | 1 | ✅ |
@@ -314,4 +308,4 @@ If a feature doesn't appear in this document, it doesn't get built.
 | J-19 Platform health overview | 1 | 1 | ✅ #18 done |
 | J-20 Handle ban | 3 | 3 | ✅ #18 done |
 | J-21 Fix orphaned team | 3 | 3 | ✅ |
-| J-22 Evaluate → install bot | 3 | partial | ✅ #41 stats, ✅ #56 OG previews; bot invite URL pending #37 |
+| J-22 Evaluate → install bot | 3 | 3 | ✅ #37 + #41 + #56 done |
