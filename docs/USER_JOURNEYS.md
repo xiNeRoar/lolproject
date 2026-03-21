@@ -57,8 +57,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Use search bar (global search)
 2. Land on PlayerProfile or TeamProfile
 
-**Current state:** No search. Must know exact URL.
-**Required:** #23 (global search backend) + #25 (search UI)
+**Current state:** ✅ Global search bar in nav. Searches teams, players, events.
 
 ---
 
@@ -71,8 +70,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Login via Discord OAuth → land on Dashboard
 2. Dashboard shows recent matches directly (no extra navigation)
 
-**Current state:** Dashboard has no recent matches. Player must go PlayerProfile → Recent Matches (3 steps).
-**Required:** #16 (Dashboard overhaul — add recent matches section)
+**Current state:** ✅ Dashboard shows recent matches directly. #16 done.
 
 ---
 
@@ -84,8 +82,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Click match → MatchDetail
 3. VOD is visible on same page
 
-**Current state:** Dashboard → PlayerProfile → Recent Matches → MatchDetail → scroll to VOD (5 steps).
-**Required:** #16
+**Current state:** ✅ Dashboard → recent match → MatchDetail → VOD on same page. #16 done.
 
 ---
 
@@ -117,8 +114,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Share URL. PlayerProfile shows: teams, aggregate KDA, champion pool, win rate, ELO trajectory, VODs.
 
-**Current state:** PlayerProfile has all this. ✅
-**Issue:** "Is this you?" CTA missing for profile owner (#18 R3).
+**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool, VODs, ELO trajectory. "Is this you?" CTA present for unauthenticated visitors.
 
 ---
 
@@ -131,8 +127,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Go to Captain Hub (`/teams/:id/manage`) — linked from "Manage Team" in nav dropdown
 2. Match list shows inline visibility toggle per row → click → done
 
-**Current state:** Dashboard → TeamProfile → Recent Matches → MatchDetail → visibility card = 5 steps.
-**Required:** #14 (bulk visibility API), #15 (Captain Hub with inline toggle)
+**Current state:** ✅ Dashboard → CaptainHub → inline toggle per match row = 2 steps. #14 + #15 done.
 
 ---
 
@@ -143,8 +138,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Captain Hub → Team Settings section
 2. Toggle "Default Match Visibility" → Private → Save
 
-**Current state:** Feature does not exist. No schema column, no API, no UI.
-**Required:** #14 (defaultMatchVisibility schema + API), #15 (Captain Hub settings section)
+**Current state:** ✅ CaptainHub → Team Settings → Default Match Visibility dropdown. #14 + #15 done.
 
 ---
 
@@ -156,8 +150,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Filter by event
 3. Select all → "Set Public" → confirm
 
-**Current state:** Does not exist.
-**Required:** #14 (bulk visibility endpoint), #15 (Captain Hub bulk UI)
+**Current state:** ✅ CaptainHub → Match Visibility section → checkbox select → bulk set. #14 + #15 done.
 
 ---
 
@@ -167,8 +160,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. TeamProfile has a "VODs" section showing all team VODs
 
-**Current state:** No VOD section on TeamProfile. Must go match-by-match.
-**Required:** #17 (TeamProfile VOD section)
+**Current state:** ✅ TeamProfile has VODs section with embedded YouTube players. #17 done.
 
 ---
 
@@ -183,8 +175,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Click "Add Member" → enter RiotId
 3. Confirm
 
-**Current state:** Bot command in spec (bot not built). Web UI not built.
-**Required:** #4 (bot /add), #10 (team member API hooks), #15 (Captain Hub roster)
+**Current state:** ✅ Bot /add command built (#4). CaptainHub roster section with Add by RiotId (#10, #15). Both paths work.
 
 ---
 
@@ -198,8 +189,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Captain Hub → Team Settings
 2. "Transfer Captain" → select player → confirm
 
-**Current state:** Bot command in spec (not built). No web UI. No backend endpoint.
-**Required:** #4 (bot), #14 (transfer-captain endpoint), #15 (Captain Hub)
+**Current state:** ✅ Bot /transfer-captain built (#4). CaptainHub Transfer Captain section with confirmation (#14, #15).
 
 ---
 
@@ -209,8 +199,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Captain Hub → Roster section shows link status per member (✅ linked / ⚠️ pending)
 
-**Current state:** No visibility into link status anywhere.
-**Required:** `players.riotId = "pending"` flag visible in team member data + #15
+**Current state:** ✅ CaptainHub Roster shows ✅ linked / ⚠️ pending per member. #15 done.
 
 ---
 
@@ -223,8 +212,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Players page — filter by role: Mid
 2. Scan list showing: riotId, team, games played, win rate — shortlist candidates
 
-**Current state:** Players page shows riotId + role badge only. No team, no games, no win rate. Must click every player to evaluate.
-**Required:** #22 (players list enrichment API), #22 (Players page UI — was Issue #22)
+**Current state:** ✅ Players page shows team, totalGames, winRate. Role filter + sort by games/winRate + min games filter. #22 + #43 done.
 
 ---
 
