@@ -76,9 +76,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Dashboard → see recent matches list
 2. Click match → MatchDetail
-3. VOD is visible on same page
+3. VOD thumbnail card visible on MatchDetail → click → VodDetail (/watch/:id)
 
-**Current state:** ✅ Dashboard → recent match → MatchDetail → VOD on same page. #16 done.
+**Current state:** ✅ Dashboard → recent match → MatchDetail → VOD thumbnail → VodDetail. MatchDetail shows thumbnail grid (not inline embeds); VodDetail is the sole video player. Route renamed /vods/:id → /watch/:id by Replit (#108 architecture).
 
 ---
 
@@ -153,9 +153,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Entry:** TeamProfile page
 **Max steps:** 1
 **Journey:**
-1. TeamProfile has a "VODs" section showing all team VODs
+1. TeamProfile Recent Matches section links to /watch?teamId=N for full VOD archive
 
-**Current state:** ✅ TeamProfile has VODs section with embedded YouTube players. #17 done.
+**Current state:** ✅ TeamProfile VODs section removed (Replit #108 architecture — VodDetail is sole video player). Team VODs accessible via Watch page (/watch) with team filter. Step count unchanged: 1 step from TeamProfile to team VODs via Watch page.
 
 ---
 
@@ -227,9 +227,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Max steps:** 2
 **Journey:**
 1. PlayerProfile → VODs section
-2. Click VOD → VodDetail with embedded video
+2. Click VOD → VodDetail (/watch/:id) with embedded video
 
-**Current state:** Works if VODs are public. ✅ (dependent on team's visibility setting)
+**Current state:** ✅ Works if VODs are public (dependent on team visibility setting). Route renamed /vods/:id → /watch/:id.
 
 ---
 

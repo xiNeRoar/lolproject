@@ -24,12 +24,12 @@ A 5v5 team scrim recording platform for Vancouver / Lower Mainland League of Leg
 | `/login` | Player login (Discord OAuth, dev login available) |
 | `/dashboard` | Player dashboard — stats, teams, recent matches |
 | `/teams` | Team Ladder — ELO rankings per season |
-| `/teams/:id` | Team Profile — roster (with captain badge), match history, VODs |
+| `/teams/:id` | Team Profile — roster (with captain badge), match history |
 | `/players/:riotId` | Player Profile — stats, champion pool, match history, championships |
 | `/events` | Event listing with champion splash banners |
 | `/events/:slug` | Event detail + bracket/standings |
-| `/vods` | VOD archive with search, event, format filters |
-| `/vods/:id` | VOD detail with embedded YouTube, timestamps, related VODs |
+| `/watch` | VOD archive with search, event, format, team, type filters |
+| `/watch/:id` | VOD detail with embedded YouTube, timestamps, related VODs |
 | `/matches/:id` | Match detail — player stats, VODs, .rofl download, POV request, visibility toggle |
 | `/contact` | Contact information (Discord + Email) |
 
