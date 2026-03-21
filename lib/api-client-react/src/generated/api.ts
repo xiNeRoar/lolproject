@@ -33,7 +33,6 @@ import type {
   CreateEventRequest,
   CreateMatchRequest,
   CreatePlayerRequest,
-  CreateRegistrationRequest,
   CreateSeasonRequest,
   CreateTeamRequest,
   CreateVodRequest,
@@ -3421,77 +3420,6 @@ export function useListRegistrations<TData = Awaited<ReturnType<typeof listRegis
 
 
 
-/**
- * @summary Register for event
- */
-export const getCreateRegistrationUrl = () => {
-
-
-  
-
-  return `/api/registrations`
-}
-
-export const createRegistration = async (createRegistrationRequest: CreateRegistrationRequest, options?: RequestInit): Promise<EventRegistration> => {
-  
-  return customFetch<EventRegistration>(getCreateRegistrationUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createRegistrationRequest,)
-  }
-);}
-  
-
-
-
-export const getCreateRegistrationMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistration>>, TError,{data: BodyType<CreateRegistrationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createRegistration>>, TError,{data: BodyType<CreateRegistrationRequest>}, TContext> => {
-
-const mutationKey = ['createRegistration'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRegistration>>, {data: BodyType<CreateRegistrationRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createRegistration(data,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof createRegistration>>>
-    export type CreateRegistrationMutationBody = BodyType<CreateRegistrationRequest>
-    export type CreateRegistrationMutationError = ErrorType<ErrorResponse>
-
-    /**
- * @summary Register for event
- */
-export const useCreateRegistration = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRegistration>>, TError,{data: BodyType<CreateRegistrationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createRegistration>>,
-        TError,
-        {data: BodyType<CreateRegistrationRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateRegistrationMutationOptions(options));
-    }
-    
 /**
  * @summary Delete registration (admin)
  */

@@ -394,18 +394,6 @@ export interface EventRegistration {
   createdAt: string;
 }
 
-export interface CreateRegistrationRequest {
-  eventId: number;
-  teamId?: number | null;
-  riotId: string;
-  discordUsername: string;
-  currentRank: string;
-  city: string;
-  availabilityConfirmation: string;
-  notes?: string | null;
-  playerId?: number | null;
-}
-
 export interface CreateVodRequest {
   eventId?: number | null;
   matchId?: number | null;

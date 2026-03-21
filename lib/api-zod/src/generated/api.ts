@@ -1280,22 +1280,6 @@ export const ListRegistrationsResponse = zod.array(ListRegistrationsResponseItem
 
 
 /**
- * @summary Register for event
- */
-export const CreateRegistrationBody = zod.object({
-  "eventId": zod.number(),
-  "teamId": zod.number().nullish(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "currentRank": zod.string(),
-  "city": zod.string(),
-  "availabilityConfirmation": zod.string(),
-  "notes": zod.string().nullish(),
-  "playerId": zod.number().nullish()
-})
-
-
-/**
  * @summary Delete registration (admin)
  */
 export const DeleteRegistrationParams = zod.object({

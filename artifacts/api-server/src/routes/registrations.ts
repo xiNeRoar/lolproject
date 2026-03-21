@@ -67,62 +67,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /registrations — register for an event
-router.post("/", async (req, res) => {
-  try {
-    const {
-      eventId,
-      teamId,
-      riotId,
-      discordUsername,
-      currentRank,
-      city,
-      availabilityConfirmation,
-      notes,
-      playerId,
-    } = req.body as {
-      eventId?: number;
-      teamId?: number | null;
-      riotId?: string;
-      discordUsername?: string;
-      currentRank?: string;
-      city?: string;
-      availabilityConfirmation?: string;
-      notes?: string | null;
-      playerId?: number | null;
-    };
-
-    if (!eventId || !riotId || !discordUsername || !currentRank || !city || !availabilityConfirmation) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
-    }
-
-    const [row] = await db
-      .insert(eventRegistrationsTable)
-      .values({
-        eventId: Number(eventId),
-        teamId: teamId ? Number(teamId) : null,
-        riotId,
-        discordUsername,
-        currentRank,
-        city,
-        availabilityConfirmation,
-        notes: notes || null,
-        status: "registered",
-        playerId: playerId ? Number(playerId) : null,
-      })
-      .returning();
-
-    const [event] = await db
-      .select()
-      .from(eventsTable)
-      .where(eq(eventsTable.id, Number(eventId)));
-
-    res.status(201).json(formatRegistration(row!, event?.title ?? null));
-  } catch (err) {
-    res.status(500).json({ error: "Failed to create registration" });
-  }
-});
+// POST /registrations removed (#79) — PRD v3: website is read-only display layer.
+// Event registration is bot-only via /register-event → POST /api/events/:idOrSlug/register-team.
 
 // PUT /registrations/:id/confirm — mark as confirmed (admin)
 router.put("/:id/confirm", requireAdmin, async (req, res) => {

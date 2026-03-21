@@ -19,7 +19,6 @@ export * from './createBanRequest';
 export * from './createEventRequest';
 export * from './createMatchRequest';
 export * from './createPlayerRequest';
-export * from './createRegistrationRequest';
 export * from './createSeasonRequest';
 export * from './createTeamRequest';
 export * from './createVodRequest';

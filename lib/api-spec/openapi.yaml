@@ -1163,30 +1163,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/EventRegistration"
-    post:
-      operationId: createRegistration
-      tags: [registrations]
-      summary: Register for event
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateRegistrationRequest"
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EventRegistration"
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /registrations/{id}:
     delete:
       operationId: deleteRegistration
@@ -2847,32 +2823,6 @@ components:
         createdAt:
           type: string
       required: [id, eventId, riotId, discordUsername, currentRank, city, availabilityConfirmation, status, createdAt]
-
-    CreateRegistrationRequest:
-      type: object
-      properties:
-        eventId:
-          type: integer
-        teamId:
-          type: integer
-          nullable: true
-        riotId:
-          type: string
-        discordUsername:
-          type: string
-        currentRank:
-          type: string
-        city:
-          type: string
-        availabilityConfirmation:
-          type: string
-        notes:
-          type: string
-          nullable: true
-        playerId:
-          type: integer
-          nullable: true
-      required: [eventId, riotId, discordUsername, currentRank, city, availabilityConfirmation]
 
     # ── VOD ───────────────────────────────────────────────────
 
