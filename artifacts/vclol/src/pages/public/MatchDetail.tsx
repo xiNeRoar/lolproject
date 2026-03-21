@@ -464,18 +464,20 @@ export default function MatchDetail() {
                       <th className="px-4 py-2 hidden md:table-cell">Dmg</th>
                       <th className="px-4 py-2 hidden md:table-cell">Vision</th>
                       <th className="px-4 py-2 hidden lg:table-cell">Items</th>
+                      {vods.length > 0 && <th className="px-4 py-2 w-10">VOD</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {teamAPlayers.length > 0 && (
                       <tr className="bg-blue-400/5 border-b border-border/30">
-                        <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
+                        <td colSpan={vods.length > 0 ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
                           {match.sideAName} {sideAWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
                     )}
                     {teamAPlayers.map((p) => {
                       const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
+                      const playerVod = vods.find(v => v.playerId === p.playerId);
                       return (
                       <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
                         <td className="px-4 py-2">
@@ -516,18 +518,28 @@ export default function MatchDetail() {
                             </div>
                           ) : <span className="text-xs text-muted-foreground">-</span>}
                         </td>
+                        {vods.length > 0 && (
+                          <td className="px-4 py-2 text-center">
+                            {playerVod ? (
+                              <Link href={`/watch/${playerVod.id}`} className="text-primary hover:text-primary/80 transition-colors" title="Watch POV">
+                                <FileVideo className="w-4 h-4 inline-block" />
+                              </Link>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </td>
+                        )}
                       </tr>
                       );
                     })}
                     {teamBPlayers.length > 0 && (
                       <tr className="bg-red-400/5 border-b border-border/30">
-                        <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-red-400">
+                        <td colSpan={vods.length > 0 ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-red-400">
                           {match.sideBName} {sideBWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
                     )}
                     {teamBPlayers.map((p) => {
                       const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
+                      const playerVod = vods.find(v => v.playerId === p.playerId);
                       return (
                       <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
                         <td className="px-4 py-2">
@@ -568,6 +580,15 @@ export default function MatchDetail() {
                             </div>
                           ) : <span className="text-xs text-muted-foreground">-</span>}
                         </td>
+                        {vods.length > 0 && (
+                          <td className="px-4 py-2 text-center">
+                            {playerVod ? (
+                              <Link href={`/watch/${playerVod.id}`} className="text-primary hover:text-primary/80 transition-colors" title="Watch POV">
+                                <FileVideo className="w-4 h-4 inline-block" />
+                              </Link>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </td>
+                        )}
                       </tr>
                       );
                     })}
@@ -582,49 +603,46 @@ export default function MatchDetail() {
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader>
               <CardTitle className="text-base font-display flex items-center gap-2">
-                <Video className="w-4 h-4 text-primary" /> VODs
+                <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border/30">
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {vods.map((vod) => {
                   const vid = extractYouTubeId(vod.videoUrl);
+                  const isPlayerPov = !!vod.playerId;
                   return (
-                    <div key={vod.id} className="px-6 py-4">
-                      {vid && (
-                        <div className="mb-3 rounded-lg overflow-hidden border border-border/40 bg-black aspect-video">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${vid}?rel=0&modestbranding=1`}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title={vod.title}
+                    <Link key={vod.id} href={`/watch/${vod.id}`} className="group block">
+                      <div className="rounded-lg overflow-hidden border border-border/40 bg-black aspect-video relative">
+                        {vid ? (
+                          <img
+                            src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`}
+                            alt={vod.title}
+                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                           />
-                        </div>
-                      )}
-                      <div className="flex items-center gap-3">
-                        {!vid && <PlayCircle className="w-5 h-5 text-muted-foreground shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <Link href={`/vods/${vod.id}`} className="text-sm font-medium hover:text-primary transition-colors">
-                            {vod.title}
-                          </Link>
-                          <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
-                            {vod.playerRiotId && (
-                              <Link href={`/players/${encodeURIComponent(vod.playerRiotId)}`} className="text-primary/80 hover:text-primary">
-                                {vod.playerRiotId}
-                              </Link>
-                            )}
-                            {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
-                            {vod.position && <span>• {vod.position}</span>}
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                            <PlayCircle className="w-10 h-10 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
+                            <PlayCircle className="w-6 h-6 text-white" />
                           </div>
                         </div>
-                        {vod.videoUrl && !vid && (
-                          <a href={vod.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline shrink-0">
-                            Watch →
-                          </a>
-                        )}
+                        <Badge className={`absolute top-2 left-2 text-[10px] ${isPlayerPov ? "bg-blue-400/20 text-blue-400 border-blue-400/30" : "bg-primary/20 text-primary border-primary/30"}`}>
+                          {isPlayerPov ? "Player POV" : "Spectator"}
+                        </Badge>
                       </div>
-                    </div>
+                      <div className="mt-2">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{vod.title}</p>
+                        <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
+                          {vod.playerRiotId && <span className="text-primary/80">{vod.playerRiotId}</span>}
+                          {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
+                          {vod.position && <span>• {vod.position}</span>}
+                        </div>
+                      </div>
+                    </Link>
                   );
                 })}
               </div>
