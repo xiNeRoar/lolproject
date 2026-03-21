@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useGlobalSearch } from "@workspace/api-client-react";
-import { Search, X, Users, Trophy, Calendar } from "lucide-react";
+import { Search, X, Users, Trophy, Calendar, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function useDebounce(value: string, delay: number) {
@@ -32,7 +32,8 @@ export default function GlobalSearch() {
   const teams = data?.teams ?? [];
   const players = data?.players ?? [];
   const events = data?.events ?? [];
-  const hasResults = teams.length > 0 || players.length > 0 || events.length > 0;
+  const matches = data?.matches ?? [];
+  const hasResults = teams.length > 0 || players.length > 0 || events.length > 0 || matches.length > 0;
 
   useEffect(() => {
     if (enabled) setOpen(true);
@@ -133,6 +134,33 @@ export default function GlobalSearch() {
                   ))}
                 </div>
               )}
+              {matches.length > 0 && (
+                <div>
+                  <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/30 flex items-center gap-1.5">
+                    <Swords className="w-3 h-3" /> Matches
+                  </div>
+                  {matches.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => go(`/matches/${m.id}`)}
+                      className="w-full px-3 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-display font-bold text-primary flex-shrink-0">
+                        <Swords className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{m.sideAName} vs {m.sideBName}</span>
+                        {m.matchTitle && (
+                          <span className="text-xs text-muted-foreground ml-1.5">{m.matchTitle}</span>
+                        )}
+                      </div>
+                      {m.score && (
+                        <span className="text-xs text-muted-foreground flex-shrink-0">{m.score}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
               {events.length > 0 && (
                 <div>
                   <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/30 flex items-center gap-1.5">
@@ -177,7 +205,7 @@ export default function GlobalSearch() {
             onFocus={() => { if (enabled) setOpen(true); }}
             placeholder="Search..."
             className="w-44 lg:w-56 h-8 pl-8 pr-8 text-sm rounded-md border border-border/40 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-muted/50 transition-colors"
-            aria-label="Search teams, players, and events"
+            aria-label="Search teams, players, matches, and events"
           />
           {query && (
             <button
@@ -211,9 +239,9 @@ export default function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => { if (enabled) setOpen(true); }}
-                placeholder="Search teams, players, events..."
+                placeholder="Search teams, players, matches..."
                 className="w-full h-10 pl-10 pr-10 text-sm rounded-md border border-border/40 bg-muted/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                aria-label="Search teams, players, and events"
+                aria-label="Search teams, players, matches, and events"
               />
               {query && (
                 <button
