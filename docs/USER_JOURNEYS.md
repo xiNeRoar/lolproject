@@ -42,7 +42,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Go to /register — see bot guide + Discord invite link
 3. Add bot to their server
 
-**Current state:** ✅ Complete. /register exists with bot guide. Bot invite link enabled (#37). Step count: 3.
+**Current state:** ✅ Complete. /register exists with bot guide + Step 3.5 /link-riot (#61). Bot invite link enabled (#37). Step count: 3.
 
 ---
 
@@ -53,7 +53,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Use search bar (global search)
 2. Land on PlayerProfile or TeamProfile
 
-**Current state:** ✅ Global search bar in nav. Searches teams, players, events.
+**Current state:** ✅ Global search bar in nav. Searches teams, players, events. Home page now shows Recent Matches section (#59). Matches page has team name filter + date sort (#64). Match search in global search pending backend (#57).
 
 ---
 
@@ -66,7 +66,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Login via Discord OAuth → land on Dashboard
 2. Dashboard shows recent matches directly (no extra navigation)
 
-**Current state:** ✅ Dashboard shows recent matches directly. #16 done.
+**Current state:** ✅ Dashboard shows recent matches directly. Captain onboarding checklist for new captains (#68). #16 done.
 
 ---
 
@@ -109,7 +109,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Share URL. PlayerProfile shows: teams, aggregate KDA, champion pool, win rate, ELO trajectory, VODs.
 
-**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool, VODs, ELO trajectory. "Is this you?" CTA present for unauthenticated visitors.
+**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool, VODs, multi-team ELO trajectory overlay (#44). "Is this you?" CTA present for unauthenticated visitors.
 
 ---
 
@@ -122,7 +122,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Go to Captain Hub (`/teams/:id/manage`) — linked from "Manage Team" in nav dropdown
 2. Match list shows inline visibility toggle per row → click → done
 
-**Current state:** ✅ Dashboard → CaptainHub → inline toggle per match row = 2 steps. #14 + #15 done.
+**Current state:** ✅ Dashboard → CaptainHub → inline toggle per match row = 2 steps. "Manage Team" button visible on TeamProfile for captains (#62). #14 + #15 done.
 
 ---
 
@@ -288,14 +288,14 @@ If a feature doesn't appear in this document, it doesn't get built.
 | Journey | Max Steps | Current Steps | Gap |
 |---------|-----------|---------------|-----|
 | J-01 Match link → understand context | 1 | 1 | ✅ #8 + #40 done |
-| J-02 Discover → join | 3 | 3 | ✅ #37 done |
-| J-03 Find player/team | 2 | 2 | ✅ #23 done |
-| J-04 See recent match performance | 2 | 2 | ✅ #16 done |
+| J-02 Discover → join | 3 | 3 | ✅ #37 + #61 done |
+| J-03 Find player/team | 2 | 2 | ✅ #23 + #59 + #64 done |
+| J-04 See recent match performance | 2 | 2 | ✅ #16 + #68 done |
 | J-05 Watch match VOD | 3 | 3 | ✅ #16 done |
 | J-06 Request POV render | 1 | 1 | ✅ |
 | J-07 Link Riot ID | 1 | 1 | ✅ #6 done |
-| J-08 Competitive resume | 1 | 1 | ✅ |
-| J-09 Set match public | 2 | 2 | ✅ #14 + #15 done |
+| J-08 Competitive resume | 1 | 1 | ✅ #44 done |
+| J-09 Set match public | 2 | 2 | ✅ #14 + #15 + #62 done |
 | J-10 Set visibility default | 2 | 2 | ✅ #14 + #15 done |
 | J-11 Bulk set visibility | 3 | 3 | ✅ #14 + #15 done |
 | J-12 See team VODs | 1 | 1 | ✅ #17 done |
