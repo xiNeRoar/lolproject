@@ -19,6 +19,8 @@ export interface Match {
   matchTitle: string;
   winnerName: string;
   score?: string | null;
+  /** Number of VODs attached to this match (0 if none) */
+  vodCount?: number;
   format?: string | null;
   teamAEloBefore?: number | null;
   teamAEloAfter?: number | null;

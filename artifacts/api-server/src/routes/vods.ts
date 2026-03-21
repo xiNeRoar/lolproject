@@ -114,8 +114,18 @@ router.get("/", async (req, res) => {
       );
     if (patch) rows = rows.filter((r) => r.vod.patch === patch);
     if (playerId) rows = rows.filter((r) => r.vod.playerId === playerId);
-    if (vodType === "spectator") rows = rows.filter((r) => r.vod.playerId == null);
-    else if (vodType === "pov") rows = rows.filter((r) => r.vod.playerId != null);
+    if (vodType === "spectator") {
+      // Prefer vodType column; fall back to playerId heuristic for legacy VODs (#120)
+      rows = rows.filter((r) =>
+        r.vod.vodType != null ? r.vod.vodType === "spectator" : r.vod.playerId == null
+      );
+    } else if (vodType === "pov") {
+      rows = rows.filter((r) =>
+        r.vod.vodType != null
+          ? r.vod.vodType === "team-pov" || r.vod.vodType === "player-pov"
+          : r.vod.playerId != null
+      );
+    }
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter(

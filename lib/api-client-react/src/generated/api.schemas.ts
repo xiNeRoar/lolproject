@@ -89,6 +89,8 @@ export interface Match {
   matchTitle: string;
   winnerName: string;
   score?: string | null;
+  /** Number of VODs attached to this match (0 if none) */
+  vodCount?: number;
   format?: string | null;
   teamAEloBefore?: number | null;
   teamAEloAfter?: number | null;
@@ -336,6 +338,8 @@ export interface CreateMatchRequest {
   sideBName: string;
   winnerName: string;
   score?: string | null;
+  /** Number of VODs attached to this match (0 if none) */
+  vodCount?: number;
   format?: string | null;
   resultSource?: string | null;
   eventId?: number | null;
@@ -400,6 +404,7 @@ export interface CreateEventRequest {
   shortDescription: string;
   fullDescription?: string | null;
   rulesSummary?: string | null;
+  discordUrl?: string | null;
 }
 
 export interface EventRegistration {
@@ -724,7 +729,7 @@ export type ListVodsParams = {
   teamId?: number;
   playerId?: number;
   /**
-   * Filter by VOD type. spectator=no player, pov=has player
+   * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
    */
   type?: ListVodsType;
 };

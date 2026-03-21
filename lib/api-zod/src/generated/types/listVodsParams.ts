@@ -18,7 +18,7 @@ export type ListVodsParams = {
   teamId?: number;
   playerId?: number;
   /**
-   * Filter by VOD type. spectator=no player, pov=has player
+   * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
    */
   type?: ListVodsType;
 };

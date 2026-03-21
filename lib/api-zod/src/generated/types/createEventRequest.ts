@@ -15,4 +15,5 @@ export interface CreateEventRequest {
   shortDescription: string;
   fullDescription?: string | null;
   rulesSummary?: string | null;
+  discordUrl?: string | null;
 }

@@ -163,6 +163,10 @@ export const GetTeamResponse = zod.object({
         matchTitle: zod.string(),
         winnerName: zod.string(),
         score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
         format: zod.string().nullish(),
         teamAEloBefore: zod.number().nullish(),
         teamAEloAfter: zod.number().nullish(),
@@ -509,6 +513,10 @@ export const GetPlayerByIdResponse = zod.object({
         matchTitle: zod.string(),
         winnerName: zod.string(),
         score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
         format: zod.string().nullish(),
         teamAEloBefore: zod.number().nullish(),
         teamAEloAfter: zod.number().nullish(),
@@ -646,6 +654,10 @@ export const GetPlayerResponse = zod.object({
         matchTitle: zod.string(),
         winnerName: zod.string(),
         score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
         format: zod.string().nullish(),
         teamAEloBefore: zod.number().nullish(),
         teamAEloAfter: zod.number().nullish(),
@@ -881,6 +893,10 @@ export const ListMatchesResponseItem = zod.object({
   matchTitle: zod.string(),
   winnerName: zod.string(),
   score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
   format: zod.string().nullish(),
   teamAEloBefore: zod.number().nullish(),
   teamAEloAfter: zod.number().nullish(),
@@ -924,6 +940,10 @@ export const CreateMatchBody = zod.object({
   sideBName: zod.string(),
   winnerName: zod.string(),
   score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
   format: zod.string().nullish(),
   resultSource: zod.string().nullish(),
   eventId: zod.number().nullish(),
@@ -955,6 +975,10 @@ export const GetMatchResponse = zod
     matchTitle: zod.string(),
     winnerName: zod.string(),
     score: zod.string().nullish(),
+    vodCount: zod
+      .number()
+      .optional()
+      .describe("Number of VODs attached to this match (0 if none)"),
     format: zod.string().nullish(),
     teamAEloBefore: zod.number().nullish(),
     teamAEloAfter: zod.number().nullish(),
@@ -1077,6 +1101,10 @@ export const UpdateMatchBody = zod.object({
   sideBName: zod.string(),
   winnerName: zod.string(),
   score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
   format: zod.string().nullish(),
   resultSource: zod.string().nullish(),
   eventId: zod.number().nullish(),
@@ -1100,6 +1128,10 @@ export const UpdateMatchResponse = zod.object({
   matchTitle: zod.string(),
   winnerName: zod.string(),
   score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
   format: zod.string().nullish(),
   teamAEloBefore: zod.number().nullish(),
   teamAEloAfter: zod.number().nullish(),
@@ -1253,6 +1285,7 @@ export const CreateEventBody = zod.object({
   shortDescription: zod.string(),
   fullDescription: zod.string().nullish(),
   rulesSummary: zod.string().nullish(),
+  discordUrl: zod.string().nullish(),
 });
 
 /**
@@ -1286,6 +1319,10 @@ export const GetEventResponse = zod.object({
       matchTitle: zod.string(),
       winnerName: zod.string(),
       score: zod.string().nullish(),
+      vodCount: zod
+        .number()
+        .optional()
+        .describe("Number of VODs attached to this match (0 if none)"),
       format: zod.string().nullish(),
       teamAEloBefore: zod.number().nullish(),
       teamAEloAfter: zod.number().nullish(),
@@ -1371,6 +1408,7 @@ export const UpdateEventBody = zod.object({
   shortDescription: zod.string(),
   fullDescription: zod.string().nullish(),
   rulesSummary: zod.string().nullish(),
+  discordUrl: zod.string().nullish(),
 });
 
 export const UpdateEventResponse = zod.object({
@@ -1490,7 +1528,9 @@ export const ListVodsQueryParams = zod.object({
   type: zod
     .enum(["spectator", "pov", "all"])
     .optional()
-    .describe("Filter by VOD type. spectator=no player, pov=has player"),
+    .describe(
+      "Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set",
+    ),
 });
 
 export const ListVodsResponseItem = zod.object({

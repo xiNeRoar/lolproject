@@ -259,6 +259,20 @@ router.get("/", async (req, res) => {
 
     // Fetch Team B names separately (inArray avoids complex self-join on teams)
     const teamBIds = [...new Set(filtered.map((r) => r.match.teamBId).filter(Boolean))] as number[];
+
+    // Fetch vodCount per match (#118)
+    const matchIds = filtered.map((r) => r.match.id);
+    const vodCountMap: Record<number, number> = {};
+    if (matchIds.length > 0) {
+      const vodCounts = await db
+        .select({ matchId: vodEntriesTable.matchId, cnt: count() })
+        .from(vodEntriesTable)
+        .where(inArray(vodEntriesTable.matchId, matchIds))
+        .groupBy(vodEntriesTable.matchId);
+      for (const vc of vodCounts) {
+        if (vc.matchId != null) vodCountMap[vc.matchId] = Number(vc.cnt);
+      }
+    }
     const teamBMap: Record<number, { name: string; tag: string }> = {};
     if (teamBIds.length > 0) {
       const teamBRows = await db
@@ -277,6 +291,7 @@ router.get("/", async (req, res) => {
           teamBTag: teamBMap[r.match.teamBId ?? -1]?.tag ?? null,
           eventTitle: r.eventTitle ?? null,
         }),
+        vodCount: vodCountMap[r.match.id] ?? 0,
       }))
     );
   } catch (err) {

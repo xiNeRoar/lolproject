@@ -1274,7 +1274,7 @@ paths:
           schema:
             type: string
             enum: [spectator, pov, all]
-          description: Filter by VOD type. spectator=no player, pov=has player
+          description: Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
       responses:
         "200":
           description: VODs
@@ -2518,6 +2518,9 @@ components:
         score:
           type: string
           nullable: true
+        vodCount:
+          type: integer
+          description: Number of VODs attached to this match (0 if none)
         format:
           type: string
           nullable: true
@@ -2628,6 +2631,9 @@ components:
         score:
           type: string
           nullable: true
+        vodCount:
+          type: integer
+          description: Number of VODs attached to this match (0 if none)
         format:
           type: string
           nullable: true
@@ -2826,6 +2832,9 @@ components:
           type: string
           nullable: true
         rulesSummary:
+          type: string
+          nullable: true
+        discordUrl:
           type: string
           nullable: true
       required: [title, slug, format, eventDate, registrationStatus, shortDescription]

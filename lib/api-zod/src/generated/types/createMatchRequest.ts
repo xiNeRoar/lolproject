@@ -14,6 +14,8 @@ export interface CreateMatchRequest {
   sideBName: string;
   winnerName: string;
   score?: string | null;
+  /** Number of VODs attached to this match (0 if none) */
+  vodCount?: number;
   format?: string | null;
   resultSource?: string | null;
   eventId?: number | null;

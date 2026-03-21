@@ -110,6 +110,7 @@ router.post("/", requireAdmin, async (req, res) => {
       shortDescription,
       fullDescription,
       rulesSummary,
+      discordUrl,
     } = req.body as {
       title?: string;
       slug?: string;
@@ -119,6 +120,7 @@ router.post("/", requireAdmin, async (req, res) => {
       shortDescription?: string;
       fullDescription?: string | null;
       rulesSummary?: string | null;
+      discordUrl?: string | null;
     };
 
     if (!title || !slug || !format || !eventDate || !registrationStatus || !shortDescription) {
@@ -137,6 +139,7 @@ router.post("/", requireAdmin, async (req, res) => {
         shortDescription,
         fullDescription: fullDescription || null,
         rulesSummary: rulesSummary || null,
+        discordUrl: discordUrl || null,
       })
       .returning();
 
@@ -205,6 +208,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
       shortDescription,
       fullDescription,
       rulesSummary,
+      discordUrl,
     } = req.body as Partial<typeof eventsTable.$inferInsert>;
 
     const [row] = await db
@@ -218,6 +222,7 @@ router.put("/:id/edit", requireAdmin, async (req, res) => {
         shortDescription,
         fullDescription: fullDescription || null,
         rulesSummary: rulesSummary || null,
+        discordUrl: discordUrl !== undefined ? (discordUrl || null) : undefined,
         updatedAt: new Date(),
       })
       .where(eq(eventsTable.id, id))
