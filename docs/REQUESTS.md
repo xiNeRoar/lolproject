@@ -41,6 +41,41 @@ Format: one section per request.
 
 ---
 
+## Request: Implement Email and Discord DM notification delivery
+**Needed for:** Issue #72 | **Backend issue:** TBD (create as Claude task)
+**File:** `artifacts/api-server/src/lib/notifications.ts`
+**Why:** Frontend already shows 4 notification preference options (Web only, Email, Discord DM, Email + Discord). Backend `notifyPlayer()` already has the routing logic (lines 46-54) but the email and Discord DM implementations are TODO stubs that only console.log. Users who select Email or Discord DM receive nothing.
+
+**DB columns already exist:**
+- `players.email` (text, nullable) — for email delivery
+- `players.discordId` (text, nullable) — for Discord DM delivery
+
+**What needs implementing:**
+
+1. **Email delivery** (pref = `"email"` or `"both"`):
+   - Use Resend or nodemailer to send notification emails
+   - Template: simple plain-text or minimal HTML with notification title + message
+   - Only send if `player.email` is not null; log warning if null
+   - Consider: does the platform need a RESEND_API_KEY or SMTP config? Add as env var.
+
+2. **Discord DM delivery** (pref = `"discord"` or `"both"`):
+   - Use Discord bot token (already exists for the Discord bot) to send DM
+   - `client.users.send(player.discordId, { content: ... })` or REST API call
+   - Only send if `player.discordId` is not null; log warning if null
+   - Consider: the API server may not have the Discord bot client. Options:
+     a. Share the bot token as env var and use Discord REST API directly
+     b. Add a notification queue that the Discord bot polls
+     c. Import discord.js in the API server just for DM sending
+
+3. **Error handling:**
+   - Email/DM failures should not block the web notification (already inserted first on line 37-43)
+   - Log errors but don't throw
+
+**No frontend changes needed** — the UI already works correctly.
+**No schema changes needed** — columns and preference values already exist.
+
+---
+
 ## Request: Add `bracketSize` or `totalRounds` to Event/Match response
 **Needed for:** Issue #106 | **Backend issue:** #111
 **Status:** ✅ Approved by owner — dynamic bracket labels confirmed
