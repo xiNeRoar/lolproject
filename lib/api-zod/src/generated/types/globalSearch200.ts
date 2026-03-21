@@ -6,6 +6,7 @@
  * OpenAPI spec version: 2.0.0
  */
 import type { GlobalSearch200EventsItem } from './globalSearch200EventsItem';
+import type { GlobalSearch200MatchesItem } from './globalSearch200MatchesItem';
 import type { GlobalSearch200PlayersItem } from './globalSearch200PlayersItem';
 import type { GlobalSearch200TeamsItem } from './globalSearch200TeamsItem';
 
@@ -13,4 +14,5 @@ export type GlobalSearch200 = {
   teams?: GlobalSearch200TeamsItem[];
   players?: GlobalSearch200PlayersItem[];
   events?: GlobalSearch200EventsItem[];
+  matches?: GlobalSearch200MatchesItem[];
 };

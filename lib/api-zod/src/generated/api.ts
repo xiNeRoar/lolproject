@@ -1971,7 +1971,7 @@ export const GetReplayQueueStatsResponse = zod.object({
 
 
 /**
- * @summary Global search across teams, players, events
+ * @summary Global search across teams, players, events, matches
  */
 export const globalSearchQueryQMin = 2;
 
@@ -2001,6 +2001,16 @@ export const GlobalSearchResponse = zod.object({
   "title": zod.string().optional(),
   "slug": zod.string().optional(),
   "format": zod.string().nullish()
+})).optional(),
+  "matches": zod.array(zod.object({
+  "type": zod.string().optional(),
+  "id": zod.number().optional(),
+  "sideAName": zod.string().optional(),
+  "sideBName": zod.string().optional(),
+  "matchTitle": zod.string().optional(),
+  "score": zod.string().nullish(),
+  "winnerName": zod.string().optional(),
+  "createdAt": zod.string().optional()
 })).optional()
 })
 

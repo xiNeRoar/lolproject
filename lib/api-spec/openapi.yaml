@@ -1890,7 +1890,7 @@ paths:
     get:
       operationId: globalSearch
       tags: [search]
-      summary: Global search across teams, players, events
+      summary: Global search across teams, players, events, matches
       parameters:
         - name: q
           in: query
@@ -1951,6 +1951,28 @@ paths:
                         format:
                           type: string
                           nullable: true
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        id:
+                          type: integer
+                        sideAName:
+                          type: string
+                        sideBName:
+                          type: string
+                        matchTitle:
+                          type: string
+                        score:
+                          type: string
+                          nullable: true
+                        winnerName:
+                          type: string
+                        createdAt:
+                          type: string
         "400":
           description: Query too short
 

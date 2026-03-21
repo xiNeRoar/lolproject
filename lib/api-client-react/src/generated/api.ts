@@ -6040,7 +6040,7 @@ export function useGetReplayQueueStats<TData = Awaited<ReturnType<typeof getRepl
 
 
 /**
- * @summary Global search across teams, players, events
+ * @summary Global search across teams, players, events, matches
  */
 export const getGlobalSearchUrl = (params: GlobalSearchParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -6102,7 +6102,7 @@ export type GlobalSearchQueryError = ErrorType<void>
 
 
 /**
- * @summary Global search across teams, players, events
+ * @summary Global search across teams, players, events, matches
  */
 
 export function useGlobalSearch<TData = Awaited<ReturnType<typeof globalSearch>>, TError = ErrorType<void>>(

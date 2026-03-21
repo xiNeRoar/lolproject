@@ -35,6 +35,7 @@ export * from './getReplayStatus200';
 export * from './getReplayStatusParams';
 export * from './globalSearch200';
 export * from './globalSearch200EventsItem';
+export * from './globalSearch200MatchesItem';
 export * from './globalSearch200PlayersItem';
 export * from './globalSearch200TeamsItem';
 export * from './globalSearchParams';

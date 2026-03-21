@@ -727,9 +727,21 @@ export type GlobalSearch200EventsItem = {
   format?: string | null;
 };
 
+export type GlobalSearch200MatchesItem = {
+  type?: string;
+  id?: number;
+  sideAName?: string;
+  sideBName?: string;
+  matchTitle?: string;
+  score?: string | null;
+  winnerName?: string;
+  createdAt?: string;
+};
+
 export type GlobalSearch200 = {
   teams?: GlobalSearch200TeamsItem[];
   players?: GlobalSearch200PlayersItem[];
   events?: GlobalSearch200EventsItem[];
+  matches?: GlobalSearch200MatchesItem[];
 };
 
