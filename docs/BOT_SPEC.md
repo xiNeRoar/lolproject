@@ -80,7 +80,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
    c. No match: `playerId = null`, store `puuid` + `riotIdGameName` + `riotIdTagLine` on `match_players` row
 8. **Team matching:** For each side, count how many `match_players` have a `playerId` that appears in a team's `team_members`. Team with 3+ matches = identified.
 9. **Both teams identified:**
-   a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter = createdAt + 7 days`)
+   a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter` derived from team's `defaultMatchVisibility`: `public` → `new Date(0)`, `private` → `new Date('9999-01-01')`, `default`/unset → `createdAt + 7 days`)
    b. Create 10 `match_players` rows
    c. Calculate + update team ELO for both teams
    d. Write `elo_history` for both teams
