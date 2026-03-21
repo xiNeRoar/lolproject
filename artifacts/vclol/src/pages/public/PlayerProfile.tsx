@@ -387,14 +387,29 @@ export default function PlayerProfile() {
                     const isOnTeamB = playerTeamIds.has(match.teamBId ?? -1);
                     const playerSideName = isOnTeamA ? match.sideAName : isOnTeamB ? match.sideBName : null;
                     const won = playerSideName ? match.winnerName === playerSideName : false;
+                    const champ = match.playerChampion;
                     return (
                       <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
                         <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                           {won ? "W" : "L"}
                         </span>
+                        {champ ? (
+                          <div className="w-8 h-8 rounded overflow-hidden border border-border/40 shrink-0">
+                            <img
+                              src={champPortraitUrl(champ)}
+                              alt={champ}
+                              className="w-full h-full object-cover object-top scale-[1.4] translate-y-1"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded bg-muted/30 border border-border/40 shrink-0" />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{match.matchTitle}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            {champ && <span className="text-foreground/70">{champ}</span>}
+                            {champ && <span>·</span>}
                             <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
                             <span>·</span>
                             {match.sideAName} vs {match.sideBName}

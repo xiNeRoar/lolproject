@@ -38,14 +38,37 @@ function extractYouTubeId(url: string | null | undefined): string | null {
   return null;
 }
 
-function bracketRoundLabel(round: number | null | undefined, bracketSlot: number | null | undefined): string | null {
+function bracketRoundLabel(
+  round: number | null | undefined,
+  bracketSlot: number | null | undefined,
+  bracketSize: number | null | undefined,
+  isLosersBracket: boolean | null | undefined
+): string | null {
   if (round == null) return null;
-  switch (round) {
-    case 1: return "Quarter Final";
-    case 2: return "Semi Final";
-    case 3: return "Grand Final";
-    default: return `Round ${round}${bracketSlot != null ? ` · Match ${bracketSlot}` : ""}`;
+
+  let label: string;
+
+  if (bracketSize && bracketSize >= 2) {
+    const totalRounds = Math.ceil(Math.log2(bracketSize));
+    const roundsFromFinal = totalRounds - round;
+
+    if (roundsFromFinal <= 0) label = "Grand Final";
+    else if (roundsFromFinal === 1) label = "Semi Final";
+    else if (roundsFromFinal === 2) label = "Quarter Final";
+    else label = `Round of ${Math.pow(2, roundsFromFinal + 1)}`;
+  } else {
+    switch (round) {
+      case 1: label = "Quarter Final"; break;
+      case 2: label = "Semi Final"; break;
+      case 3: label = "Grand Final"; break;
+      default: label = `Round ${round}`; break;
+    }
   }
+
+  if (isLosersBracket) label = `Losers ${label}`;
+  if (bracketSlot != null) label += ` · Match ${bracketSlot}`;
+
+  return label;
 }
 
 function isWithinTwoWeeks(dateStr: string): boolean {
@@ -118,7 +141,7 @@ export default function MatchDetail() {
   const seasonName = match.seasonId ? seasons?.find((s) => s.id === match.seasonId)?.name : null;
   const sideAWon = match.winnerName === match.sideAName;
   const sideBWon = match.winnerName === match.sideBName;
-  const roundLabel = match.isPlayoff ? bracketRoundLabel(match.round, match.bracketSlot) : null;
+  const roundLabel = match.isPlayoff ? bracketRoundLabel(match.round, match.bracketSlot, match.bracketSize, match.isLosersBracket) : null;
 
   const vods = match.vods ?? [];
   const roflAvailable = !!(match as any).roflFilePath && isWithinTwoWeeks(match.createdAt);
@@ -599,56 +622,117 @@ export default function MatchDetail() {
           </Card>
         )}
 
-        {vods.length > 0 && (
-          <Card className="bg-card/40 border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {vods.map((vod) => {
-                  const vid = extractYouTubeId(vod.videoUrl);
-                  const isPlayerPov = !!vod.playerId;
-                  return (
-                    <Link key={vod.id} href={`/watch/${vod.id}`} className="group block">
-                      <div className="rounded-lg overflow-hidden border border-border/40 bg-black aspect-video relative">
-                        {vid ? (
-                          <img
-                            src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`}
-                            alt={vod.title}
-                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-muted/20">
-                            <PlayCircle className="w-10 h-10 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
-                            <PlayCircle className="w-6 h-6 text-white" />
-                          </div>
-                        </div>
-                        <Badge className={`absolute top-2 left-2 text-[10px] ${isPlayerPov ? "bg-blue-400/20 text-blue-400 border-blue-400/30" : "bg-primary/20 text-primary border-primary/30"}`}>
-                          {isPlayerPov ? "Player POV" : "Spectator"}
-                        </Badge>
-                      </div>
-                      <div className="mt-2">
-                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{vod.title}</p>
-                        <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
-                          {vod.playerRiotId && <span className="text-primary/80">{vod.playerRiotId}</span>}
-                          {vod.champion && <span>{vod.champion}{vod.opponentChampion ? ` vs ${vod.opponentChampion}` : ""}</span>}
-                          {vod.position && <span>• {vod.position}</span>}
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {vods.length > 0 && (() => {
+          const hasGameNumbers = vods.some((v) => v.gameNumber != null && v.gameNumber > 0);
+
+          function vodTypeLabel(vod: typeof vods[number]): { label: string; style: string } {
+            const vt = vod.vodType;
+            if (vt === "spectator") return { label: "Spectator", style: "bg-primary/20 text-primary border-primary/30" };
+            if (vt === "team-pov") return { label: "Team POV", style: "bg-green-400/20 text-green-400 border-green-400/30" };
+            if (vt === "player-pov") return { label: "Player POV", style: "bg-blue-400/20 text-blue-400 border-blue-400/30" };
+            return vod.playerId
+              ? { label: "Player POV", style: "bg-blue-400/20 text-blue-400 border-blue-400/30" }
+              : { label: "Spectator", style: "bg-primary/20 text-primary border-primary/30" };
+          }
+
+          function renderVodCard(vod: typeof vods[number]) {
+            const vid = extractYouTubeId(vod.videoUrl);
+            const { label: typeLabel, style: typeStyle } = vodTypeLabel(vod);
+            return (
+              <Link key={vod.id} href={`/watch/${vod.id}`} className="group block">
+                <div className="rounded-lg overflow-hidden border border-border/40 bg-black aspect-video relative">
+                  {vid ? (
+                    <img
+                      src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`}
+                      alt={vod.title}
+                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                      <PlayCircle className="w-10 h-10 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
+                      <PlayCircle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <Badge className={`absolute top-2 left-2 text-[10px] ${typeStyle}`}>
+                    {typeLabel}
+                  </Badge>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{vod.title}</p>
+                  <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
+                    {vod.playerRiotId && <span className="text-primary/80">{vod.playerRiotId}</span>}
+                    {vod.champion && <span>{vod.champion}</span>}
+                    {vod.position && <span>• {vod.position}</span>}
+                  </div>
+                </div>
+              </Link>
+            );
+          }
+
+          if (!hasGameNumbers) {
+            return (
+              <Card className="bg-card/40 border-border/40 mb-6">
+                <CardHeader>
+                  <CardTitle className="text-base font-display flex items-center gap-2">
+                    <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vods.map(renderVodCard)}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          const gameMap = new Map<number, typeof vods>();
+          const ungrouped: typeof vods = [];
+          for (const vod of vods) {
+            if (vod.gameNumber != null && vod.gameNumber > 0) {
+              const arr = gameMap.get(vod.gameNumber) ?? [];
+              arr.push(vod);
+              gameMap.set(vod.gameNumber, arr);
+            } else {
+              ungrouped.push(vod);
+            }
+          }
+          const sortedGames = [...gameMap.entries()].sort((a, b) => a[0] - b[0]);
+
+          return (
+            <Card className="bg-card/40 border-border/40 mb-6">
+              <CardHeader>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Video className="w-4 h-4 text-primary" /> VODs ({vods.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {sortedGames.map(([gameNum, gameVods]) => (
+                  <div key={gameNum}>
+                    <h3 className="text-sm font-display font-semibold text-muted-foreground mb-3">Game {gameNum}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {gameVods.map(renderVodCard)}
+                    </div>
+                  </div>
+                ))}
+                {ungrouped.length > 0 && (
+                  <div>
+                    {sortedGames.length > 0 && (
+                      <h3 className="text-sm font-display font-semibold text-muted-foreground mb-3">Other</h3>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {ungrouped.map(renderVodCard)}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {canChangeVisibility && (
           <Card className="bg-card/40 border-border/40 mb-6">
