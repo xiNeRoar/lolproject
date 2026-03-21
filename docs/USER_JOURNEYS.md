@@ -53,7 +53,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Use search bar (global search)
 2. Land on PlayerProfile or TeamProfile
 
-**Current state:** ✅ Global search bar in nav. Searches teams, players, events. Home page now shows Recent Matches section (#59). Matches page has team name filter + date sort (#64). Match search in global search pending backend (#57).
+**Current state:** ✅ Global search bar in nav. Searches teams, players, events, and matches (#57). Home page shows Recent Matches section (#59). Matches page has team name filter + date sort (#64).
 
 ---
 
