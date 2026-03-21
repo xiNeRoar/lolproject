@@ -233,7 +233,7 @@ export const eventRegistrationsTable = pgTable("event_registrations", {
 - `vodEntries` — VOD records (already has matchId FK)
 - `vodTimestamps` — VOD timestamp markers
 - `replaySubmissions` — render queue
-- `notifications` — player notifications (added `dmSent`, `dmFailed` boolean columns)
+- `notifications` — player notifications (added `dmSent`, `dmFailed` boolean columns; added `entityId` integer nullable — matchId for match_result type, eventId for event notifications)
 - `playerBadges` — badge records
 
 ### New Tables (Defect Remediation)

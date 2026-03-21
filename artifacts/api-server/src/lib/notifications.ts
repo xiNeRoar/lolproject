@@ -20,7 +20,8 @@ export async function notifyPlayer(
   playerId: number,
   type: NotificationType,
   title: string,
-  message: string
+  message: string,
+  entityId?: number
 ) {
   try {
     const [player] = await db
@@ -38,6 +39,7 @@ export async function notifyPlayer(
       type,
       title,
       message,
+      ...(entityId != null ? { entityId } : {}),
     });
 
     // Future: email and discord DM based on preference

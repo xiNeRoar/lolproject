@@ -3225,6 +3225,10 @@ components:
           type: string
         message:
           type: string
+        entityId:
+          type: integer
+          nullable: true
+          description: "Reference ID for the notification subject (e.g. matchId for match_result, eventId for event notifications)"
         isRead:
           type: boolean
           nullable: true
