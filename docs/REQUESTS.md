@@ -200,38 +200,57 @@ score:
 
 ### Frontend UX design (what Replit will build once backend is ready)
 
-**MatchDetail VODs section — grouped by game, then by type:**
+**Core principle: VodDetail is the ONLY place that embeds/plays a video.**
+MatchDetail and Watch page only show thumbnails + links to VodDetail.
+
+**MatchDetail — match data + VOD quick-access:**
+
+1. Game tabs (BO3/BO5 only — BO1 has no tabs):
+   `[Game 1] [Game 2] [Game 3]`
+
+2. Player Stats table — adds VOD column:
+   - If player has a POV VOD for this game → show 🎬 icon
+   - Click 🎬 → navigates to `/watch/:vodId` (VodDetail)
+   - Players without POV → show "—"
+   - This is the primary way users find player POVs
+
+3. VODs section — thumbnail cards only (NO YouTube embed):
+   - Spectator VOD → thumbnail + "Spectator" label → click → VodDetail
+   - Team A POV → thumbnail + team name → click → VodDetail
+   - Team B POV → thumbnail + team name → click → VodDetail
+   - Grouped by gameNumber when BO3/BO5
+
 ```
-VODs (6)
+Player Stats (Game 1)
+┌──────┬─────┬────┬────┬─────┐
+│ Name │ KDA │ CS │DMG │ VOD │
+├──────┼─────┼────┼────┼─────┤
+│ Plr1 │ 5/2 │220 │18k │ 🎬  │  ← click goes to VodDetail
+│ Plr2 │ 3/4 │180 │12k │  —  │  ← no POV requested
+└──────┴─────┴────┴────┴─────┘
 
-Game 1
-  📺 Full Match (Spectator)
-  👥 Team A POV  ·  👥 Team B POV
-
-Game 2
-  📺 Full Match (Spectator)
-
-Player POVs
-  🎮 PlayerName (Jinx vs Thresh · Bot) — Game 1
-  🎮 PlayerName (Ahri vs Syndra · Mid) — Game 2
+VODs
+┌──────────────────┐ ┌──────────────────┐
+│ 🖼 Spectator     │ │ 🖼 Team A POV   │
+│ Game 1           │ │ Game 1           │
+└──────────────────┘ └──────────────────┘
 ```
 
-Key UX rules:
-- Group by `gameNumber` first, then by `vodType`
-- Player POVs collected in separate section (not every player has one — only those who requested)
-- BO1 matches: no "Game 1" header, just flat list
-- Each VOD row: YouTube embed or thumbnail + title + metadata
-- Player POV rows link to player profile
+**VodDetail (`/watch/:id`) — the ONLY video player page:**
+- YouTube embed + timestamps with seek
+- Metadata: match link, player info, champion, position
+- One page = one video = one entity
 
 **Watch page (`/watch`) — pure VOD archive:**
-- Search + filter by type (Spectator / Player POV), team, event, champion, position
-- Card grid with YouTube thumbnails
-- Badge shows VOD type: "Spectator" / "Player POV" / "Team POV"
-- No match data display — just link to match page via "Match →"
+- Card grid with YouTube thumbnails (no embeds)
+- Filter by type (Spectator / Player POV / Team POV), team, event, champion, position
+- Badge shows VOD type
+- Click any card → VodDetail
 
 **Matches page (`/matches`) — match records only:**
-- No VOD badges or VOD-related UI (removed per #108)
+- No VOD-related UI (removed per #108)
 - Pure match listing: teams, score, date, event
+- If match is BO3/BO5, show series score (e.g. "2-1")
 
 ### Files to change
 - `lib/api-spec/openapi.yaml` — schema changes above
