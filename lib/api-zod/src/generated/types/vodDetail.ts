@@ -5,8 +5,8 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { VodEntry } from './vodEntry';
-import type { VodTimestamp } from './vodTimestamp';
+import type { VodEntry } from "./vodEntry";
+import type { VodTimestamp } from "./vodTimestamp";
 
 export interface VodDetail {
   id: number;
@@ -25,6 +25,12 @@ export interface VodDetail {
   opponentChampion?: string | null;
   position?: string | null;
   patch?: string | null;
+  /** Game number in BO series (1,2,3); null for BO1 */
+  gameNumber?: number | null;
+  /** spectator | team-pov | player-pov */
+  vodType?: string | null;
+  /** Team for team-pov VODs */
+  teamId?: number | null;
   playerEloAtTime?: number | null;
   timestamps: VodTimestamp[];
   relatedVods: VodEntry[];

@@ -53,6 +53,9 @@ function formatVodEntry(
     position: v.position ?? null,
     patch: v.patch ?? null,
     playerEloAtTime: v.playerEloAtTime ?? null,
+    gameNumber: v.gameNumber ?? null,
+    vodType: v.vodType ?? null,
+    teamId: v.teamId ?? null,
     createdAt: v.createdAt.toISOString(),
     updatedAt: v.updatedAt.toISOString(),
   };
@@ -83,6 +86,7 @@ router.get("/", async (req, res) => {
     const patch = req.query.patch as string | undefined;
     const teamId = req.query.teamId ? parseInt(req.query.teamId as string) : null;
     const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null;
+    const vodType = req.query.type as string | undefined; // spectator | pov | all (#109)
 
     // Fetch all VODs with joins
     let rows = await db
@@ -110,6 +114,8 @@ router.get("/", async (req, res) => {
       );
     if (patch) rows = rows.filter((r) => r.vod.patch === patch);
     if (playerId) rows = rows.filter((r) => r.vod.playerId === playerId);
+    if (vodType === "spectator") rows = rows.filter((r) => r.vod.playerId == null);
+    else if (vodType === "pov") rows = rows.filter((r) => r.vod.playerId != null);
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter(
@@ -250,6 +256,9 @@ router.post("/", requireAdmin, async (req, res) => {
       position,
       patch,
       playerEloAtTime,
+      gameNumber,
+      vodType,
+      teamId,
     } = req.body as {
       eventId?: number | null;
       matchId?: number | null;
@@ -265,6 +274,9 @@ router.post("/", requireAdmin, async (req, res) => {
       position?: string | null;
       patch?: string | null;
       playerEloAtTime?: number | null;
+      gameNumber?: number | null;
+      vodType?: string | null;
+      teamId?: number | null;
     };
 
     if (!title || !videoUrl) {
@@ -289,6 +301,9 @@ router.post("/", requireAdmin, async (req, res) => {
         position: position || null,
         patch: patch || null,
         playerEloAtTime: playerEloAtTime ? Number(playerEloAtTime) : null,
+        gameNumber: gameNumber ? Number(gameNumber) : null,
+        vodType: vodType || null,
+        teamId: teamId ? Number(teamId) : null,
       })
       .returning();
 
@@ -336,6 +351,9 @@ router.put("/:id", requireAdmin, async (req, res) => {
       position,
       patch,
       playerEloAtTime,
+      gameNumber,
+      vodType,
+      teamId,
     } = req.body as {
       eventId?: number | null;
       matchId?: number | null;
@@ -369,6 +387,9 @@ router.put("/:id", requireAdmin, async (req, res) => {
     if (patch !== undefined) updates.patch = patch || null;
     if (playerEloAtTime !== undefined)
       updates.playerEloAtTime = playerEloAtTime ? Number(playerEloAtTime) : null;
+    if (gameNumber !== undefined) updates.gameNumber = gameNumber ? Number(gameNumber) : null;
+    if (vodType !== undefined) updates.vodType = vodType || null;
+    if (teamId !== undefined) updates.teamId = teamId ? Number(teamId) : null;
 
     const [row] = await db
       .update(vodEntriesTable)

@@ -7,8 +7,12 @@
  */
 
 export type ListMatchesParams = {
-eventId?: number;
-seasonId?: number;
-teamId?: number;
-search?: string;
+  eventId?: number;
+  seasonId?: number;
+  teamId?: number;
+  /**
+   * Filter to matches where player participated
+   */
+  playerId?: number;
+  search?: string;
 };

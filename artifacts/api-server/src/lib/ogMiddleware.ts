@@ -12,6 +12,7 @@
  *   /matches/:id   → "TeamA vs TeamB — 2-1 | VCLoL"
  *   /teams/:id     → "VancouverStorm [VST] — 1243 ELO | VCLoL"
  *   /players/:riotId → "xiNe#NA1 — Mid | VCLoL"
+ *   /watch/:id     → "VOD title | VCLoL"
  */
 
 import { Request, Response, NextFunction } from "express";
@@ -23,6 +24,7 @@ import {
   teamsTable,
   playersTable,
   matchPlayersTable,
+  vodEntriesTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
@@ -99,6 +101,19 @@ async function getPlayerOg(riotId: string): Promise<OgData | null> {
   }
 }
 
+async function getVodOg(id: number): Promise<OgData | null> {
+  try {
+    const [vod] = await db.select().from(vodEntriesTable).where(eq(vodEntriesTable.id, id));
+    if (!vod) return null;
+    const parts = [vod.champion, vod.position, vod.patch ? `Patch ${vod.patch}` : null]
+      .filter(Boolean).join(" · ");
+    return {
+      title: vod.title,
+      description: parts ? `${parts} · VCLoL scrim VOD` : "VCLoL scrim VOD — verified competitive footage",
+    };
+  } catch { return null; }
+}
+
 // ── HTML injection ────────────────────────────────────────────────────────────
 
 interface OgData {
@@ -154,6 +169,7 @@ export function createOgMiddleware(staticDir: string) {
   const MATCH_RE = /^\/matches\/(\d+)$/;
   const TEAM_RE = /^\/teams\/(\d+)(?:\/.*)?$/;
   const PLAYER_RE = /^\/players\/([^/]+)$/;
+  const VOD_RE = /^\/watch\/(\d+)$/;
 
   return async (req: Request, res: Response, next: NextFunction) => {
     const path = req.path;
@@ -168,6 +184,7 @@ export function createOgMiddleware(staticDir: string) {
     const matchMatch = path.match(MATCH_RE);
     const teamMatch = path.match(TEAM_RE);
     const playerMatch = path.match(PLAYER_RE);
+    const vodMatch = path.match(VOD_RE);
 
     if (matchMatch) {
       ogData = await getMatchOg(parseInt(matchMatch[1]));
@@ -175,6 +192,8 @@ export function createOgMiddleware(staticDir: string) {
       ogData = await getTeamOg(parseInt(teamMatch[1]));
     } else if (playerMatch) {
       ogData = await getPlayerOg(decodeURIComponent(playerMatch[1]));
+    } else if (vodMatch) {
+      ogData = await getVodOg(parseInt(vodMatch[1]));
     }
 
     // No OG data needed — let static middleware handle it

@@ -7,11 +7,12 @@ import {
   teamMembersTable,
   eventsTable,
   vodEntriesTable,
+  eventRegistrationsTable,
   ladderSettingsTable,
   eloHistoryTable,
   playersTable,
 } from "@workspace/db";
-import { eq, desc, and, inArray, or } from "drizzle-orm";
+import { eq, desc, and, inArray, or, count } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges } from "../lib/badges";
@@ -214,6 +215,7 @@ router.get("/", async (req, res) => {
     const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : null;
     const seasonId = req.query.seasonId ? parseInt(req.query.seasonId as string) : null;
     const teamId = req.query.teamId ? parseInt(req.query.teamId as string) : null;
+    const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null; // #110
     const search = req.query.search as string | undefined;
 
     let rows = await db
@@ -235,6 +237,16 @@ router.get("/", async (req, res) => {
       filtered = filtered.filter(
         (r) => r.match.teamAId === teamId || r.match.teamBId === teamId
       );
+    if (playerId) {
+      const playerMatchIds = new Set(
+        (await db
+          .select({ matchId: matchPlayersTable.matchId })
+          .from(matchPlayersTable)
+          .where(eq(matchPlayersTable.playerId, playerId))
+        ).map((r) => r.matchId)
+      );
+      filtered = filtered.filter((r) => playerMatchIds.has(r.match.id));
+    }
     if (search) {
       const s = search.toLowerCase();
       filtered = filtered.filter(
@@ -432,6 +444,17 @@ router.get("/:id", async (req, res) => {
       ? (await db.select().from(eventsTable).where(eq(eventsTable.id, match.eventId)))[0]
       : null;
 
+    // bracketSize: round up team registrations to nearest power of 2 (#111)
+    let bracketSize: number | null = null;
+    if (match.isPlayoff && match.eventId) {
+      const [regCount] = await db
+        .select({ cnt: count() })
+        .from(eventRegistrationsTable)
+        .where(eq(eventRegistrationsTable.eventId, match.eventId));
+      const n = Number(regCount?.cnt ?? 0);
+      if (n >= 2) bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
+    }
+
     const base = formatMatch(match, {
       teamAName: teamA?.name ?? null, teamATag: teamA?.tag ?? null,
       teamBName: teamB?.name ?? null, teamBTag: teamB?.tag ?? null,
@@ -452,14 +475,23 @@ router.get("/:id", async (req, res) => {
       .where(eq(matchPlayersTable.matchId, id))
       .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
 
-    const vods = await db.select().from(vodEntriesTable).where(eq(vodEntriesTable.matchId, id));
+    // Join players to surface playerRiotId per VOD (#117)
+    const vodRows = await db
+      .select({ v: vodEntriesTable, playerRiotId: playersTable.riotId })
+      .from(vodEntriesTable)
+      .leftJoin(playersTable, eq(vodEntriesTable.playerId, playersTable.id))
+      .where(eq(vodEntriesTable.matchId, id));
 
     res.json({
       ...base,
+      bracketSize,
       matchPlayers: mpRows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)),
-      vods: vods.map((v) => ({
+      vods: vodRows.map(({ v, playerRiotId }) => ({
         id: v.id, matchId: v.matchId ?? null, title: v.title,
         videoUrl: v.videoUrl, champion: v.champion ?? null,
+        playerId: v.playerId ?? null, playerRiotId: playerRiotId ?? null,
+        position: v.position ?? null, roleTag: v.roleTag ?? null,
+        gameNumber: v.gameNumber ?? null, vodType: v.vodType ?? null,
         createdAt: v.createdAt.toISOString(), updatedAt: v.updatedAt.toISOString(),
       })),
     });

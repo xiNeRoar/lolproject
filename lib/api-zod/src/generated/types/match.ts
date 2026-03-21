@@ -34,6 +34,10 @@ export interface Match {
   eventTitle?: string | null;
   isPlayoff: boolean;
   round?: number | null;
+  /** Series format (1=BO1, 3=BO3, 5=BO5) */
+  bestOf?: number | null;
+  /** Bracket size (4,8,16) derived from event registration count */
+  bracketSize?: number | null;
   bracketSlot?: number | null;
   nextMatchId?: number | null;
   isLosersBracket?: boolean | null;

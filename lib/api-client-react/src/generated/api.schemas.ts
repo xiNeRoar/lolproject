@@ -76,17 +76,6 @@ export interface CreateTeamRequest {
   isActive?: boolean | null;
 }
 
-export interface TeamMember {
-  id: number;
-  teamId: number;
-  playerId: number;
-  playerRiotId?: string | null;
-  playerDiscordUsername?: string | null;
-  role?: string | null;
-  status: string;
-  joinedAt: string;
-}
-
 export interface Match {
   id: number;
   teamAId?: number | null;
@@ -115,12 +104,32 @@ export interface Match {
   eventTitle?: string | null;
   isPlayoff: boolean;
   round?: number | null;
+  /** Series format (1=BO1, 3=BO3, 5=BO5) */
+  bestOf?: number | null;
+  /** Bracket size (4,8,16) derived from event registration count */
+  bracketSize?: number | null;
   bracketSlot?: number | null;
   nextMatchId?: number | null;
   isLosersBracket?: boolean | null;
   groupId?: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type TeamProfileRecentMatchesItem = Match & {
+  /** Champion played by this player in the match */
+  playerChampion?: string | null;
+};
+
+export interface TeamMember {
+  id: number;
+  teamId: number;
+  playerId: number;
+  playerRiotId?: string | null;
+  playerDiscordUsername?: string | null;
+  role?: string | null;
+  status: string;
+  joinedAt: string;
 }
 
 export interface TeamProfile {
@@ -134,7 +143,7 @@ export interface TeamProfile {
   losses: number;
   isActive: boolean;
   members: TeamMember[];
-  recentMatches: Match[];
+  recentMatches: TeamProfileRecentMatchesItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -192,6 +201,11 @@ export interface UpdatePlayerProfileRequest {
   secondaryRole?: string | null;
 }
 
+export type PlayerProfileRecentMatchesItem = Match & {
+  /** Champion played by this player in the match */
+  playerChampion?: string | null;
+};
+
 export interface PlayerTeamEntry {
   teamId: number;
   teamName: string;
@@ -238,6 +252,12 @@ export interface VodEntry {
   opponentChampion?: string | null;
   position?: string | null;
   patch?: string | null;
+  /** Game number in BO series (1,2,3); null for BO1 */
+  gameNumber?: number | null;
+  /** spectator | team-pov | player-pov */
+  vodType?: string | null;
+  /** Team for team-pov VODs */
+  teamId?: number | null;
   playerEloAtTime?: number | null;
   createdAt: string;
   updatedAt: string;
@@ -253,7 +273,7 @@ export interface PlayerProfile {
   isActive: boolean;
   teams: PlayerTeamEntry[];
   aggregateStats: PlayerAggregateStats;
-  recentMatches: Match[];
+  recentMatches: PlayerProfileRecentMatchesItem[];
   vods: VodEntry[];
   createdAt: string;
   updatedAt: string;
@@ -300,11 +320,13 @@ export interface MatchPlayerEntry {
   createdAt: string;
 }
 
-export type MatchDetail = Match & ({
+export type MatchDetail = Match & {
   eventSlug?: string | null;
+  /** Bracket size derived from event registration count */
+  bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
-});
+};
 
 export interface CreateMatchRequest {
   teamAId?: number | null;
@@ -324,13 +346,13 @@ export interface CreateMatchRequest {
   isLosersBracket?: boolean | null;
 }
 
-export type UpdateVisibilityRequestVisibility = typeof UpdateVisibilityRequestVisibility[keyof typeof UpdateVisibilityRequestVisibility];
-
+export type UpdateVisibilityRequestVisibility =
+  (typeof UpdateVisibilityRequestVisibility)[keyof typeof UpdateVisibilityRequestVisibility];
 
 export const UpdateVisibilityRequestVisibility = {
-  public: 'public',
-  private: 'private',
-  default: 'default',
+  public: "public",
+  private: "private",
+  default: "default",
 } as const;
 
 export interface UpdateVisibilityRequest {
@@ -347,6 +369,8 @@ export interface Event {
   shortDescription: string;
   fullDescription?: string | null;
   rulesSummary?: string | null;
+  /** Optional Discord invite URL for the event */
+  discordUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -408,6 +432,12 @@ export interface CreateVodRequest {
   opponentChampion?: string | null;
   position?: string | null;
   patch?: string | null;
+  /** Game number in BO series (1,2,3); null for BO1 */
+  gameNumber?: number | null;
+  /** spectator | team-pov | player-pov */
+  vodType?: string | null;
+  /** Team for team-pov VODs */
+  teamId?: number | null;
   playerEloAtTime?: number | null;
 }
 
@@ -437,6 +467,12 @@ export interface VodDetail {
   opponentChampion?: string | null;
   position?: string | null;
   patch?: string | null;
+  /** Game number in BO series (1,2,3); null for BO1 */
+  gameNumber?: number | null;
+  /** spectator | team-pov | player-pov */
+  vodType?: string | null;
+  /** Team for team-pov VODs */
+  teamId?: number | null;
   playerEloAtTime?: number | null;
   timestamps: VodTimestamp[];
   relatedVods: VodEntry[];
@@ -599,7 +635,7 @@ export type ListAdminActions200Item = {
 };
 
 export type ListTeamsParams = {
-active?: boolean;
+  active?: boolean;
 };
 
 export type AddTeamMemberBody = {
@@ -636,15 +672,19 @@ export type BulkSetMatchVisibility200 = {
 };
 
 export type ListMatchesParams = {
-eventId?: number;
-seasonId?: number;
-teamId?: number;
-search?: string;
+  eventId?: number;
+  seasonId?: number;
+  teamId?: number;
+  /**
+   * Filter to matches where player participated
+   */
+  playerId?: number;
+  search?: string;
 };
 
 export type GetReplayStatusParams = {
-matchId: number;
-playerId: number;
+  matchId: number;
+  playerId: number;
 };
 
 export type GetReplayStatus200 = {
@@ -670,20 +710,32 @@ export type RegisterTeamForEvent201 = {
 };
 
 export type ListRegistrationsParams = {
-eventId?: number;
+  eventId?: number;
 };
 
 export type ListVodsParams = {
-eventId?: number;
-format?: string;
-roleTag?: string;
-search?: string;
-champion?: string;
-position?: string;
-patch?: string;
-teamId?: number;
-playerId?: number;
+  eventId?: number;
+  format?: string;
+  roleTag?: string;
+  search?: string;
+  champion?: string;
+  position?: string;
+  patch?: string;
+  teamId?: number;
+  playerId?: number;
+  /**
+   * Filter by VOD type. spectator=no player, pov=has player
+   */
+  type?: ListVodsType;
 };
+
+export type ListVodsType = (typeof ListVodsType)[keyof typeof ListVodsType];
+
+export const ListVodsType = {
+  spectator: "spectator",
+  pov: "pov",
+  all: "all",
+} as const;
 
 export type GetBotStatus200 = {
   online: boolean;
@@ -703,10 +755,10 @@ export type GetReplayQueueStats200 = {
 };
 
 export type GlobalSearchParams = {
-/**
- * @minLength 2
- */
-q: string;
+  /**
+   * @minLength 2
+   */
+  q: string;
 };
 
 export type GlobalSearch200TeamsItem = {
@@ -749,4 +801,3 @@ export type GlobalSearch200 = {
   events?: GlobalSearch200EventsItem[];
   matches?: GlobalSearch200MatchesItem[];
 };
-

@@ -7,8 +7,8 @@
  */
 
 export type GlobalSearchParams = {
-/**
- * @minLength 2
- */
-q: string;
+  /**
+   * @minLength 2
+   */
+  q: string;
 };

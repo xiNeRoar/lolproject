@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
 import { playersTable } from "./players";
+import { teamsTable } from "./teams";
 import { matchesTable } from "./matches";
 
 export const vodEntriesTable = pgTable("vod_entries", {
@@ -21,6 +22,9 @@ export const vodEntriesTable = pgTable("vod_entries", {
   // position is nullable now; will be required for 5v5 use cases in future
   position: text("position"),
   patch: text("patch"),
+  gameNumber: integer("game_number"),             // game within BO series (1,2,3); null=BO1 (#116)
+  vodType: text("vod_type"),                      // spectator | team-pov | player-pov (#116)
+  teamId: integer("team_id").references(() => teamsTable.id, { onDelete: "set null" }), // team-pov only
   playerEloAtTime: integer("player_elo_at_time"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

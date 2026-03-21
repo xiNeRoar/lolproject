@@ -99,6 +99,7 @@ export const matchesTable = pgTable("matches", {
   winnerName: text("winner_name").notNull(),
   score: text("score"),
   format: text("format"),                     // BO1, BO3, BO5
+  bestOf: integer("best_of"),                  // 1, 3, or 5; null treated as 1 (#116)
   // Team ELO tracking (replaces playerA/BEloBefore/After)
   teamAEloBefore: integer("team_a_elo_before"),
   teamAEloAfter: integer("team_a_elo_after"),
@@ -228,7 +229,8 @@ export const eventRegistrationsTable = pgTable("event_registrations", {
 ## Kept Unchanged
 
 - `adminUsers` — admin auth
-- `events` — event structure
+- `events` — event structure (`discordUrl` column added #115: optional Discord invite URL)
+- `vod_entries` — `gameNumber`, `vodType`, `teamId` columns added (#116)
 - `seasons` — season lifecycle
 - `vodEntries` — VOD records (already has matchId FK)
 - `vodTimestamps` — VOD timestamp markers
@@ -300,6 +302,7 @@ event_registrations.eventId → events.id
 vod_entries.matchId → matches.id
 vod_entries.eventId → events.id
 vod_entries.playerId → players.id
+vod_entries.teamId → teams.id        (NEW #116: team-pov VODs)
 replay_submissions.matchId → matches.id
 notifications.playerId → players.id
 player_badges.playerId → players.id

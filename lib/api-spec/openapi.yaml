@@ -760,6 +760,11 @@ paths:
           in: query
           schema:
             type: integer
+        - name: playerId
+          in: query
+          schema:
+            type: integer
+          description: Filter to matches where player participated
         - name: search
           in: query
           schema:
@@ -1264,6 +1269,12 @@ paths:
           in: query
           schema:
             type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [spectator, pov, all]
+          description: Filter by VOD type. spectator=no player, pov=has player
       responses:
         "200":
           description: VODs
@@ -2183,7 +2194,14 @@ components:
         recentMatches:
           type: array
           items:
-            $ref: "#/components/schemas/Match"
+            allOf:
+              - $ref: "#/components/schemas/Match"
+              - type: object
+                properties:
+                  playerChampion:
+                    type: string
+                    nullable: true
+                    description: Champion played by this player in the match
         createdAt:
           type: string
         updatedAt:
@@ -2364,7 +2382,14 @@ components:
         recentMatches:
           type: array
           items:
-            $ref: "#/components/schemas/Match"
+            allOf:
+              - $ref: "#/components/schemas/Match"
+              - type: object
+                properties:
+                  playerChampion:
+                    type: string
+                    nullable: true
+                    description: Champion played by this player in the match
         vods:
           type: array
           items:
@@ -2536,6 +2561,14 @@ components:
         round:
           type: integer
           nullable: true
+        bestOf:
+          type: integer
+          nullable: true
+          description: Series format (1=BO1, 3=BO3, 5=BO5)
+        bracketSize:
+          type: integer
+          nullable: true
+          description: Bracket size (4,8,16) derived from event registration count
         bracketSlot:
           type: integer
           nullable: true
@@ -2562,6 +2595,10 @@ components:
             eventSlug:
               type: string
               nullable: true
+            bracketSize:
+              type: integer
+              nullable: true
+              description: Bracket size derived from event registration count
             matchPlayers:
               type: array
               items:
@@ -2723,6 +2760,10 @@ components:
         rulesSummary:
           type: string
           nullable: true
+        discordUrl:
+          type: string
+          nullable: true
+          description: Optional Discord invite URL for the event
         createdAt:
           type: string
         updatedAt:
@@ -2874,6 +2915,18 @@ components:
         patch:
           type: string
           nullable: true
+        gameNumber:
+          type: integer
+          nullable: true
+          description: Game number in BO series (1,2,3); null for BO1
+        vodType:
+          type: string
+          nullable: true
+          description: spectator | team-pov | player-pov
+        teamId:
+          type: integer
+          nullable: true
+          description: Team for team-pov VODs
         playerEloAtTime:
           type: integer
           nullable: true
@@ -2923,6 +2976,18 @@ components:
         patch:
           type: string
           nullable: true
+        gameNumber:
+          type: integer
+          nullable: true
+          description: Game number in BO series (1,2,3); null for BO1
+        vodType:
+          type: string
+          nullable: true
+          description: spectator | team-pov | player-pov
+        teamId:
+          type: integer
+          nullable: true
+          description: Team for team-pov VODs
         playerEloAtTime:
           type: integer
           nullable: true
@@ -2976,6 +3041,18 @@ components:
         patch:
           type: string
           nullable: true
+        gameNumber:
+          type: integer
+          nullable: true
+          description: Game number in BO series (1,2,3); null for BO1
+        vodType:
+          type: string
+          nullable: true
+          description: spectator | team-pov | player-pov
+        teamId:
+          type: integer
+          nullable: true
+          description: Team for team-pov VODs
         playerEloAtTime:
           type: integer
           nullable: true

@@ -17,6 +17,7 @@ export const matchesTable = pgTable("matches", {
   winnerName: text("winner_name").notNull(),
   score: text("score"),
   format: text("format"), // BO1, BO3, BO5
+  bestOf: integer("best_of"),                  // 1, 3, or 5; null treated as 1 (#116)
 
   // Team ELO tracking
   teamAEloBefore: integer("team_a_elo_before"),

@@ -16,6 +16,8 @@ export interface Event {
   shortDescription: string;
   fullDescription?: string | null;
   rulesSummary?: string | null;
+  /** Optional Discord invite URL for the event */
+  discordUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }

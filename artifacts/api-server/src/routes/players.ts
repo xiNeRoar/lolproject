@@ -125,9 +125,9 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
     topChampions,
   };
 
-  // Recent matches (last 10 via match_players)
+  // Recent matches (last 10) — include champion played (#113)
   const recentMpRows = await db
-    .select({ match: matchesTable })
+    .select({ match: matchesTable, champion: matchPlayersTable.champion })
     .from(matchPlayersTable)
     .leftJoin(matchesTable, eq(matchPlayersTable.matchId, matchesTable.id))
     .where(eq(matchPlayersTable.playerId, player.id))
@@ -157,6 +157,7 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
       isPlayoff: r.match!.isPlayoff,
       createdAt: r.match!.createdAt.toISOString(),
       updatedAt: r.match!.updatedAt.toISOString(),
+      playerChampion: r.champion ?? null,
     }));
 
   // VODs linked to this player

@@ -5,8 +5,8 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { Match } from './match';
-import type { TeamMember } from './teamMember';
+import type { TeamMember } from "./teamMember";
+import type { TeamProfileRecentMatchesItem } from "./teamProfileRecentMatchesItem";
 
 export interface TeamProfile {
   id: number;
@@ -19,7 +19,7 @@ export interface TeamProfile {
   losses: number;
   isActive: boolean;
   members: TeamMember[];
-  recentMatches: Match[];
+  recentMatches: TeamProfileRecentMatchesItem[];
   createdAt: string;
   updatedAt: string;
 }

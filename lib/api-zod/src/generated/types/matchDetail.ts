@@ -5,12 +5,14 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { Match } from './match';
-import type { MatchPlayerEntry } from './matchPlayerEntry';
-import type { VodEntry } from './vodEntry';
+import type { Match } from "./match";
+import type { MatchPlayerEntry } from "./matchPlayerEntry";
+import type { VodEntry } from "./vodEntry";
 
-export type MatchDetail = Match & ({
+export type MatchDetail = Match & {
   eventSlug?: string | null;
+  /** Bracket size derived from event registration count */
+  bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
-});
+};

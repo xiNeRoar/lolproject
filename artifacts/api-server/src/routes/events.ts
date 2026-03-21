@@ -20,6 +20,7 @@ function formatEvent(e: typeof eventsTable.$inferSelect) {
     shortDescription: e.shortDescription,
     fullDescription: e.fullDescription ?? null,
     rulesSummary: e.rulesSummary ?? null,
+    discordUrl: e.discordUrl ?? null,
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   };
