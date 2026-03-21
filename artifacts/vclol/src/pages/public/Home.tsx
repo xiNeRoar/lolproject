@@ -266,12 +266,12 @@ export default function Home() {
                 <h2 className="text-xl font-display font-bold flex items-center gap-2">
                   <Video className="text-primary w-5 h-5" /> Recent VODs
                 </h2>
-                <Link href="/vods" className="text-sm text-primary hover:underline">VOD Archive →</Link>
+                <Link href="/watch" className="text-sm text-primary hover:underline">VOD Archive →</Link>
               </div>
 
               <div className="space-y-3">
                 {recentVods.map((vod, i) => (
-                  <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
+                  <Link key={vod.id} href={`/watch/${vod.id}`} className="block group">
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}

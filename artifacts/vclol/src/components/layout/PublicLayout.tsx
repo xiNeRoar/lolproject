@@ -140,7 +140,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     { href: "/matches", label: "Matches" },
     { href: "/players", label: "Players" },
     { href: "/events", label: "Events" },
-    { href: "/vods", label: "Watch" },
+    { href: "/watch", label: "Watch" },
   ];
 
   const firstTeam = player?.teams?.[0];

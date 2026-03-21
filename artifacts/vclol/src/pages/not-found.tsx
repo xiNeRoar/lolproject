@@ -30,7 +30,7 @@ export default function NotFound() {
               <Link href="/players" className="text-sm text-primary hover:underline flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Players
               </Link>
-              <Link href="/vods" className="text-sm text-primary hover:underline flex items-center gap-1.5">
+              <Link href="/watch" className="text-sm text-primary hover:underline flex items-center gap-1.5">
                 <Video className="w-3.5 h-3.5" /> VODs
               </Link>
             </div>

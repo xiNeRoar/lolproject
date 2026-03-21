@@ -129,7 +129,7 @@ export default function VodDetail() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">VOD not found.</p>
-          <Link href="/vods" className="text-primary hover:underline text-sm mt-2 inline-block">
+          <Link href="/watch" className="text-primary hover:underline text-sm mt-2 inline-block">
             ← Back to Watch
           </Link>
         </div>
@@ -141,7 +141,7 @@ export default function VodDetail() {
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <Link href="/vods" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+        <Link href="/watch" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
           <ChevronLeft className="w-4 h-4" /> Watch
         </Link>
 
@@ -243,7 +243,7 @@ export default function VodDetail() {
               <CardContent className="p-0">
                 <div className="divide-y divide-border/30">
                   {vod.relatedVods.map((related) => (
-                    <Link key={related.id} href={`/vods/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
+                    <Link key={related.id} href={`/watch/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{related.title}</div>
                         <div className="flex gap-2 mt-1 flex-wrap">

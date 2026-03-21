@@ -50,8 +50,10 @@ function Router() {
       <Route path="/dashboard" component={PlayerDashboard} />
       <Route path="/events" component={Events} />
       <Route path="/events/:slug" component={EventDetail} />
-      <Route path="/vods" component={Vods} />
-      <Route path="/vods/:id" component={VodDetail} />
+      <Route path="/watch" component={Vods} />
+      <Route path="/watch/:id" component={VodDetail} />
+      <Route path="/vods">{() => { window.location.replace("/watch"); return null; }}</Route>
+      <Route path="/vods/:id">{({ id }) => { window.location.replace(`/watch/${id}`); return null; }}</Route>
       <Route path="/teams" component={Teams} />
       <Route path="/teams/:id/manage" component={CaptainHub} />
       <Route path="/teams/:id" component={TeamProfile} />

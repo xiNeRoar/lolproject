@@ -124,7 +124,7 @@ export default function EventDetail() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {event.vods.map(v => (
-                  <Link key={v.id} href={`/vods/${v.id}`} className="block">
+                  <Link key={v.id} href={`/watch/${v.id}`} className="block">
                     <Card className="hover:border-primary/50 transition-colors h-full bg-card/40">
                       <CardContent className="p-4">
                         <div className="font-semibold mb-2">{v.title}</div>

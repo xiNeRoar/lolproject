@@ -156,7 +156,7 @@ export default function Vods() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {vods?.map((vod) => (
-              <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
+              <Link key={vod.id} href={`/watch/${vod.id}`} className="block group">
                 <Card className="h-full bg-card/40 border-border/40 group-hover:bg-card/80 group-hover:border-primary/50 transition-all duration-300 flex flex-col">
                   <div className="aspect-video bg-background flex items-center justify-center border-b border-border/40 relative overflow-hidden rounded-t-lg">
                     {(() => {
