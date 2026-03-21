@@ -116,8 +116,8 @@ playerChampion:
 
 ---
 
-## Request: Add `vodCount` field to Match list response
-**Needed for:** Issue #88 | **Backend issue:** #114
+## ~~Request: Add `vodCount` field to Match list response~~ (SUPERSEDED by #116)
+**Needed for:** ~~Issue #88~~ | **Backend issue:** ~~#114~~ — Both closed, superseded by VOD architecture #116
 **Endpoint:** `GET /api/matches` → each match object
 **Why:** Frontend wants to show a VOD badge on the Matches list page when a match has associated VODs. Currently no way to know if a match has VODs without fetching each match individually.
 **Spec change:** Add `vodCount` to Match schema:
