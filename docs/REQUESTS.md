@@ -98,3 +98,49 @@ function bracketRoundLabel(round, totalRounds) {
   return `Round of ${Math.pow(2, roundsFromFinal + 1)}`;
 }
 ```
+
+---
+
+## Request: Add `champion` field to PlayerProfile recentMatches response
+**Needed for:** Issue #80 | **Backend issue:** TBD
+**Endpoint:** `GET /api/players/:id` → `recentMatches[]`
+**Why:** Frontend wants to show the champion played in each recent match on PlayerProfile. Currently `recentMatches` uses the `Match` schema which has no per-player champion info. The champion data exists in `match_players.championId` but isn't surfaced in the player profile response.
+**Spec change:** Add a `playerChampion` field to the match objects returned in `recentMatches`:
+```yaml
+playerChampion:
+  type: string
+  nullable: true
+  description: Champion name played by this player in the match (from match_players.championId lookup).
+```
+**Backend logic:** When building recentMatches for a player, JOIN match_players WHERE match_players.playerId = :playerId AND match_players.matchId = match.id, include championId → champion name lookup.
+
+---
+
+## Request: Add `vodCount` field to Match list response
+**Needed for:** Issue #88 | **Backend issue:** TBD
+**Endpoint:** `GET /api/matches` → each match object
+**Why:** Frontend wants to show a VOD badge on the Matches list page when a match has associated VODs. Currently no way to know if a match has VODs without fetching each match individually.
+**Spec change:** Add `vodCount` to Match schema:
+```yaml
+vodCount:
+  type: integer
+  nullable: true
+  description: Number of VODs associated with this match. 0 or null means no VODs.
+```
+**Backend logic:** LEFT JOIN vods ON vods.matchId = matches.id, COUNT(vods.id) as vodCount, grouped by match.
+
+---
+
+## Request: Add `discordUrl` field to Event schema
+**Needed for:** Issue #98 | **Backend issue:** TBD
+**Endpoint:** `GET /api/events/:idOrSlug`
+**Why:** Frontend EventDetail page has a "Join Discord" button that links to the event's Discord server. Currently Event schema has no Discord URL field.
+**Spec change:** Add `discordUrl` to Event schema:
+```yaml
+discordUrl:
+  type: string
+  nullable: true
+  description: Discord invite URL for the event's server/channel.
+```
+**Backend logic:** Add column to events table, return in GET response. Optional field, null by default.
+

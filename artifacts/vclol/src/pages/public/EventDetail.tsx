@@ -161,6 +161,13 @@ export default function EventDetail() {
                         </p>
                       </div>
                     </div>
+                    {event.discordUrl && (
+                      <a href={event.discordUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" className="w-full gap-2">
+                          <MessageCircle className="w-4 h-4" /> Join Discord
+                        </Button>
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">

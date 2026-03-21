@@ -42,4 +42,9 @@ export const BADGE_META: Record<string, { emoji: string; label: string }> = {
   climber: { emoji: "📈", label: "Climber" },
 };
 
+export const DD_VERSION = "14.24.1";
+
+export const itemIconUrl = (itemId: number) =>
+  `https://ddragon.leagueoflegends.com/cdn/${DD_VERSION}/img/item/${itemId}.png`;
+
 export const ROLES = ["Top", "Jungle", "Mid", "Bot", "Support"] as const;

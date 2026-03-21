@@ -1,8 +1,10 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import {
   useGetPlayer, useGetPlayerBadges, useListSeasonChampions,
-  useGetPlayerEvents, useGetPlayerChampions, useGetTeamEloHistory,
+  useGetPlayerEvents, useGetPlayerChampions,
 } from "@workspace/api-client-react";
+import { getTeamEloHistory, getGetTeamEloHistoryQueryKey } from "@workspace/api-client-react";
+import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
@@ -17,15 +19,17 @@ function EloTrajectory({ teams }: { teams: Array<{ teamId: number; teamName: str
 
 function EloTrajectoryInner({ teams }: { teams: Array<{ teamId: number; teamName: string }> }) {
   const COLORS = ["hsl(var(--primary))", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
-  const t0 = useGetTeamEloHistory(teams[0]?.teamId ?? 0);
-  const t1 = useGetTeamEloHistory(teams[1]?.teamId ?? 0);
-  const t2 = useGetTeamEloHistory(teams[2]?.teamId ?? 0);
-  const t3 = useGetTeamEloHistory(teams[3]?.teamId ?? 0);
-  const t4 = useGetTeamEloHistory(teams[4]?.teamId ?? 0);
 
-  const allResults = [t0, t1, t2, t3, t4].slice(0, teams.length);
+  const eloQueries = useQueries({
+    queries: teams.map((t) => ({
+      queryKey: getGetTeamEloHistoryQueryKey(t.teamId),
+      queryFn: ({ signal }: { signal: AbortSignal }) => getTeamEloHistory(t.teamId, { signal }),
+      enabled: t.teamId > 0,
+    })),
+  });
+
   const teamsWithHistory = teams
-    .map((team, i) => ({ team, history: allResults[i]?.data ?? [] }))
+    .map((team, i) => ({ team, history: eloQueries[i]?.data ?? [] }))
     .filter((t) => t.history.length >= 2);
 
   if (teamsWithHistory.length === 0) return null;
@@ -234,6 +238,14 @@ export default function PlayerProfile() {
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">Avg KDA</div>
                   </div>
+                  <div className="flex-1 text-center px-4 py-1">
+                    <div className="text-xl font-display font-bold">
+                      {player.aggregateStats.wins + player.aggregateStats.losses > 0
+                        ? Math.round((player.aggregateStats.wins / (player.aggregateStats.wins + player.aggregateStats.losses)) * 100)
+                        : 0}%
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">Win Rate</div>
+                  </div>
                 </div>
               </div>
             )}
@@ -383,6 +395,8 @@ export default function PlayerProfile() {
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{match.matchTitle}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
+                            <span>·</span>
                             {match.sideAName} vs {match.sideBName}
                             {match.isPlayoff && (
                               <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>
@@ -410,19 +424,28 @@ export default function PlayerProfile() {
               ) : (
                 <div className="divide-y divide-border/30">
                   {player.vods.map((vod) => (
-                    <Link key={vod.id} href={`/vods/${vod.id}`}>
-                      <div className="px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{vod.title}</div>
-                          <div className="text-xs text-muted-foreground flex gap-2">
-                            {vod.champion && <span>{vod.champion}</span>}
-                            {vod.position && <span>· {vod.position}</span>}
-                            {vod.patch && <span>· Patch {vod.patch}</span>}
-                          </div>
+                    <div key={vod.id} className="px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/vods/${vod.id}`} className="text-sm font-medium truncate block hover:text-primary transition-colors">
+                          {vod.title}
+                        </Link>
+                        <div className="text-xs text-muted-foreground flex gap-2">
+                          {vod.champion && <span>{vod.champion}</span>}
+                          {vod.position && <span>· {vod.position}</span>}
+                          {vod.patch && <span>· Patch {vod.patch}</span>}
                         </div>
-                        <PlayCircle className="w-3 h-3 text-muted-foreground shrink-0" />
                       </div>
-                    </Link>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {vod.matchId && (
+                          <Link href={`/matches/${vod.matchId}`} className="text-xs text-primary hover:underline">
+                            Match →
+                          </Link>
+                        )}
+                        <Link href={`/vods/${vod.id}`}>
+                          <PlayCircle className="w-3 h-3 text-muted-foreground" />
+                        </Link>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}

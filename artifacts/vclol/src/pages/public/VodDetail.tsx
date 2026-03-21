@@ -200,7 +200,7 @@ export default function VodDetail() {
           </div>
         )}
 
-        <div className={`grid grid-cols-1 ${vod.timestamps?.length ? "lg:grid-cols-2" : ""} gap-6`}>
+        <div className={`grid grid-cols-1 ${vod.timestamps?.length && vod.relatedVods?.length ? "lg:grid-cols-2" : ""} gap-6`}>
           {vod.timestamps && vod.timestamps.length > 0 && (
             <Card className="bg-card/40 border-border/40">
               <CardHeader>
@@ -233,18 +233,14 @@ export default function VodDetail() {
           )}
 
           {/* Related VODs */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <Video className="w-4 h-4" /> Related VODs
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!vod.relatedVods?.length ? (
-                <div className="px-6 py-6 text-center text-muted-foreground text-sm">
-                  No related VODs found.
-                </div>
-              ) : (
+          {vod.relatedVods && vod.relatedVods.length > 0 && (
+            <Card className="bg-card/40 border-border/40">
+              <CardHeader>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Video className="w-4 h-4" /> Related VODs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="divide-y divide-border/30">
                   {vod.relatedVods.map((related) => (
                     <Link key={related.id} href={`/vods/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
@@ -262,9 +258,9 @@ export default function VodDetail() {
                     </Link>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </PublicLayout>

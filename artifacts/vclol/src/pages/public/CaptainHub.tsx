@@ -157,6 +157,9 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
                 );
               })}
             </div>
+            <div className="px-6 py-3 border-t border-border/30 text-xs text-muted-foreground">
+              Showing recent matches only. To manage older matches, visit each <Link href="/matches" className="text-primary hover:underline">match page</Link> individually.
+            </div>
           </>
         )}
       </CardContent>

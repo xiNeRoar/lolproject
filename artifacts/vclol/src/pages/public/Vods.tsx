@@ -8,6 +8,18 @@ import { Search, PlayCircle, ArrowRight, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 
+function extractYouTubeId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0];
+    if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 const POSITIONS = ["Mid", "Top", "Jungle", "Bot", "Support"];
 
 export default function Vods() {
@@ -147,8 +159,31 @@ export default function Vods() {
               <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
                 <Card className="h-full bg-card/40 border-border/40 group-hover:bg-card/80 group-hover:border-primary/50 transition-all duration-300 flex flex-col">
                   <div className="aspect-video bg-background flex items-center justify-center border-b border-border/40 relative overflow-hidden rounded-t-lg">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
-                    <PlayCircle className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
+                    {(() => {
+                      const ytId = extractYouTubeId(vod.videoUrl);
+                      if (ytId) {
+                        return (
+                          <>
+                            <img
+                              src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+                              alt={vod.title}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+                            <PlayCircle className="relative z-10 w-12 h-12 text-white/80 group-hover:text-white group-hover:scale-110 transition-all duration-300 drop-shadow-lg" />
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
+                          <PlayCircle className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors group-hover:scale-110 duration-300" />
+                        </>
+                      );
+                    })()}
                   </div>
                   <CardContent className="p-5 flex flex-col flex-1">
                     <div className="flex justify-between items-start mb-3">

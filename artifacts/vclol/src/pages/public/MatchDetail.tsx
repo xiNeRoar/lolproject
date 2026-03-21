@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert, Info, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { champPortraitUrl } from "@/lib/lol-utils";
+import { champPortraitUrl, itemIconUrl } from "@/lib/lol-utils";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -417,6 +417,33 @@ export default function MatchDetail() {
           </div>
         )}
 
+        {teamAPlayers.length === 0 && teamBPlayers.length === 0 && match.visibleAfter && (() => {
+          const visDate = new Date(match.visibleAfter);
+          const isPermanentPrivate = visDate.getFullYear() >= 9000;
+          const isFuture = visDate.getTime() > Date.now();
+          if (!isPermanentPrivate && !isFuture) return null;
+          return (
+            <Card className="bg-card/40 border-border/40 mb-6">
+              <CardContent className="py-8 text-center">
+                <EyeOff className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                {isPermanentPrivate ? (
+                  <>
+                    <p className="text-sm font-medium mb-1">Stats are private</p>
+                    <p className="text-xs text-muted-foreground">Contact the team captain for access.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium mb-1">
+                      Stats available {visDate.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">This match has a visibility delay. Check back later.</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {(teamAPlayers.length > 0 || teamBPlayers.length > 0) && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader>
@@ -436,17 +463,20 @@ export default function MatchDetail() {
                       <th className="px-4 py-2 hidden sm:table-cell">Gold</th>
                       <th className="px-4 py-2 hidden md:table-cell">Dmg</th>
                       <th className="px-4 py-2 hidden md:table-cell">Vision</th>
+                      <th className="px-4 py-2 hidden lg:table-cell">Items</th>
                     </tr>
                   </thead>
                   <tbody>
                     {teamAPlayers.length > 0 && (
                       <tr className="bg-blue-400/5 border-b border-border/30">
-                        <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
+                        <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
                           {match.sideAName} {sideAWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
                     )}
-                    {teamAPlayers.map((p) => (
+                    {teamAPlayers.map((p) => {
+                      const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
+                      return (
                       <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
                         <td className="px-4 py-2">
                           {p.playerRiotId ? (
@@ -471,16 +501,34 @@ export default function MatchDetail() {
                         <td className="px-4 py-2 text-xs text-yellow-400 hidden sm:table-cell">{(p.gold / 1000).toFixed(1)}k</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{(p.damageToChampions / 1000).toFixed(1)}k</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{p.visionScore}</td>
+                        <td className="px-4 py-2 hidden lg:table-cell">
+                          {items.length > 0 ? (
+                            <div className="flex gap-0.5">
+                              {items.map((itemId, idx) => (
+                                <img
+                                  key={idx}
+                                  src={itemIconUrl(itemId)}
+                                  alt={`Item ${itemId}`}
+                                  className="w-5 h-5 rounded-sm"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                              ))}
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">-</span>}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                     {teamBPlayers.length > 0 && (
                       <tr className="bg-red-400/5 border-b border-border/30">
-                        <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-red-400">
+                        <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-red-400">
                           {match.sideBName} {sideBWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
                     )}
-                    {teamBPlayers.map((p) => (
+                    {teamBPlayers.map((p) => {
+                      const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
+                      return (
                       <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
                         <td className="px-4 py-2">
                           {p.playerRiotId ? (
@@ -505,8 +553,24 @@ export default function MatchDetail() {
                         <td className="px-4 py-2 text-xs text-yellow-400 hidden sm:table-cell">{(p.gold / 1000).toFixed(1)}k</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{(p.damageToChampions / 1000).toFixed(1)}k</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{p.visionScore}</td>
+                        <td className="px-4 py-2 hidden lg:table-cell">
+                          {items.length > 0 ? (
+                            <div className="flex gap-0.5">
+                              {items.map((itemId, idx) => (
+                                <img
+                                  key={idx}
+                                  src={itemIconUrl(itemId)}
+                                  alt={`Item ${itemId}`}
+                                  className="w-5 h-5 rounded-sm"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                              ))}
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">-</span>}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

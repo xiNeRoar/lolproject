@@ -7,7 +7,7 @@ import {
   Trophy, Video, Users, ArrowRight, Calendar as CalendarIcon,
   MessageCircle, Swords, BarChart3,
 } from "lucide-react";
-import { useListEvents, useListVods, useListMatches } from "@workspace/api-client-react";
+import { useListEvents, useListVods, useListMatches, useGetLadder } from "@workspace/api-client-react";
 import { formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +26,7 @@ export default function Home() {
   const { data: events } = useListEvents();
   const { data: vods } = useListVods();
   const { data: matches } = useListMatches();
+  const { data: ladder } = useGetLadder();
 
   const { isLoggedIn: loggedIn } = useAuth();
 
@@ -88,9 +89,9 @@ export default function Home() {
                       Register Now <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href="/events">
+                  <Link href="/teams">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                      View Events
+                      Browse Teams
                     </Button>
                   </Link>
                 </>
@@ -105,9 +106,9 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-3 gap-4 text-center">
               {[
-                { icon: CalendarIcon, value: events?.length ?? "—", label: "Events Hosted" },
-                { icon: Swords,       value: matches?.length ?? "—", label: "Matches Played" },
-                { icon: Video,        value: vods?.length    ?? "—", label: "VODs Archived"  },
+                { icon: Users,  value: ladder?.entries?.length ?? "—", label: "Teams Competing" },
+                { icon: Swords, value: matches?.length ?? "—",        label: "Matches Played"  },
+                { icon: Video,  value: vods?.length    ?? "—",        label: "VODs Archived"   },
               ].map(({ icon: Icon, value, label }) => (
                 <div key={label}>
                   <Icon className="w-4 h-4 text-primary mx-auto mb-1 opacity-70" />
