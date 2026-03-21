@@ -1,15 +1,21 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useListMatches } from "@workspace/api-client-react";
+import { useListMatches, useGetLadder } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Swords, Search, ArrowUpDown } from "lucide-react";
+import { Swords, Search, ArrowUpDown, X } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export default function Matches() {
-  const { data: matches, isLoading } = useListMatches();
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTeamId = urlParams.get("teamId") ? Number(urlParams.get("teamId")) : undefined;
+
+  const [teamIdFilter, setTeamIdFilter] = useState<number | undefined>(initialTeamId);
+  const apiParams = teamIdFilter ? { teamId: teamIdFilter } : undefined;
+  const { data: matches, isLoading } = useListMatches(apiParams);
+  const { data: ladderData } = useGetLadder();
   const [search, setSearch] = useState("");
   const [sortNewest, setSortNewest] = useState(true);
 
@@ -66,6 +72,16 @@ export default function Matches() {
                   className="pl-9 bg-background"
                 />
               </div>
+              <select
+                className="flex h-10 w-full sm:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={teamIdFilter || ""}
+                onChange={(e) => setTeamIdFilter(e.target.value ? Number(e.target.value) : undefined)}
+              >
+                <option value="">All Teams</option>
+                {ladderData?.entries?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>
+                ))}
+              </select>
               <Button
                 variant="outline"
                 size="sm"
@@ -75,6 +91,11 @@ export default function Matches() {
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 {sortNewest ? "Newest first" : "Oldest first"}
               </Button>
+              {teamIdFilter && (
+                <Button variant="ghost" size="sm" onClick={() => setTeamIdFilter(undefined)} className="text-muted-foreground hover:text-foreground gap-1">
+                  <X className="w-3 h-3" /> Clear team filter
+                </Button>
+              )}
             </div>
 
             <p className="text-xs text-muted-foreground mb-3">

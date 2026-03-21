@@ -42,7 +42,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const unreadCount = (notifications ?? []).filter((n) => !n.isRead).length;
 
   function notifIcon(type: string) {
-    if (type === "match_result") return { icon: "🏆", color: "text-yellow-400" };
+    if (type === "match_result") return { icon: "⚔️", color: "text-primary" };
     if (type === "season_completed") return { icon: "🏆", color: "text-yellow-400" };
     if (type === "badge_earned") return { icon: "🎖", color: "text-yellow-400" };
     if (type === "event_registration_confirmed") return { icon: "✓", color: "text-green-400" };
@@ -113,15 +113,34 @@ function DashboardContent({ pid }: { pid: number }) {
             </div>
             <div className="text-right text-sm space-y-1">
               {activeSeason && <div className="text-muted-foreground">{activeSeason.name}</div>}
-              {player.aggregateStats && (
-                <div className="text-xs text-muted-foreground">
-                  <span className="text-green-400">{player.aggregateStats.wins}W</span>
-                  {" / "}
-                  <span className="text-red-400">{player.aggregateStats.losses}L</span>
-                </div>
-              )}
             </div>
           </div>
+          {player.aggregateStats && (() => {
+            const s = player.aggregateStats;
+            const totalGames = (s.wins ?? 0) + (s.losses ?? 0);
+            const winRate = totalGames > 0 ? Math.round(((s.wins ?? 0) / totalGames) * 100) : 0;
+            const avgKda = s.averageKda != null ? Number(s.averageKda).toFixed(1) : null;
+            return (
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/30">
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Record</div>
+                  <div className="text-sm font-medium">
+                    <span className="text-green-400">{s.wins ?? 0}W</span>
+                    {" / "}
+                    <span className="text-red-400">{s.losses ?? 0}L</span>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Win Rate</div>
+                  <div className="text-sm font-display font-bold">{winRate}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Avg KDA</div>
+                  <div className="text-sm font-display font-bold">{avgKda ?? "—"}</div>
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

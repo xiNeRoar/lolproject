@@ -14,9 +14,9 @@ export const champPortraitUrl = (name: string) =>
   `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${toChampId(name)}_0.jpg`;
 
 export function eloBadgeColor(elo: number) {
-  if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-  if (elo >= 1200) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-  if (elo >= 1100) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (elo >= 1400) return "bg-yellow-400/20 text-yellow-400 border-yellow-400/30";
+  if (elo >= 1200) return "bg-purple-400/20 text-purple-400 border-purple-400/30";
+  if (elo >= 1100) return "bg-blue-400/20 text-blue-400 border-blue-400/30";
   return "bg-muted text-muted-foreground";
 }
 

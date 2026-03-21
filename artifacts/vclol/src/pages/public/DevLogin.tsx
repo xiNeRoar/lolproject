@@ -26,7 +26,7 @@ export default function DevLogin() {
   return (
     <PublicLayout>
       <div className="max-w-lg mx-auto px-4 pt-16 pb-16">
-        <Card className="border-yellow-500/30 bg-card/60">
+        <Card className="border-yellow-400/30 bg-card/60">
           <CardHeader>
             <CardTitle className="text-lg font-display flex items-center gap-2">
               <span className="text-yellow-400">⚡</span> Dev Login

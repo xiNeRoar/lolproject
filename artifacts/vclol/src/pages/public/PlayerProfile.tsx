@@ -5,7 +5,7 @@ import {
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video, LogIn } from "lucide-react";
+import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -160,17 +160,6 @@ export default function PlayerProfile() {
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
 
-        {!isLoggedIn && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
-            <p className="text-sm text-muted-foreground">
-              Is this you?
-            </p>
-            <Link href="/login" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex-shrink-0">
-              <LogIn className="w-3.5 h-3.5" />
-              Login with Discord
-            </Link>
-          </div>
-        )}
 
         <Card className="bg-card/40 border-border/40 mb-8 relative overflow-hidden">
           {topChampion && (
@@ -207,7 +196,7 @@ export default function PlayerProfile() {
                 {myChampionships.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {myChampionships.map((c) => (
-                      <span key={c.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium">
+                      <span key={c.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-medium">
                         <Crown className="w-3 h-3" /> Season Champion
                       </span>
                     ))}
@@ -371,7 +360,10 @@ export default function PlayerProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+                <Link href="/matches" className="text-xs text-primary hover:underline">View All →</Link>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {!player.recentMatches?.length ? (
@@ -385,7 +377,7 @@ export default function PlayerProfile() {
                     const won = playerSideName ? match.winnerName === playerSideName : false;
                     return (
                       <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
-                        <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                        <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                           {won ? "W" : "L"}
                         </span>
                         <div className="flex-1 min-w-0">
@@ -428,7 +420,7 @@ export default function PlayerProfile() {
                             {vod.patch && <span>· Patch {vod.patch}</span>}
                           </div>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <PlayCircle className="w-3 h-3 text-muted-foreground shrink-0" />
                       </div>
                     </Link>
                   ))}

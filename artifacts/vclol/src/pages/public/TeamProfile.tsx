@@ -130,8 +130,8 @@ export default function TeamProfile() {
               {team.wins + team.losses > 0 && (
                 <div className="mt-4 space-y-1.5">
                   <div className="flex h-1.5 rounded-full overflow-hidden bg-border/30">
-                    <div className="bg-green-500/70 transition-all" style={{ width: `${winRate}%` }} />
-                    <div className="bg-red-500/70 flex-1" />
+                    <div className="bg-green-400/70 transition-all" style={{ width: `${winRate}%` }} />
+                    <div className="bg-red-400/70 flex-1" />
                   </div>
                   <div className="text-xs text-muted-foreground text-center">
                     {team.wins + team.losses} games played
@@ -198,7 +198,7 @@ export default function TeamProfile() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {m.playerId === team.captainPlayerId && (
-                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Captain</Badge>
+                  <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs">Captain</Badge>
                 )}
                 {m.role && (
                   <Badge variant="outline" className="text-xs">{m.role}</Badge>
@@ -247,7 +247,10 @@ export default function TeamProfile() {
         {team.recentMatches && team.recentMatches.length > 0 && (
           <Card className="bg-card/40 border-border/40 mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-display flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+                <Link href={`/matches?teamId=${teamId}`} className="text-xs text-primary hover:underline">View All →</Link>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/30">
@@ -259,7 +262,7 @@ export default function TeamProfile() {
                   const oppName = isA ? match.sideBName : match.sideAName;
                   return (
                     <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
-                      <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                      <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                         {won ? "W" : "L"}
                       </span>
                       <div className="flex-1 min-w-0">

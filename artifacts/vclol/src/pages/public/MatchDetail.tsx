@@ -242,7 +242,7 @@ export default function MatchDetail() {
           <div className="flex flex-wrap gap-2">
             {match.format && <Badge variant="outline">{match.format}</Badge>}
             {match.isPlayoff && <Badge className="bg-primary/20 text-primary border-primary/30">Playoff</Badge>}
-            {roundLabel && <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{roundLabel}</Badge>}
+            {roundLabel && <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30">{roundLabel}</Badge>}
             {seasonName && <Badge variant="secondary">{seasonName}</Badge>}
             {match.eventTitle && match.eventSlug && (
               <Link href={`/events/${match.eventSlug}`}>
@@ -293,12 +293,13 @@ export default function MatchDetail() {
             <div className={`p-3 rounded-xl border text-center ${sideAWon ? "border-primary/20 bg-primary/5" : "border-border/40 bg-card/30"}`}>
               <EloDelta before={match.teamAEloBefore} after={match.teamAEloAfter} />
               {sideAUnregistered && (
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
+                <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-[10px] mt-1">
                   <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
                 </Badge>
               )}
               {canClaimA && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] text-muted-foreground">Captains: link your team to this side for ELO tracking</p>
                   {captainTeams.length === 1 ? (
                     <button
                       onClick={() => handleClaim("A", captainTeams[0].teamId)}
@@ -326,12 +327,13 @@ export default function MatchDetail() {
             <div className={`p-3 rounded-xl border text-center ${sideBWon ? "border-primary/20 bg-primary/5" : "border-border/40 bg-card/30"}`}>
               <EloDelta before={match.teamBEloBefore} after={match.teamBEloAfter} />
               {sideBUnregistered && (
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] mt-1">
+                <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-[10px] mt-1">
                   <ShieldAlert className="w-3 h-3 mr-1" /> Unregistered
                 </Badge>
               )}
               {canClaimB && (
-                <div className="mt-2">
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] text-muted-foreground">Captains: link your team to this side for ELO tracking</p>
                   {captainTeams.length === 1 ? (
                     <button
                       onClick={() => handleClaim("B", captainTeams[0].teamId)}
@@ -438,7 +440,7 @@ export default function MatchDetail() {
                   </thead>
                   <tbody>
                     {teamAPlayers.length > 0 && (
-                      <tr className="bg-blue-500/5 border-b border-border/30">
+                      <tr className="bg-blue-400/5 border-b border-border/30">
                         <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
                           {match.sideAName} {sideAWon ? "(WIN)" : "(LOSS)"}
                         </td>
@@ -472,7 +474,7 @@ export default function MatchDetail() {
                       </tr>
                     ))}
                     {teamBPlayers.length > 0 && (
-                      <tr className="bg-red-500/5 border-b border-border/30">
+                      <tr className="bg-red-400/5 border-b border-border/30">
                         <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold text-red-400">
                           {match.sideBName} {sideBWon ? "(WIN)" : "(LOSS)"}
                         </td>

@@ -40,7 +40,7 @@ export default function EventDetail() {
         <div className="max-w-5xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
           <div className="flex gap-3 mb-6">
             <Badge variant="outline" className="border-primary text-primary">{event.format}</Badge>
-            <Badge variant={isOpen ? "default" : "secondary"}>{event.registrationStatus.toUpperCase()}</Badge>
+            <Badge variant={isOpen ? "default" : "secondary"}>{event.registrationStatus.charAt(0).toUpperCase() + event.registrationStatus.slice(1)}</Badge>
           </div>
           <h1 className="text-4xl md:text-6xl font-display font-bold mb-4">{event.title}</h1>
           <div className="flex items-center gap-2 text-lg text-muted-foreground">

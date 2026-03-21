@@ -5,6 +5,7 @@ import { useGetTeam, getGetTeamQueryKey, useAddTeamMember, useUpdateTeamMember, 
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -25,8 +26,8 @@ function visLabel(visibleAfter: string | null | undefined): string {
 }
 
 function visBadge(v: string) {
-  if (v === "public") return "bg-green-500/20 text-green-400 border-green-500/30";
-  if (v === "private") return "bg-red-500/20 text-red-400 border-red-500/30";
+  if (v === "public") return "bg-green-400/20 text-green-400 border-green-400/30";
+  if (v === "private") return "bg-red-400/20 text-red-400 border-red-400/30";
   return "bg-muted/40 text-muted-foreground border-border/40";
 }
 
@@ -119,7 +120,7 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
         ) : (
           <>
             <div className="px-6 py-2 border-b border-border/30 flex items-center gap-3">
-              <input type="checkbox" checked={selected.size === matches.length && matches.length > 0} onChange={toggleAll} className="accent-primary" />
+              <Checkbox checked={selected.size === matches.length && matches.length > 0} onCheckedChange={toggleAll} />
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Select all</span>
             </div>
             <div className="divide-y divide-border/30">
@@ -131,8 +132,8 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
                 const isLoading = loading === m.id;
                 return (
                   <div key={m.id} className="px-6 py-3 flex items-center gap-3">
-                    <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleSelect(m.id)} className="accent-primary" />
-                    <span className={`w-7 h-7 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                    <Checkbox checked={selected.has(m.id)} onCheckedChange={() => toggleSelect(m.id)} />
+                    <span className={`w-7 h-7 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                       {won ? "W" : "L"}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -276,7 +277,7 @@ function RosterSection({ team, teamId }: { team: any; teamId: number }) {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {isCaptain && (
-                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs flex items-center gap-1">
+                      <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs flex items-center gap-1">
                         <Crown className="w-3 h-3" /> Captain
                       </Badge>
                     )}
@@ -462,12 +463,12 @@ function TransferCaptainSection({ team, teamId }: { team: any; teamId: number })
           <button
             onClick={() => setConfirming(true)}
             disabled={!selectedPlayer}
-            className="px-6 py-2 rounded-md bg-red-500/10 text-red-400 border border-red-500/30 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+            className="px-6 py-2 rounded-md bg-red-400/10 text-red-400 border border-red-400/30 text-sm font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50"
           >
             Transfer Captain
           </button>
         ) : (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-red-400/10 border border-red-400/30">
             <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-red-400">Are you sure?</p>
@@ -477,7 +478,7 @@ function TransferCaptainSection({ team, teamId }: { team: any; teamId: number })
               <button
                 onClick={handleTransfer}
                 disabled={loading}
-                className="px-4 py-1.5 rounded bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded bg-red-400 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
               >
                 {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Confirm

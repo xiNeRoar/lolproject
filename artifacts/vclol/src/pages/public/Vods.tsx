@@ -1,5 +1,5 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useListVods, useListEvents, useListPlayers } from "@workspace/api-client-react";
+import { useListVods, useListEvents, useListPlayers, useGetLadder } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,9 @@ export default function Vods() {
   const [position, setPosition] = useState("");
   const [patch, setPatch] = useState("");
   const [playerIdFilter, setPlayerIdFilter] = useState<number | undefined>();
+  const [teamIdFilter, setTeamIdFilter] = useState<number | undefined>();
 
-  const hasFilters = !!(search || eventId || champion || position || patch || playerIdFilter);
+  const hasFilters = !!(search || eventId || champion || position || patch || playerIdFilter || teamIdFilter);
 
   const params = hasFilters
     ? {
@@ -28,12 +29,14 @@ export default function Vods() {
         position: position || undefined,
         patch: patch || undefined,
         playerId: playerIdFilter,
+        teamId: teamIdFilter,
       }
     : undefined;
 
   const { data: vods, isLoading } = useListVods(params);
   const { data: events } = useListEvents();
   const { data: players } = useListPlayers();
+  const { data: ladderData } = useGetLadder();
 
   const clearFilters = () => {
     setSearch("");
@@ -42,6 +45,7 @@ export default function Vods() {
     setPosition("");
     setPatch("");
     setPlayerIdFilter(undefined);
+    setTeamIdFilter(undefined);
   };
 
   return (
@@ -107,6 +111,16 @@ export default function Vods() {
               <option value="">All Players</option>
               {players?.map((p) => (
                 <option key={p.id} value={p.id}>{p.riotId}</option>
+              ))}
+            </select>
+            <select
+              className="flex h-10 w-full md:w-52 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={teamIdFilter || ""}
+              onChange={(e) => setTeamIdFilter(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">All Teams</option>
+              {ladderData?.entries?.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>
               ))}
             </select>
             {hasFilters && (

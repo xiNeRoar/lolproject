@@ -179,12 +179,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                     Login
                   </Link>
-                  <a
+                  <Link
                     href="/register"
                     className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
                   >
                     Join VCLoL
-                  </a>
+                  </Link>
                 </>
               )}
             </div>

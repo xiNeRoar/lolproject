@@ -2,7 +2,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetVod } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ExternalLink, Video, ChevronLeft } from "lucide-react";
+import { Clock, PlayCircle, Video, ChevronLeft } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useEffect, useRef } from "react";
 
@@ -258,7 +258,7 @@ export default function VodDetail() {
                           )}
                         </div>
                       </div>
-                      <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <PlayCircle className="w-3 h-3 text-muted-foreground shrink-0" />
                     </Link>
                   ))}
                 </div>

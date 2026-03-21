@@ -1,5 +1,6 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "wouter";
 
 export default function Register() {
   return (
@@ -131,7 +132,7 @@ export default function Register() {
         </div>
 
         <div className="mt-10 text-center text-sm text-muted-foreground">
-          <p>Already registered? Your team and matches appear on this site automatically.</p>
+          <p>Already registered? <Link href="/login" className="text-primary hover:underline">Log in here →</Link></p>
         </div>
       </div>
     </PublicLayout>

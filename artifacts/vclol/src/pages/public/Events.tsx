@@ -64,7 +64,7 @@ export default function Events() {
                         variant={isClosed ? "secondary" : "default"}
                         className={`backdrop-blur-sm ${isClosed ? "opacity-70" : ""}`}
                       >
-                        {event.registrationStatus.toUpperCase()}
+                        {event.registrationStatus.charAt(0).toUpperCase() + event.registrationStatus.slice(1)}
                       </Badge>
                     </div>
                     <div className="absolute bottom-3 right-4 text-sm font-medium text-foreground/80 drop-shadow">

@@ -93,7 +93,7 @@ export default function Teams() {
                         </div>
 
                         <div className="flex items-center gap-4 shrink-0">
-                          <div className="text-center hidden sm:block">
+                          <div className="text-center">
                             <div className="text-xs text-muted-foreground">W/L</div>
                             <div className="text-sm font-medium">
                               <span className="text-green-400">{entry.wins}W</span>
