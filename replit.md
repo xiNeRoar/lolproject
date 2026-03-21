@@ -292,10 +292,26 @@ visibleAfter null = 7-day default
 - **#16** Dashboard overhaul — Recent Matches section (last 5, W/L badges), Captain quick-links, actionable notifications
 - **#15** CaptainHub — visibility, roster, settings, transfer captain
 - **#17** TeamProfile VOD section — `useListVods({ teamId })`, YouTube embed, match links
+- **#37** Register bot invite — `VITE_BOT_INVITE_URL` env var: live link if set, disabled button if unset
+- **#39** NA-wide copy — removed Vancouver/Lower Mainland from Home hero, phase banner, Discord CTA, footer
+- **#40** MatchDetail explainer — "What is VCLoL?" dismissible banner for unauthenticated users
+- **#41** Home stats always show — removed `>=10` matches threshold from stats bar
+- **#42** Notification link fix — `match_result` links to team profile (fallback until backend entityId)
+- **#43** Players sort/filter — sort by Name/Games/WinRate, min games filter, role filter buttons
+- **#45** Ladder empty state — /register CTA in empty leaderboard
+- **#46** 404 redesign — PublicLayout wrapper, Go Home CTA, Ladder/Players/VODs quick links
+- **#47** ELO chart dates — TeamProfile X axis uses `createdAt` dates, not match numbers
+- **#48** CaptainHub access control — login prompt (not logged in) + captain-only message (wrong user) instead of silent redirect
+- **#49** Nav label — "Ladder" → "Ranking" (per owner preference)
+- **#50** /matches page — new page listing all matches with scores, dates, winner highlight, empty state CTA
+- **#51** MatchDetail score prominence — score is 4xl/5xl center element flanked by team names
+- **#52** Champion icons — `champPortraitUrl()` + name in both team player stats tables
+- **#53** About removed from nav — footer-only via "What is VCLoL?"
+- **#58** Nav labels — "Ladder"→"Ranking", "VODs"→"Watch" (per owner preference)
 
 ## Issues Closed via API
 
-#15, #16, #17, #18, #22, #23, #32, #34. #7 was already closed.
+#15, #16, #17, #18, #22, #23, #32, #34, #37, #39, #40, #41, #42, #43, #45, #46, #47, #48, #49, #50, #51, #52, #53, #58. #7 was already closed.
 
 ## API Status
 
