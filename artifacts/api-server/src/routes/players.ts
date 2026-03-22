@@ -243,20 +243,28 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// POST /players/register — register a new player (bot or OAuth)
-// Must be registered BEFORE /:riotId to avoid Express path collision
+// POST /players/register — register a new player via Discord OAuth flow only.
+// Must be registered BEFORE /:riotId to avoid Express path collision.
+// Requires a valid Discord OAuth session (set by GET /auth/discord/callback).
+// discordId is taken from session — never from request body — to prevent forgery.
 router.post("/register", async (req, res) => {
+  // Auth gate: must have completed Discord OAuth (session.discordId set by auth callback)
+  const sessionDiscordId = req.session.discordId;
+  const sessionDiscordUsername = req.session.discordUsername;
+  if (!sessionDiscordId) {
+    res.status(401).json({ error: "Discord OAuth session required. Complete Discord login first." });
+    return;
+  }
+
   try {
-    const { riotId, discordId, discordUsername, puuid, email } = req.body as {
+    const { riotId, puuid, email } = req.body as {
       riotId?: string;
-      discordId?: string;
-      discordUsername?: string;
       puuid?: string | null;
       email?: string | null;
     };
 
-    if (!riotId || !discordId || !discordUsername) {
-      res.status(400).json({ error: "riotId, discordId, and discordUsername are required" });
+    if (!riotId) {
+      res.status(400).json({ error: "riotId is required" });
       return;
     }
 
@@ -264,20 +272,18 @@ router.post("/register", async (req, res) => {
       .insert(playersTable)
       .values({
         riotId,
-        discordId,
-        discordUsername,
+        discordId: sessionDiscordId,            // from session — trusted, not body
+        discordUsername: sessionDiscordUsername ?? sessionDiscordId,
         puuid: puuid ?? null,
         email: email ?? null,
         registrationStatus: "active",
       })
       .returning();
 
-    // Set session if called from web OAuth flow
-    if (req.session) {
-      req.session.playerId = row!.id;
-      req.session.playerRiotId = row!.riotId;
-      req.session.discordUsername = row!.discordUsername;
-    }
+    // Upgrade session: pre-registration → full player session
+    req.session.playerId = row!.id;
+    req.session.playerRiotId = row!.riotId;
+    delete req.session.discordId; // consumed — prevents duplicate registration attempts
 
     res.status(201).json(formatPlayer(row!));
   } catch (err: any) {
