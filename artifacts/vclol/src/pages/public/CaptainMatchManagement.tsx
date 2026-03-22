@@ -186,6 +186,29 @@ export default function CaptainMatchManagement() {
     );
   }
 
+  if (error === "Not authenticated") {
+    return (
+      <PublicLayout>
+        <div className="max-w-md mx-auto px-4 pt-24 pb-16">
+          <Card className="bg-card/40 border-border/40 text-center">
+            <CardContent className="pt-8 pb-8">
+              <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4 opacity-60" />
+              <h2 className="text-xl font-display font-bold mb-3">Session expired</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Please log in with Discord to manage matches. Dev login does not grant server access.
+              </p>
+              <Link href="/login">
+                <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold" style={{ backgroundColor: "#5865F2" }}>
+                  Login with Discord →
+                </button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </PublicLayout>
+    );
+  }
+
   if (error === "Captain access only") {
     return (
       <PublicLayout>
