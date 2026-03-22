@@ -23,6 +23,7 @@ import Contact from "@/pages/public/Contact";
 import MatchDetail from "@/pages/public/MatchDetail";
 import Matches from "@/pages/public/Matches";
 import CaptainHub from "@/pages/public/CaptainHub";
+import CaptainMatchManagement from "@/pages/public/CaptainMatchManagement";
 
 import Login from "@/pages/admin/Login";
 import Dashboard from "@/pages/admin/Dashboard";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/vods">{() => { window.location.replace("/watch"); return null; }}</Route>
       <Route path="/vods/:id">{({ id }) => { window.location.replace(`/watch/${id}`); return null; }}</Route>
       <Route path="/teams" component={Teams} />
+      <Route path="/teams/:id/manage/matches" component={CaptainMatchManagement} />
       <Route path="/teams/:id/manage" component={CaptainHub} />
       <Route path="/teams/:id" component={TeamProfile} />
       <Route path="/ladder">{() => { window.location.replace("/teams"); return null; }}</Route>

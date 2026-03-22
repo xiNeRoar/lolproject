@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam, getGetTeamQueryKey, useAddTeamMember, useUpdateTeamMember, useRemoveTeamMember, useUpdateMatchVisibility } from "@workspace/api-client-react";
+import { useGetTeam, getGetTeamQueryKey, useAddTeamMember, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -32,59 +31,7 @@ function visBadge(v: string) {
 }
 
 function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number }) {
-  const queryClient = useQueryClient();
-  const matches = team.recentMatches ?? [];
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState<number | null>(null);
-  const [bulkLoading, setBulkLoading] = useState(false);
-
-  const updateVis = useUpdateMatchVisibility();
-
-  const toggleSingle = async (matchId: number, newVis: string) => {
-    setLoading(matchId);
-    try {
-      const visibleAfter = newVis === "public" ? new Date(0).toISOString()
-        : newVis === "private" ? new Date("9999-01-01").toISOString() : null;
-      await updateVis.mutateAsync({ id: matchId, data: { visibleAfter } });
-      queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(teamId) });
-      toast.success(`Match visibility set to ${newVis}`);
-    } catch {
-      toast.error("Failed to update visibility");
-    }
-    setLoading(null);
-  };
-
-  const bulkSetVisibility = async (vis: string) => {
-    if (selected.size === 0) return;
-    setBulkLoading(true);
-    try {
-      await fetch(`${API_BASE}/api/teams/${teamId}/matches/visibility`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ visibility: vis, matchIds: [...selected] }),
-      });
-      queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(teamId) });
-      setSelected(new Set());
-      toast.success(`${selected.size} match(es) set to ${vis}`);
-    } catch {
-      toast.error("Failed to bulk update visibility");
-    }
-    setBulkLoading(false);
-  };
-
-  const toggleSelect = (id: number) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === matches.length) setSelected(new Set());
-    else setSelected(new Set(matches.map((m: any) => m.id)));
-  };
+  const matches = (team.recentMatches ?? []).slice(0, 3);
 
   return (
     <Card className="bg-card/40 border-border/40">
@@ -93,21 +40,6 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
           <CardTitle className="text-base font-display flex items-center gap-2">
             <Eye className="w-4 h-4 text-primary" /> Match Visibility
           </CardTitle>
-          {selected.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{selected.size} selected</span>
-              {VIS_OPTIONS.map(v => (
-                <button
-                  key={v}
-                  onClick={() => bulkSetVisibility(v)}
-                  disabled={bulkLoading}
-                  className="text-xs px-2.5 py-1 rounded border border-border/40 hover:bg-muted/30 transition-colors capitalize disabled:opacity-50"
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -119,20 +51,14 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
           </div>
         ) : (
           <>
-            <div className="px-6 py-2 border-b border-border/30 flex items-center gap-3">
-              <Checkbox checked={selected.size === matches.length && matches.length > 0} onCheckedChange={toggleAll} />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">Select all</span>
-            </div>
             <div className="divide-y divide-border/30">
               {matches.map((m: any) => {
                 const isA = m.teamAId === teamId;
                 const oppName = isA ? m.sideBName : m.sideAName;
                 const won = m.winnerName === (isA ? m.sideAName : m.sideBName);
                 const vis = visLabel(m.visibleAfter);
-                const isLoading = loading === m.id;
                 return (
                   <div key={m.id} className="px-6 py-3 flex items-center gap-3">
-                    <Checkbox checked={selected.has(m.id)} onCheckedChange={() => toggleSelect(m.id)} />
                     <span className={`w-7 h-7 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                       {won ? "W" : "L"}
                     </span>
@@ -141,24 +67,14 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
                       <div className="text-xs text-muted-foreground">{m.matchTitle}</div>
                     </div>
                     <Badge className={`text-xs capitalize ${visBadge(vis)}`}>{vis}</Badge>
-                    <div className="flex items-center gap-1">
-                      {VIS_OPTIONS.filter(v => v !== vis).map(v => (
-                        <button
-                          key={v}
-                          onClick={() => toggleSingle(m.id, v)}
-                          disabled={isLoading}
-                          className="text-[11px] px-2 py-0.5 rounded border border-border/30 hover:bg-muted/30 transition-colors capitalize disabled:opacity-50"
-                        >
-                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : v}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 );
               })}
             </div>
-            <div className="px-6 py-3 border-t border-border/30 text-xs text-muted-foreground">
-              Showing recent matches only. To manage older matches, visit each <Link href="/matches" className="text-primary hover:underline">match page</Link> individually.
+            <div className="px-6 py-3 border-t border-border/30">
+              <Link href={`/teams/${teamId}/manage/matches`} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
+                Manage All Matches →
+              </Link>
             </div>
           </>
         )}

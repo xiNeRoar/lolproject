@@ -77,7 +77,7 @@ export default function EventDetail() {
               <div className="flex flex-wrap gap-2">
                 {registrations.map((r) => {
                   const hasTeam = !!(r as any).teamName;
-                  const label = hasTeam ? `[${(r as any).teamTag}] ${(r as any).teamName}` : (r.riotId ?? "Unknown");
+                  const label = hasTeam ? ((r as any).teamTag ? `[${(r as any).teamTag}] ${(r as any).teamName}` : (r as any).teamName) : (r.riotId ?? "Unknown");
                   const href = hasTeam ? `/teams/${r.teamId}` : r.riotId ? `/players/${encodeURIComponent(r.riotId)}` : null;
                   const chip = (
                     <div className={cn(
