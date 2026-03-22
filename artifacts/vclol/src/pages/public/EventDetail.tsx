@@ -76,19 +76,22 @@ export default function EventDetail() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {registrations.map((r) => {
+                  const hasTeam = !!(r as any).teamName;
+                  const label = hasTeam ? `[${(r as any).teamTag}] ${(r as any).teamName}` : (r.riotId ?? "Unknown");
+                  const href = hasTeam ? `/teams/${r.teamId}` : r.riotId ? `/players/${encodeURIComponent(r.riotId)}` : null;
                   const chip = (
                     <div className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-sm",
-                      r.riotId && "hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
+                      href && "hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
                     )}>
-                      <span className="font-medium">{r.riotId ?? "Unknown"}</span>
+                      <span className="font-medium">{label}</span>
                       {r.status && r.status !== "registered" && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0">{r.status}</Badge>
                       )}
                     </div>
                   );
-                  return r.riotId ? (
-                    <Link key={r.id} href={`/players/${encodeURIComponent(r.riotId)}`}>{chip}</Link>
+                  return href ? (
+                    <Link key={r.id} href={href}>{chip}</Link>
                   ) : (
                     <div key={r.id}>{chip}</div>
                   );
