@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { teamsTable, teamMembersTable, playersTable, matchesTable, eloHistoryTable } from "@workspace/db";
-import { eq, desc, and, inArray, or } from "drizzle-orm";
+import { eq, desc, and, inArray, or, ilike, count, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
 
@@ -526,8 +526,28 @@ router.get("/:id/matches", async (req, res) => {
 
     const teamCondition = or(eq(matchesTable.teamAId, teamId), eq(matchesTable.teamBId, teamId))!;
 
-    // Fetch all matching rows (in-memory search + pagination — safe for typical team sizes)
-    let rows = await db
+    // Build WHERE clause: team condition + optional ILIKE search (#128 SQL-level pagination)
+    const searchCondition = search
+      ? and(
+          teamCondition,
+          or(
+            ilike(matchesTable.sideAName, `%${search}%`),
+            ilike(matchesTable.sideBName, `%${search}%`),
+            ilike(matchesTable.matchTitle, `%${search}%`),
+          )!
+        )!
+      : teamCondition;
+
+    // COUNT query — one round-trip for total
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(matchesTable)
+      .where(searchCondition);
+
+    const totalPages = Math.ceil(Number(total) / limit);
+
+    // Data query — LIMIT + OFFSET pushed to DB
+    const paginated = await db
       .select({
         id:           matchesTable.id,
         matchTitle:   matchesTable.matchTitle,
@@ -540,20 +560,10 @@ router.get("/:id/matches", async (req, res) => {
         createdAt:    matchesTable.createdAt,
       })
       .from(matchesTable)
-      .where(teamCondition)
-      .orderBy(desc(matchesTable.createdAt));
-
-    if (search) {
-      rows = rows.filter((m) =>
-        m.sideAName.toLowerCase().includes(search) ||
-        m.sideBName.toLowerCase().includes(search) ||
-        m.matchTitle.toLowerCase().includes(search)
-      );
-    }
-
-    const total      = rows.length;
-    const totalPages = Math.ceil(total / limit);
-    const paginated  = rows.slice(offset, offset + limit);
+      .where(searchCondition)
+      .orderBy(desc(matchesTable.createdAt))
+      .limit(limit)
+      .offset(offset);
 
     res.json({
       matches: paginated.map((m) => ({
