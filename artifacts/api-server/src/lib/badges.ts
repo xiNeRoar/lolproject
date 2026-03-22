@@ -1,6 +1,12 @@
 import { db } from "@workspace/db";
-import { playerBadgesTable, matchPlayersTable } from "@workspace/db";
-import { eq, and, count, desc } from "drizzle-orm";
+import {
+  playerBadgesTable,
+  matchPlayersTable,
+  teamsTable,
+  teamMembersTable,
+  eloHistoryTable,
+} from "@workspace/db";
+import { eq, and, count, desc, sql } from "drizzle-orm";
 import { notifyPlayer } from "./notifications";
 
 // ── Internal helpers ─────────────────────────────────────────
@@ -90,29 +96,103 @@ export async function checkMatchBadges(matchId: number): Promise<void> {
 /**
  * Check and award badges after season completion.
  * Called with the seasonId and the winning teamId.
- * climber badge is currently team-scoped — individual climber badges
- * can be added in a future phase when per-player ELO is tracked.
  */
 export async function checkSeasonBadges(
   seasonId: number,
   championTeamId: number
 ): Promise<void> {
   // season_champion: award to all active members of the champion team
-  // Imported inline to avoid circular deps; team_members is in schema
-  const { teamMembersTable } = await import("@workspace/db");
-  const { eq: eqI } = await import("drizzle-orm");
-
   const members = await db
     .select({ playerId: teamMembersTable.playerId })
     .from(teamMembersTable)
     .where(
       and(
-        eqI(teamMembersTable.teamId, championTeamId),
-        eqI(teamMembersTable.status, "active")
+        eq(teamMembersTable.teamId, championTeamId),
+        eq(teamMembersTable.status, "active")
       )
     );
 
   for (const m of members) {
     await awardBadge(m.playerId, "season_champion", seasonId);
+  }
+}
+
+/**
+ * Check and award the climber badge after a match.
+ * Trigger: team climbs 3+ ladder positions since the start of the current season.
+ *
+ * "Season start position" = rank at time of the most recent season_reset entry
+ * in elo_history for this team. If no reset exists, uses registration baseline.
+ * "Current position" = rank among all active teams by teamElo DESC.
+ *
+ * Called for both participating teams after each /submit.
+ */
+export async function checkClimberBadge(teamId: number): Promise<void> {
+  const CLIMB_THRESHOLD = 3; // positions climbed to earn the badge
+
+  // Get the team's ELO at season start (most recent season_reset entry)
+  const [resetEntry] = await db
+    .select({ elo: eloHistoryTable.elo })
+    .from(eloHistoryTable)
+    .where(
+      and(
+        eq(eloHistoryTable.teamId, teamId),
+        eq(eloHistoryTable.reason, "season_reset")
+      )
+    )
+    .orderBy(desc(eloHistoryTable.createdAt))
+    .limit(1);
+
+  // If no season reset yet, use registration baseline (first entry)
+  const [baselineEntry] = resetEntry
+    ? [resetEntry]
+    : await db
+        .select({ elo: eloHistoryTable.elo })
+        .from(eloHistoryTable)
+        .where(
+          and(
+            eq(eloHistoryTable.teamId, teamId),
+            eq(eloHistoryTable.reason, "registration")
+          )
+        )
+        .limit(1);
+
+  if (!baselineEntry) return; // no history at all yet
+
+  const baselineElo = baselineEntry.elo;
+
+  // Get all active teams ordered by current ELO (for rank calculation)
+  const allActiveTeams = await db
+    .select({ id: teamsTable.id, teamElo: teamsTable.teamElo })
+    .from(teamsTable)
+    .where(eq(teamsTable.isActive, true))
+    .orderBy(desc(teamsTable.teamElo));
+
+  // Current rank of this team (1-based)
+  const currentRankIdx = allActiveTeams.findIndex((t) => t.id === teamId);
+  if (currentRankIdx === -1) return;
+  const currentRank = currentRankIdx + 1;
+
+  // Rank at baseline ELO: count how many active teams had ELO >= baseline
+  const teamsAboveBaseline = allActiveTeams.filter((t) => t.teamElo >= baselineElo);
+  const baselineRank = teamsAboveBaseline.length + (teamsAboveBaseline.some((t) => t.id === teamId) ? 0 : 1);
+
+  const positionsClimbed = baselineRank - currentRank; // positive = climbed up
+
+  if (positionsClimbed < CLIMB_THRESHOLD) return;
+
+  // Award climber badge to all active team members
+  const members = await db
+    .select({ playerId: teamMembersTable.playerId })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.teamId, teamId),
+        eq(teamMembersTable.status, "active")
+      )
+    );
+
+  for (const m of members) {
+    await awardBadge(m.playerId, "climber");
   }
 }

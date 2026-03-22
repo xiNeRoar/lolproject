@@ -15,7 +15,7 @@ import {
 import { eq, desc, and, inArray, or, count } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
-import { checkMatchBadges } from "../lib/badges";
+import { checkMatchBadges, checkClimberBadge } from "../lib/badges";
 import { logAdminAction } from "../lib/auditLog";
 
 const router = Router();
@@ -411,6 +411,12 @@ router.post("/", requireAdmin, async (req, res) => {
     checkMatchBadges(createdMatchId!).catch((err) =>
       console.error("[badges] Error checking match badges:", err)
     );
+    // Check climber badge for both teams (if identified)
+    for (const tid of [teamAId, teamBId].filter(Boolean) as number[]) {
+      checkClimberBadge(tid).catch((err) =>
+        console.error("[badges] Error checking climber badge:", err)
+      );
+    }
 
     const [created] = await db.select().from(matchesTable).where(eq(matchesTable.id, createdMatchId!));
     res.status(201).json(formatMatch(created!));
