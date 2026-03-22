@@ -57,11 +57,10 @@ export default function Players() {
     }
 
     if (roleFilter) {
-      const r = roleFilter.toLowerCase();
       list = list.filter(
         (p) =>
-          p.primaryRole?.toLowerCase() === r ||
-          p.secondaryRole?.toLowerCase() === r
+          formatRole(p.primaryRole) === roleFilter ||
+          formatRole(p.secondaryRole) === roleFilter
       );
     }
 
