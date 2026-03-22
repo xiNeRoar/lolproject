@@ -21,6 +21,7 @@ import {
   Routes,
   ChatInputCommandInteraction,
 } from "discord.js";
+import { db, botHeartbeatsTable } from "./lib/db.js";
 
 import * as registerTeam from "./commands/register-team.js";
 import * as add from "./commands/add.js";
@@ -84,6 +85,18 @@ const client = new Client({
 client.once(Events.ClientReady, async (c) => {
   console.log(`[bot] Logged in as ${c.user.tag}`);
   await registerCommands();
+
+  // ── Heartbeat writer (BOT_SPEC §Health Monitoring) ────────────────────
+  // Writes to bot_heartbeats every 5 minutes so GET /api/bot-status works.
+  async function writeHeartbeat() {
+    try {
+      await db.insert(botHeartbeatsTable).values({ timestamp: new Date() });
+    } catch (err) {
+      console.error("[bot] Failed to write heartbeat:", err);
+    }
+  }
+  await writeHeartbeat(); // immediate on startup
+  setInterval(writeHeartbeat, 5 * 60 * 1000); // every 5 minutes
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
