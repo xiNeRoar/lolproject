@@ -430,6 +430,7 @@ export const ListPlayersResponseItem = zod.object({
   "primaryRole": zod.string().nullish(),
   "secondaryRole": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "profileVisibility": zod.string().optional().describe('public | private'),
   "email": zod.string().nullish(),
   "notificationPreference": zod.string().nullish(),
   "registrationStatus": zod.string().nullish(),
@@ -718,6 +719,7 @@ export const UpdatePlayerResponse = zod.object({
   "primaryRole": zod.string().nullish(),
   "secondaryRole": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "profileVisibility": zod.string().optional().describe('public | private'),
   "email": zod.string().nullish(),
   "notificationPreference": zod.string().nullish(),
   "registrationStatus": zod.string().nullish(),
@@ -749,7 +751,8 @@ export const UpdatePlayerProfileBody = zod.object({
   "email": zod.string().nullish(),
   "notificationPreference": zod.string().nullish(),
   "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish()
+  "secondaryRole": zod.string().nullish(),
+  "profileVisibility": zod.string().nullish().describe('public | private')
 })
 
 export const UpdatePlayerProfileResponse = zod.object({
@@ -768,6 +771,7 @@ export const UpdatePlayerProfileResponse = zod.object({
   "primaryRole": zod.string().nullish(),
   "secondaryRole": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "profileVisibility": zod.string().optional().describe('public | private'),
   "email": zod.string().nullish(),
   "notificationPreference": zod.string().nullish(),
   "registrationStatus": zod.string().nullish(),

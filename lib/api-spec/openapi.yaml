@@ -2352,6 +2352,9 @@ components:
           nullable: true
         isActive:
           type: boolean
+        profileVisibility:
+          type: string
+          description: public | private
         email:
           type: string
           nullable: true
@@ -2427,6 +2430,10 @@ components:
           nullable: true
         secondaryRole:
           type: string
+          nullable: true
+        profileVisibility:
+          type: string
+          description: public | private
           nullable: true
 
     PlayerProfile:

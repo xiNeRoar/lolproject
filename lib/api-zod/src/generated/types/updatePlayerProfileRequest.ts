@@ -11,4 +11,6 @@ export interface UpdatePlayerProfileRequest {
   notificationPreference?: string | null;
   primaryRole?: string | null;
   secondaryRole?: string | null;
+  /** public | private */
+  profileVisibility?: string | null;
 }

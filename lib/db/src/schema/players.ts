@@ -11,6 +11,7 @@ export const playersTable = pgTable("players", {
   primaryRole: text("primary_role"), // top, jg, mid, adc, sup
   secondaryRole: text("secondary_role"),
   isActive: boolean("is_active").notNull().default(true),
+  profileVisibility: text("profile_visibility").notNull().default("public"), // public | private
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),

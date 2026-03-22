@@ -19,6 +19,8 @@ export interface Player {
   primaryRole?: string | null;
   secondaryRole?: string | null;
   isActive: boolean;
+  /** public | private */
+  profileVisibility?: string;
   email?: string | null;
   notificationPreference?: string | null;
   registrationStatus?: string | null;

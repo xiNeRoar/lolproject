@@ -168,6 +168,8 @@ export interface Player {
   primaryRole?: string | null;
   secondaryRole?: string | null;
   isActive: boolean;
+  /** public | private */
+  profileVisibility?: string;
   email?: string | null;
   notificationPreference?: string | null;
   registrationStatus?: string | null;
@@ -199,6 +201,8 @@ export interface UpdatePlayerProfileRequest {
   notificationPreference?: string | null;
   primaryRole?: string | null;
   secondaryRole?: string | null;
+  /** public | private */
+  profileVisibility?: string | null;
 }
 
 export type PlayerProfileRecentMatchesItem = Match & ({

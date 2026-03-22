@@ -28,6 +28,7 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
     primaryRole: p.primaryRole ?? null,
     secondaryRole: p.secondaryRole ?? null,
     isActive: p.isActive,
+    profileVisibility: p.profileVisibility ?? "public",
     email: p.email ?? null,
     notificationPreference: p.notificationPreference,
     registrationStatus: p.registrationStatus,
@@ -386,6 +387,34 @@ router.get("/:riotId", async (req, res) => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
+
+    // Privacy gate: if profile is private, only the player themselves or an admin can see full data
+    const isOwner = req.session.playerId === player.id;
+    const isAdmin = !!req.session.adminId;
+    const isPrivate = (player.profileVisibility ?? "public") === "private";
+
+    if (isPrivate && !isOwner && !isAdmin) {
+      // Return redacted profile — riotId + team affiliations only, no stats
+      const memberRows = await db
+        .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag, status: teamMembersTable.status })
+        .from(teamMembersTable)
+        .leftJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+        .where(eq(teamMembersTable.playerId, player.id));
+
+      res.json({
+        id: player.id,
+        riotId: player.riotId,
+        isPrivate: true,
+        teams: memberRows.map((r) => ({
+          teamId: r.teamId,
+          teamName: r.teamName ?? "",
+          teamTag: r.teamTag ?? "",
+          status: r.status,
+        })),
+      });
+      return;
+    }
+
     res.json(await buildPlayerProfile(player));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch player" });
@@ -473,11 +502,12 @@ router.put("/:id/profile", async (req, res) => {
       return;
     }
 
-    const { email, notificationPreference, primaryRole, secondaryRole } = req.body as {
+    const { email, notificationPreference, primaryRole, secondaryRole, profileVisibility } = req.body as {
       email?: string | null;
       notificationPreference?: string | null;
       primaryRole?: string | null;
       secondaryRole?: string | null;
+      profileVisibility?: string | null;
     };
 
     const updates: Partial<typeof playersTable.$inferInsert> = { updatedAt: new Date() };
@@ -485,6 +515,9 @@ router.put("/:id/profile", async (req, res) => {
     if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
     if (primaryRole !== undefined) updates.primaryRole = primaryRole;
     if (secondaryRole !== undefined) updates.secondaryRole = secondaryRole;
+    if (profileVisibility !== undefined && (profileVisibility === "public" || profileVisibility === "private")) {
+      updates.profileVisibility = profileVisibility;
+    }
 
     const [row] = await db
       .update(playersTable)
