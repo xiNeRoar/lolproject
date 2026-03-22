@@ -19,6 +19,7 @@ import {
   matchesTable,
   matchPlayersTable,
   teamsTable,
+  teamMembersTable,
   playersTable,
   playerBansTable,
   ladderSettingsTable,
@@ -140,6 +141,48 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // ── 6. Team matching ────────────────────────────────────────────────────
   const { sideA, sideB } = await matchTeams(match.blueSide, match.redSide);
+
+  // ── 6a. Submitter membership check ──────────────────────────────────────
+  // If at least one team was identified, verify the submitter is a member of
+  // either team. Unregistered users may submit unregistered matches (stats-only).
+  if (sideA.teamId || sideB.teamId) {
+    const [invokerPlayer] = await db
+      .select({ id: playersTable.id })
+      .from(playersTable)
+      .where(eq(playersTable.discordId, interaction.user.id))
+      .limit(1);
+
+    if (invokerPlayer) {
+      const teamIds = [sideA.teamId, sideB.teamId].filter((id): id is number => id !== null);
+      const [membership] = await db
+        .select({ id: teamMembersTable.id })
+        .from(teamMembersTable)
+        .where(
+          and(
+            eq(teamMembersTable.playerId, invokerPlayer.id),
+            eq(teamMembersTable.status, "active"),
+            inArray(teamMembersTable.teamId, teamIds)
+          )
+        )
+        .limit(1);
+
+      if (!membership) {
+        await interaction.editReply(
+          "❌ You can only submit replays for matches you participated in."
+        );
+        return;
+      }
+    }
+    // invokerPlayer is null → unregistered user; block since a team was identified
+    // (they could be maliciously submitting for a team they're not part of)
+    else {
+      await interaction.editReply(
+        "❌ You must be a registered team member to submit a match for an identified team. " +
+        "Ask your captain to `/add` you first."
+      );
+      return;
+    }
+  }
 
   // Determine winner side
   const blueWon = match.blueSide[0]?.win ?? false;
