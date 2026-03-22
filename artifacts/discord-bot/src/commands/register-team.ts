@@ -38,7 +38,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const discordUsername = interaction.user.username;
   const guildId = interaction.guildId ?? undefined;
 
-  // ── 1. Validate tag format ────────────────────────────────────────────────
+  // ── 1. Validate name length ───────────────────────────────────────────────
+  if (name.length < 2 || name.length > 50) {
+    await interaction.editReply(
+      "❌ Team name must be between 2 and 50 characters."
+    );
+    return;
+  }
+
+  // ── 2. Validate tag format ────────────────────────────────────────────────
   if (!/^[A-Z0-9]{2,5}$/.test(rawTag)) {
     await interaction.editReply(
       "❌ Tag must be 2–5 uppercase letters/numbers (e.g. `TSM`, `C9`, `VCS`)."
