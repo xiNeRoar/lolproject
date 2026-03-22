@@ -57,7 +57,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .values({
         discordId,
         discordUsername,
-        riotId: "pending",
+        riotId: `pending_${discordId}`,
         registrationStatus: "active",
       })
       .returning();

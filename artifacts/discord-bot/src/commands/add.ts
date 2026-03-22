@@ -157,7 +157,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         .values({
           discordId: targetDiscordId,
           discordUsername: targetUsername,
-          riotId: "pending",
+          riotId: `pending_${targetDiscordId}`,
           registrationStatus: "active",
         })
         .returning();
@@ -206,7 +206,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (existing) {
     await interaction.editReply(
-      `❌ **${targetPlayer.riotId === "pending" ? targetUsername ?? "That player" : targetPlayer.riotId}** is already on **${teamName}**.`
+      `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** is already on **${teamName}**.`
     );
     return;
   }
@@ -220,7 +220,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   });
 
   const displayName =
-    targetPlayer.riotId !== "pending"
+    !targetPlayer.riotId.startsWith("pending")
       ? targetPlayer.riotId
       : targetUsername ?? `<@${targetDiscordId}>`;
 
@@ -247,7 +247,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       { name: "Role", value: role ?? "Unassigned", inline: true }
     );
 
-  if (targetPlayer.riotId === "pending") {
+  if (targetPlayer.riotId.startsWith("pending")) {
     embed.addFields({
       name: "⚠️ Riot ID not linked",
       value: `Ask them to run \`/link-riot YourName#TAG\` to link their account and claim match stats.`,
