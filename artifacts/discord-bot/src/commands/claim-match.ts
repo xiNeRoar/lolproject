@@ -167,9 +167,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const eloA = teamA?.teamElo ?? 1000;
     const eloB = teamB?.teamElo ?? 1000;
 
-    // Determine winner from match data
+    // Determine winner from match data.
+    // sideAName always = blue side name (set at match creation from .rofl).
+    // teamAWon = blueWon regardless of which side was claimed — Side A is always blue.
     const blueWon = match.winnerName === match.sideAName;
-    const teamAWon = hasNullA ? !blueWon : blueWon; // claiming side is whichever was null
+    const teamAWon = blueWon;
 
     const newEloA = calculateElo(eloA, eloB, teamAWon, kFactor);
     const newEloB = calculateElo(eloB, eloA, !teamAWon, kFactor);
