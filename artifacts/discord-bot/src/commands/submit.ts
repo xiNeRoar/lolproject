@@ -25,7 +25,7 @@ import {
   eloHistoryTable,
   notificationsTable,
 } from "@workspace/db";
-import { eq, and, inArray, or, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, inArray, or, isNull, isNotNull, gt } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "../lib/rofl-parser.js";
 import { matchTeams } from "../lib/team-matcher.js";
 import { calculateElo } from "../lib/elo.js";
@@ -122,8 +122,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             inArray(playerBansTable.playerId, participantIds),
             eq(playerBansTable.isActive, true),
             or(
-              isNull(playerBansTable.expiresAt),
-              // expiresAt in future — check manually since drizzle gt needs same type
+              isNull(playerBansTable.expiresAt),          // permanent ban
+              gt(playerBansTable.expiresAt, new Date()),  // temporary ban still active
             )
           )
         )
