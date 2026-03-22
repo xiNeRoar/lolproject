@@ -5,7 +5,7 @@ import { Link, useParams } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert, Info, X } from "lucide-react";
+import { ChevronLeft, PlayCircle, Video, Users, Download, Eye, EyeOff, FileVideo, Clock, CheckCircle2, AlertCircle, Loader2, ShieldAlert, Info, X, Trophy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { champPortraitUrl, itemIconUrl } from "@/lib/lol-utils";
 import { useState, useEffect } from "react";
@@ -292,7 +292,7 @@ export default function MatchDetail() {
                 ) : match.sideAName}
               </div>
               {match.teamATag && <div className="text-xs text-muted-foreground">[{match.teamATag}]</div>}
-              {sideAWon && <div className="text-[10px] font-semibold text-primary uppercase tracking-wider mt-1">Winner</div>}
+              {sideAWon && <div className="flex items-center justify-end gap-1 mt-1"><Trophy className="w-4 h-4 text-primary" /></div>}
             </div>
             <div className="text-center shrink-0 px-2">
               <div className="text-4xl sm:text-5xl font-display font-bold tracking-widest text-foreground">
@@ -308,7 +308,7 @@ export default function MatchDetail() {
                 ) : match.sideBName}
               </div>
               {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
-              {sideBWon && <div className="text-[10px] font-semibold text-primary uppercase tracking-wider mt-1">Winner</div>}
+              {sideBWon && <div className="flex items-center gap-1 mt-1"><Trophy className="w-4 h-4 text-primary" /></div>}
             </div>
           </div>
 
@@ -384,59 +384,15 @@ export default function MatchDetail() {
           </div>
         </div>
 
-        {(roflAvailable || (isLoggedIn && currentPlayerInMatch)) && (
+        {roflAvailable && (
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            {roflAvailable && (
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <a href={`${API_BASE}/api/matches/${matchId}/replay`} download>
-                  <Download className="w-4 h-4" />
-                  Download .rofl
-                  <span className="text-xs text-muted-foreground ml-1">({roflDaysLeft}d left)</span>
-                </a>
-              </Button>
-            )}
-            {isLoggedIn && currentPlayerInMatch && (
-              <>
-                {povStatusLoading ? (
-                  <Button variant="outline" size="sm" className="gap-2" disabled>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Checking...
-                  </Button>
-                ) : povStatus?.exists && povStatus.status === "pending" ? (
-                  <Button variant="outline" size="sm" className="gap-2 border-yellow-400/30 text-yellow-400" disabled>
-                    <Clock className="w-4 h-4" />
-                    POV Requested — Processing
-                  </Button>
-                ) : povStatus?.exists && povStatus.status === "done" ? (
-                  <Button variant="outline" size="sm" className="gap-2 border-green-400/30 text-green-400" disabled>
-                    <CheckCircle2 className="w-4 h-4" />
-                    POV Ready — Check VODs below
-                  </Button>
-                ) : povStatus?.exists && povStatus.status === "failed" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-red-400/30 text-red-400"
-                    onClick={handlePovRequest}
-                    disabled={povRequesting}
-                  >
-                    <AlertCircle className="w-4 h-4" />
-                    {povRequesting ? "Requesting..." : "POV Failed — Retry"}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={handlePovRequest}
-                    disabled={povRequesting}
-                  >
-                    <FileVideo className="w-4 h-4" />
-                    {povRequesting ? "Requesting..." : "Request My POV"}
-                  </Button>
-                )}
-              </>
-            )}
+            <Button variant="outline" size="sm" className="gap-2" asChild>
+              <a href={`${API_BASE}/api/matches/${matchId}/replay`} download>
+                <Download className="w-4 h-4" />
+                Download .rofl
+                <span className="text-xs text-muted-foreground ml-1">({roflDaysLeft}d left)</span>
+              </a>
+            </Button>
           </div>
         )}
 
@@ -487,13 +443,13 @@ export default function MatchDetail() {
                       <th className="px-4 py-2 hidden md:table-cell">Dmg</th>
                       <th className="px-4 py-2 hidden md:table-cell">Vision</th>
                       <th className="px-4 py-2 hidden lg:table-cell">Items</th>
-                      {vods.length > 0 && <th className="px-4 py-2 w-10">VOD</th>}
+                      {(vods.length > 0 || currentPlayerInMatch) && <th className="px-4 py-2 w-10">VOD</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {teamAPlayers.length > 0 && (
                       <tr className="bg-blue-400/5 border-b border-border/30">
-                        <td colSpan={vods.length > 0 ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
+                        <td colSpan={(vods.length > 0 || currentPlayerInMatch) ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-blue-400">
                           {match.sideAName} {sideAWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
@@ -501,8 +457,9 @@ export default function MatchDetail() {
                     {teamAPlayers.map((p) => {
                       const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
                       const playerVod = vods.find(v => v.playerId === p.playerId);
+                      const isSelf = isLoggedIn && p.playerId === playerIdNum;
                       return (
-                      <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
+                      <tr key={p.id} className={`border-b border-border/20 hover:bg-muted/20 ${isSelf ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}>
                         <td className="px-4 py-2">
                           {p.playerRiotId ? (
                             <Link href={`/players/${encodeURIComponent(p.playerRiotId)}`} className="text-primary hover:underline text-xs">
@@ -541,12 +498,28 @@ export default function MatchDetail() {
                             </div>
                           ) : <span className="text-xs text-muted-foreground">-</span>}
                         </td>
-                        {vods.length > 0 && (
+                        {(vods.length > 0 || currentPlayerInMatch) && (
                           <td className="px-4 py-2 text-center">
                             {playerVod ? (
                               <Link href={`/watch/${playerVod.id}`} className="text-primary hover:text-primary/80 transition-colors" title="Watch POV">
                                 <FileVideo className="w-4 h-4 inline-block" />
                               </Link>
+                            ) : isSelf ? (
+                              povStatusLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground inline-block" />
+                              ) : povStatus?.exists && povStatus.status === "pending" ? (
+                                <span title="POV Requested — Processing"><Clock className="w-4 h-4 text-yellow-400 inline-block" /></span>
+                              ) : povStatus?.exists && povStatus.status === "done" ? (
+                                <span title="POV Ready"><CheckCircle2 className="w-4 h-4 text-green-400 inline-block" /></span>
+                              ) : povStatus?.exists && povStatus.status === "failed" ? (
+                                <button onClick={handlePovRequest} disabled={povRequesting} title="POV Failed — Retry" className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-50">
+                                  <AlertCircle className="w-4 h-4 inline-block" />
+                                </button>
+                              ) : (
+                                <button onClick={handlePovRequest} disabled={povRequesting} title="Request My POV" className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+                                  {povRequesting ? <Loader2 className="w-4 h-4 animate-spin inline-block" /> : <FileVideo className="w-4 h-4 inline-block" />}
+                                </button>
+                              )
                             ) : <span className="text-xs text-muted-foreground">—</span>}
                           </td>
                         )}
@@ -555,7 +528,7 @@ export default function MatchDetail() {
                     })}
                     {teamBPlayers.length > 0 && (
                       <tr className="bg-red-400/5 border-b border-border/30">
-                        <td colSpan={vods.length > 0 ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-red-400">
+                        <td colSpan={(vods.length > 0 || currentPlayerInMatch) ? 9 : 8} className="px-4 py-1.5 text-xs font-semibold text-red-400">
                           {match.sideBName} {sideBWon ? "(WIN)" : "(LOSS)"}
                         </td>
                       </tr>
@@ -563,8 +536,9 @@ export default function MatchDetail() {
                     {teamBPlayers.map((p) => {
                       const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter((id): id is number => id != null && id > 0);
                       const playerVod = vods.find(v => v.playerId === p.playerId);
+                      const isSelf = isLoggedIn && p.playerId === playerIdNum;
                       return (
-                      <tr key={p.id} className="border-b border-border/20 hover:bg-muted/20">
+                      <tr key={p.id} className={`border-b border-border/20 hover:bg-muted/20 ${isSelf ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}>
                         <td className="px-4 py-2">
                           {p.playerRiotId ? (
                             <Link href={`/players/${encodeURIComponent(p.playerRiotId)}`} className="text-primary hover:underline text-xs">
@@ -603,12 +577,28 @@ export default function MatchDetail() {
                             </div>
                           ) : <span className="text-xs text-muted-foreground">-</span>}
                         </td>
-                        {vods.length > 0 && (
+                        {(vods.length > 0 || currentPlayerInMatch) && (
                           <td className="px-4 py-2 text-center">
                             {playerVod ? (
                               <Link href={`/watch/${playerVod.id}`} className="text-primary hover:text-primary/80 transition-colors" title="Watch POV">
                                 <FileVideo className="w-4 h-4 inline-block" />
                               </Link>
+                            ) : isSelf ? (
+                              povStatusLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground inline-block" />
+                              ) : povStatus?.exists && povStatus.status === "pending" ? (
+                                <span title="POV Requested — Processing"><Clock className="w-4 h-4 text-yellow-400 inline-block" /></span>
+                              ) : povStatus?.exists && povStatus.status === "done" ? (
+                                <span title="POV Ready"><CheckCircle2 className="w-4 h-4 text-green-400 inline-block" /></span>
+                              ) : povStatus?.exists && povStatus.status === "failed" ? (
+                                <button onClick={handlePovRequest} disabled={povRequesting} title="POV Failed — Retry" className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-50">
+                                  <AlertCircle className="w-4 h-4 inline-block" />
+                                </button>
+                              ) : (
+                                <button onClick={handlePovRequest} disabled={povRequesting} title="Request My POV" className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+                                  {povRequesting ? <Loader2 className="w-4 h-4 animate-spin inline-block" /> : <FileVideo className="w-4 h-4 inline-block" />}
+                                </button>
+                              )
                             ) : <span className="text-xs text-muted-foreground">—</span>}
                           </td>
                         )}

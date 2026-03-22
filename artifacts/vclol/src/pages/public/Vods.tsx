@@ -220,7 +220,9 @@ export default function Vods() {
 
                     {vod.playerNames && (
                       <p className="text-sm text-muted-foreground line-clamp-1 border-t border-border/30 pt-3 mb-3">
-                        <span className="font-medium text-foreground/70">Players:</span> {vod.playerNames}
+                        <span className="font-medium text-foreground/70">
+                          {vod.vodType === "spectator" ? "Match:" : vod.vodType === "player-pov" || vod.vodType === "team-pov" ? "Player:" : vod.playerId ? "Player:" : "Match:"}
+                        </span> {vod.playerNames}
                       </p>
                     )}
 

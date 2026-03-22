@@ -424,7 +424,10 @@ export default function PlayerProfile() {
 
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2"><Video className="w-4 h-4 text-primary" /> VODs</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-display flex items-center gap-2"><Video className="w-4 h-4 text-primary" /> VODs</CardTitle>
+                <Link href={`/watch?playerId=${player.id}`} className="text-xs text-primary hover:underline">View All →</Link>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {!player.vods?.length ? (
