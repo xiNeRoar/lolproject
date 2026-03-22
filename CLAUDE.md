@@ -169,7 +169,7 @@ If Replit left a backend request: open a GitHub Issue for it, do the work, clear
 1. **Schema → OpenAPI → codegen → route → page.** Never skip. Never write frontend fetch() by hand.
 2. **Every team ELO change writes to `elo_history`.** Reason: `match`, `season_reset`, `manual_admin`, `registration`.
 3. **Teams own ELO. Players do not.**
-4. **Bot is the only data producer.** All match data from .rofl parse.
+4. **Bot is the only match data producer.** All match records from `.rofl` parse via bot `/submit`. Web management actions (roster, visibility, settings, event registration) are available on both web and bot — web is a full management layer, not read-only.
 5. **Read actual source files before answering.** Never guess schema or route signatures.
 6. **No SSH. Portainer only.**
 

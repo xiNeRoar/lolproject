@@ -61,14 +61,31 @@ Casual players, players below Platinum, non-NA servers, other games (architectur
 
 ## 5. Product Architecture
 
-**Discord Bot = Interaction Layer.** All user actions happen in Discord: register team, add players, submit match results, receive notifications. Users never need to leave Discord to use the platform.
+**Discord Bot = Entry Point + .rofl Submission Layer.**
+- New users discover and join via the bot in their existing scrim server — zero context switch
+- `.rofl` submission is bot-only and stays that way: file upload is Discord-native, happens immediately after a scrim while players are still in Discord, and every public `/submit` in a server exposes the bot to other members (organic viral spread)
+- Notifications, match result summaries, and event announcements push via Discord
 
-**Website = Data & Display Layer.** Team profiles, player profiles, match details, VODs, leaderboard. Users visit the website to view data, not to perform actions. The only web-side actions are: link Riot ID (one-time), set profile visibility.
+**Website = Management + Display Layer.**
+- Public display: team profiles, player profiles, match history, VODs, leaderboard, event brackets
+- Registered user management: roster add/remove, match visibility, team settings, event registration, captain transfer — all available directly on the web after Discord OAuth login
+- Web management and bot commands co-exist; web is not a replacement for the bot, the bot is not a gate to the web
 
-**Why this split:**
-- Players are already in Discord for scrim coordination. Meeting them where they are eliminates adoption friction.
-- Discord cannot provide persistent, publicly-accessible web profiles. A website can.
-- This combination is what no existing tool offers: Team Up Bot has Discord ELO but no web profiles; Curry.gg has web profiles but no verified match data; Collision Time Bot has auto-detection but no persistent storage.
+**Why `.rofl` submission stays bot-only (not web upload):**
+- Players are already in Discord immediately after a scrim — no context switch required
+- Each public `/submit` in a scrim server is visible to all server members → primary organic growth mechanism
+- If web upload were equally convenient, captains would bypass Discord entirely and the viral loop would break
+
+**Why web is a full management layer (not read-only):**
+- Registered users should not need to context-switch to Discord for management tasks (roster, visibility, settings) that make more sense on a web UI with persistent state
+- Reduces friction for users who arrive via web (Discord shared match links) and want to act immediately
+- Bot-only management gates platform utility behind Discord fluency — unnecessary after registration
+
+**Why this combination is unique:**
+- Team Up Bot: Discord ELO but no web profiles
+- Curry.gg: web profiles but no verified match data
+- Challonge: tournament brackets but no persistent team record or verified results
+- VCLoL: verified .rofl-parsed results + persistent web profiles + team ELO + VODs — none of the above do all four
 
 ---
 
@@ -349,11 +366,12 @@ The existing Events system (ManageEvents, EventDetail, bracket components) is pr
 - Target: 10 active teams within first 2 months
 
 ### Phase 5 — Riot API Integration (after Phase 4 traction)
-- Deploy platform publicly
-- Apply for Riot Production API Key with functioning app + user base
-- Upon approval, apply for RSO integration
-- Migrate from .rofl-only to RSO + Match API (auto-detect custom game results, no manual upload needed)
-- .rofl upload remains as supplementary option
+- Apply for Riot Production API Key with functioning deployed app + active user base
+- Upon approval, apply for RSO (Riot Sign-On) integration — separate approval process
+- RSO enables: players OAuth-authorize VCLoL to access their custom game match history via Match API v5. Each player must individually opt in. This is not automatic — VCLoL calls Match API per player using their RSO access token after the player completes the OAuth flow.
+- For RSO-linked players: Match API v5 replaces `.rofl` submission for match record creation (structured JSON, officially supported, no file upload needed)
+- `.rofl` submission remains available for players who have not completed RSO linking, and as a fallback
+- Per Riot policy: custom game data may not be publicly displayed unless the player explicitly opts in — this is already satisfied by the platform's registration model
 
 ### Phase 6 — Growth & Events
 - First community tournament (use existing Events system)
