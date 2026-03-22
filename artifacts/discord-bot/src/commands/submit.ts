@@ -517,7 +517,7 @@ function buildMatchEmbed(opts: {
     });
   }
 
-  embed.setFooter({ text: `Match ID: ${matchId} • VOD render queued` });
+  embed.setFooter({ text: `Match ID: ${matchId}` });
 
   return embed;
 }
