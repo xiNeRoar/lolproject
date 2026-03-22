@@ -27,6 +27,7 @@ import {
 } from "discord.js";
 import { db, botHeartbeatsTable } from "./lib/db.js";
 import { startNotificationPoller } from "./lib/notificationPoller.js";
+import { startSeasonBroadcaster } from "./lib/seasonBroadcaster.js";
 
 import * as registerTeam from "./commands/register-team.js";
 import * as add from "./commands/add.js";
@@ -108,6 +109,9 @@ client.once(Events.ClientReady, async (c) => {
 
   // ── Notification poller (BOT_SPEC §Notification Poller) ───────────────────
   startNotificationPoller(c);
+
+  // ── Season broadcaster (BOT_SPEC §Season Broadcast) ─────────────────────
+  startSeasonBroadcaster(c);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
