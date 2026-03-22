@@ -26,7 +26,7 @@ import {
   eloHistoryTable,
   notificationsTable,
 } from "@workspace/db";
-import { eq, and, inArray, or, isNull, isNotNull, gt } from "drizzle-orm";
+import { eq, and, inArray, or, isNull, isNotNull, gt, desc } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "../lib/rofl-parser.js";
 import { matchTeams } from "../lib/team-matcher.js";
 import { calculateElo } from "../lib/elo.js";
@@ -394,7 +394,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── 9. Build reply embed ────────────────────────────────────────────────
+  // ── 9. Auto-inactive roster members (PRD §8) ───────────────────────────
+  // Fire-and-forget: don't block reply. After match recorded, check each
+  // identified team — members absent from last N matches → set inactive.
+  const identifiedTeamIds = [sideA.teamId, sideB.teamId].filter((id): id is number => id !== null);
+  if (identifiedTeamIds.length > 0) {
+    checkRosterInactivity(identifiedTeamIds, matchId!).catch((err) =>
+      console.error("[roster-inactivity] Check failed:", err)
+    );
+  }
+
+  // ── 10. Build reply embed ────────────────────────────────────────────────
   const embed = buildMatchEmbed({
     matchId: matchId!,
     sideAName,
@@ -520,4 +530,79 @@ function buildMatchEmbed(opts: {
   embed.setFooter({ text: `Match ID: ${matchId}` });
 
   return embed;
+}
+// ─── Roster inactivity check (PRD §8) ─────────────────────────────────────────
+
+const INACTIVITY_THRESHOLD = 5; // consecutive match absences before auto-inactive
+
+/**
+ * After a match is submitted, check each team's active roster members.
+ * If a member has been absent from the last N team matches, mark them inactive
+ * and write a notification to the DB.
+ */
+async function checkRosterInactivity(teamIds: number[], currentMatchId: number): Promise<void> {
+  for (const teamId of teamIds) {
+    // Get last N match IDs for this team (including current)
+    const recentMatches = await db
+      .select({ id: matchesTable.id })
+      .from(matchesTable)
+      .where(
+        or(
+          eq(matchesTable.teamAId, teamId),
+          eq(matchesTable.teamBId, teamId)
+        )
+      )
+      .orderBy(desc(matchesTable.createdAt))
+      .limit(INACTIVITY_THRESHOLD);
+
+    if (recentMatches.length < INACTIVITY_THRESHOLD) continue; // not enough matches yet
+
+    const recentMatchIds = recentMatches.map((m) => m.id);
+
+    // Get active members of this team
+    const activeMembers = await db
+      .select({ playerId: teamMembersTable.playerId, membershipId: teamMembersTable.id })
+      .from(teamMembersTable)
+      .where(
+        and(
+          eq(teamMembersTable.teamId, teamId),
+          eq(teamMembersTable.status, "active")
+        )
+      );
+
+    for (const member of activeMembers) {
+      // Check if member appeared in ANY of the last N matches
+      const appearances = await db
+        .select({ id: matchPlayersTable.id })
+        .from(matchPlayersTable)
+        .where(
+          and(
+            eq(matchPlayersTable.playerId, member.playerId),
+            inArray(matchPlayersTable.matchId, recentMatchIds)
+          )
+        )
+        .limit(1);
+
+      if (appearances.length === 0) {
+        // Member absent from all last N matches — mark inactive
+        await db
+          .update(teamMembersTable)
+          .set({ status: "inactive" })
+          .where(eq(teamMembersTable.id, member.membershipId));
+
+        console.log(`[roster-inactivity] Player ${member.playerId} marked inactive on team ${teamId} (${INACTIVITY_THRESHOLD} consecutive absences)`);
+
+        // Notify player via notifications table (poller handles DM delivery)
+        await db.insert(notificationsTable).values({
+          playerId: member.playerId,
+          type: "no_show_flagged",
+          title: "Roster status updated",
+          message: `You have been marked inactive on your team after missing ${INACTIVITY_THRESHOLD} consecutive matches. Use /add to rejoin or contact your captain.`,
+          isRead: false,
+          dmSent: false,
+          dmFailed: false,
+        });
+      }
+    }
+  }
 }
