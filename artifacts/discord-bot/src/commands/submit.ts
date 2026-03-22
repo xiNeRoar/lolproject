@@ -24,6 +24,7 @@ import {
   playerBansTable,
   ladderSettingsTable,
   eloHistoryTable,
+  playerBadgesTable,
   notificationsTable,
 } from "@workspace/db";
 import { eq, and, inArray, or, isNull, isNotNull, gt, desc } from "drizzle-orm";
@@ -622,23 +623,19 @@ const CLIMB_THRESHOLD = 3; // positions climbed to earn climber badge
  * Bot-side version: direct DB access, mirrors badges.ts checkClimberBadge().
  */
 async function checkClimberBadgeBot(teamId: number): Promise<void> {
-  // Get ELO at season start (most recent season_reset or registration baseline)
-  const { eloHistoryTable: eloHist, playerBadgesTable: badgesTable } = await import("@workspace/db");
-  const { eq: eqI, and: andI, desc: descI } = await import("drizzle-orm");
-
   const [resetEntry] = await db
-    .select({ elo: eloHist.elo })
-    .from(eloHist)
-    .where(andI(eqI(eloHist.teamId, teamId), eqI(eloHist.reason, "season_reset")))
-    .orderBy(descI(eloHist.createdAt))
+    .select({ elo: eloHistoryTable.elo })
+    .from(eloHistoryTable)
+    .where(and(eq(eloHistoryTable.teamId, teamId), eq(eloHistoryTable.reason, "season_reset")))
+    .orderBy(desc(eloHistoryTable.createdAt))
     .limit(1);
 
   const [baselineEntry] = resetEntry
     ? [resetEntry]
     : await db
-        .select({ elo: eloHist.elo })
-        .from(eloHist)
-        .where(andI(eqI(eloHist.teamId, teamId), eqI(eloHist.reason, "registration")))
+        .select({ elo: eloHistoryTable.elo })
+        .from(eloHistoryTable)
+        .where(and(eq(eloHistoryTable.teamId, teamId), eq(eloHistoryTable.reason, "registration")))
         .limit(1);
 
   if (!baselineEntry) return;
@@ -665,17 +662,16 @@ async function checkClimberBadgeBot(teamId: number): Promise<void> {
   const members = await db
     .select({ playerId: teamMembersTable.playerId })
     .from(teamMembersTable)
-    .where(andI(eqI(teamMembersTable.teamId, teamId), eqI(teamMembersTable.status, "active")));
+    .where(and(eq(teamMembersTable.teamId, teamId), eq(teamMembersTable.status, "active")));
 
   for (const m of members) {
     const existing = await db
-      .select({ id: badgesTable.id })
-      .from(badgesTable)
-      .where(andI(eqI(badgesTable.playerId, m.playerId), eqI(badgesTable.badgeType, "climber")))
+      .select({ id: playerBadgesTable.id })
+      .from(playerBadgesTable)
+      .where(and(eq(playerBadgesTable.playerId, m.playerId), eq(playerBadgesTable.badgeType, "climber")))
       .limit(1);
     if (existing.length > 0) continue;
-    await db.insert(badgesTable).values({ playerId: m.playerId, badgeType: "climber" });
-    // Write notification (poller handles DM)
+    await db.insert(playerBadgesTable).values({ playerId: m.playerId, badgeType: "climber" });
     await db.insert(notificationsTable).values({
       playerId: m.playerId,
       type: "badge_earned",

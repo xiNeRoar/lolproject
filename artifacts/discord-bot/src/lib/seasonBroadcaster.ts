@@ -15,7 +15,7 @@
  */
 
 import type { Client } from "discord.js";
-import { db, seasonsTable, teamsTable, eloHistoryTable } from "./db.js";
+import { db, seasonsTable, teamsTable } from "./db.js";
 import { eq, desc } from "drizzle-orm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

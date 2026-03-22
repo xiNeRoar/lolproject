@@ -6,7 +6,7 @@ import {
   teamMembersTable,
   eloHistoryTable,
 } from "@workspace/db";
-import { eq, and, count, desc, sql } from "drizzle-orm";
+import { eq, and, count, desc } from "drizzle-orm";
 import { notifyPlayer } from "./notifications";
 
 // ── Internal helpers ─────────────────────────────────────────

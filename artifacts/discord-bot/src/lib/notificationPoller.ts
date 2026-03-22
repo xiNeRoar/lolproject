@@ -69,7 +69,8 @@ export function startNotificationPoller(client: Client): void {
         if (pref === "web") continue;
         if (pref !== "discord" && pref !== "both") continue;
 
-        // Send DM
+        // Send DM (1-second delay between sends per BOT_SPEC rate limit guidance)
+        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
         try {
           const user = await client.users.fetch(player.discordId);
           await user.send(`**${notif.title}**\n${notif.message}`);
