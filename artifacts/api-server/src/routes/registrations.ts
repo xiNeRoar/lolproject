@@ -4,6 +4,7 @@ import { eventRegistrationsTable, eventsTable, teamsTable } from "@workspace/db"
 import { eq, and, ne, asc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
+import { notifyPlayer } from "../lib/notifications";
 
 const router = Router();
 
@@ -99,6 +100,11 @@ router.put("/:id/confirm", requireAdmin, async (req, res) => {
     }
     res.json({ success: true });
     logAdminAction(req.session.adminId!, "update", "registration", row.id, `Confirmed registration for "${row.riotId}"`);
+    if (row.playerId) {
+      notifyPlayer(row.playerId, "event_registration_confirmed", "Registration confirmed", "Your event registration has been confirmed.").catch((err) =>
+        console.error("[notify] registration confirm failed:", err)
+      );
+    }
   } catch (err) {
     res.status(500).json({ error: "Failed to confirm registration" });
   }
@@ -123,6 +129,11 @@ router.put("/:id/withdraw", requireAdmin, async (req, res) => {
     }
     res.json({ success: true });
     logAdminAction(req.session.adminId!, "update", "registration", row.id, `Withdrew registration for "${row.riotId}"`);
+    if (row.playerId) {
+      notifyPlayer(row.playerId, "event_registration_declined", "Registration declined", "Your event registration has been declined.").catch((err) =>
+        console.error("[notify] registration decline failed:", err)
+      );
+    }
   } catch (err) {
     res.status(500).json({ error: "Failed to withdraw registration" });
   }

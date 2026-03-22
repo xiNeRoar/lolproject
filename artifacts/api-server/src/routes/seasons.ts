@@ -11,6 +11,7 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 import { softResetElo } from "../lib/elo";
 import { checkSeasonBadges } from "../lib/badges";
 import { logAdminAction } from "../lib/auditLog";
+import { notifyPlayer } from "../lib/notifications";
 
 const router = Router();
 
@@ -280,6 +281,21 @@ router.post("/:id/complete", requireAdmin, async (req, res) => {
       checkSeasonBadges(id, champion.id).catch((err) =>
         console.error("[badges] Error checking season badges:", err)
       );
+      // Notify all active champion team members
+      const { teamMembersTable: tmTable } = await import("@workspace/db");
+      const { eq: eqN, and: andN } = await import("drizzle-orm");
+      const championMembers = await db
+        .select({ playerId: tmTable.playerId })
+        .from(tmTable)
+        .where(andN(eqN(tmTable.teamId, champion.id), eqN(tmTable.status, "active")));
+      for (const m of championMembers) {
+        notifyPlayer(
+          m.playerId,
+          "season_completed",
+          "Season complete — you won!",
+          `Your team ${champion.name} finished as champion of Season: ${target.name}.`
+        ).catch((err) => console.error("[notify] season_completed failed:", err));
+      }
     }
 
     res.json(formatSeason(updated!));

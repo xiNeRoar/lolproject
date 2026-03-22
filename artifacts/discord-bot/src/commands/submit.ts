@@ -380,7 +380,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             type: "match_result",
             title: "Match recorded",
             message: `${sideAName} vs ${sideBName} — ${winnerName} won (${duration})`,
-            entityId: match.id,
+            entityId: matchId, // matchId is the DB integer assigned at tx time; match.id is undefined (RoflMatch has no .id)
             isRead: false,
             dmSent: false,
             dmFailed: false,

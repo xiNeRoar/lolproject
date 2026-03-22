@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { playerBadgesTable, matchPlayersTable } from "@workspace/db";
 import { eq, and, count, desc } from "drizzle-orm";
+import { notifyPlayer } from "./notifications";
 
 // ── Internal helpers ─────────────────────────────────────────
 
@@ -29,6 +30,13 @@ async function awardBadge(
     seasonId: seasonId ?? null,
   });
   console.log(`[badges] Awarded '${badgeType}' to player ${playerId}`);
+  // Notify player of badge award (fire-and-forget)
+  notifyPlayer(
+    playerId,
+    "badge_earned",
+    "Badge earned",
+    `You earned the '${badgeType}' badge!`
+  ).catch((err) => console.error(`[notify] badge_earned failed for player ${playerId}:`, err));
 }
 
 // ── Public API ───────────────────────────────────────────────
