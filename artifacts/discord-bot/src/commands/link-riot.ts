@@ -102,6 +102,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       console.warn("[link-riot] Riot API fetch failed:", err);
       // Continue in trust-based mode
     }
+  } else {
+    // Trust-based mode: no API key to verify ownership.
+    // Log for admin audit — squatting risk until PUUID confirmed via .rofl.
+    console.warn(`[link-riot] Trust-based claim: discordId=${discordId} claimed riotId=${riotId}`);
   }
 
   // ── Update player record ──────────────────────────────────────────────────
@@ -145,10 +149,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (!apiKey) {
     embed.addFields({
-      name: "ℹ️ Note",
+      name: "⚠️ Unverified — Trust-based mode",
       value:
-        "Riot ID linked in trust-based mode (no API key). " +
-        "Your PUUID will be confirmed automatically from your next match submission.",
+        "Riot ID linked without API verification (no API key configured). " +
+        "Your identity will be confirmed automatically from your next \`.rofl\` submission. " +
+        "If this was a mistake or someone else claimed your ID, contact an admin.",
     });
   }
 
