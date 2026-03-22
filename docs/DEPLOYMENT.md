@@ -88,6 +88,9 @@ gunzip -c /mnt/nas/vclol-backups/vclol_20260320_030000.sql.gz | psql -h $DB_HOST
 | `ROFL_UPLOAD_DIR` | No | `./uploads/rofl` | Where .rofl files are stored |
 | `STATIC_DIR` | No | `../vclol/dist/public` | Path to compiled Vite SPA output (for consolidated serving). |
 | `VITE_SITE_URL` | No | `https://vclol.gg` | Canonical base URL used in OG meta tags. Set to your production domain. |
+| `RESEND_API_KEY` | No | -- | Resend API key for email notifications. If unset, email delivery is skipped. |
+| `EMAIL_FROM` | No | `VCLoL <noreply@vclol.gg>` | From address for notification emails (requires verified domain in Resend). |
+| `DISCORD_BOT_TOKEN` | No | -- | Bot token for Discord DM notifications. Same token as the bot stack. If unset, Discord DMs are skipped. |
 | `PORT` | No | `3000` | API server port |
 
 For the backup container, set the `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables separately (or derive them from `DATABASE_URL`).
