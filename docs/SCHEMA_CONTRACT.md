@@ -141,6 +141,7 @@ export const playersTable = pgTable("players", {
   primaryRole: text("primary_role"),          // NEW: top/jg/mid/adc/sup
   secondaryRole: text("secondary_role"),      // NEW
   isActive: boolean("is_active").notNull().default(true),
+  profileVisibility: text("profile_visibility").notNull().default("public"), // public | private — PRD §7
   defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
   lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   email: text("email"),
