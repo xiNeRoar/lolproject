@@ -76,10 +76,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       );
 
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-    await interaction.editReply({ content: "Which team do you want to leave?", components: [row] });
+    const reply = await interaction.editReply({ content: "Which team do you want to leave?", components: [row] });
 
     try {
-      const sel = await interaction.channel!.awaitMessageComponent({
+      const sel = await reply.awaitMessageComponent({
         componentType: ComponentType.StringSelect,
         filter: (i: StringSelectMenuInteraction) => i.user.id === discordId,
         time: 30_000,

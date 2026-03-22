@@ -102,13 +102,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       );
 
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-    await interaction.editReply({
+    const reply = await interaction.editReply({
       content: "You captain multiple teams. Which one?",
       components: [row],
     });
 
     try {
-      const selection = await interaction.channel!.awaitMessageComponent({
+      const selection = await reply.awaitMessageComponent({
         componentType: ComponentType.StringSelect,
         filter: (i: StringSelectMenuInteraction) => i.user.id === discordId,
         time: 30_000,

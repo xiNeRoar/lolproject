@@ -98,10 +98,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .addOptions(captainTeams.map((t) => ({ label: `${t.name} [${t.tag}]`, value: String(t.id) })));
 
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-    await interaction.editReply({ content: "Which team is claiming this match?", components: [row] });
+    const reply = await interaction.editReply({ content: "Which team is claiming this match?", components: [row] });
 
     try {
-      const sel = await interaction.channel!.awaitMessageComponent({
+      const sel = await reply.awaitMessageComponent({
         componentType: ComponentType.StringSelect,
         filter: (i: StringSelectMenuInteraction) => i.user.id === discordId,
         time: 30_000,
