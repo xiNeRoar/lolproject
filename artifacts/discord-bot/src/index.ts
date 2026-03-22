@@ -5,11 +5,15 @@
  *   #3  /register-team  — create team, become captain
  *   #4  /add            — add player to team
  *   #6  /link-riot      — link Riot account
- *   #5  /submit         — submit .rofl (Issue #5, coming next)
- *   #24 /claim-match    — claim unregistered side (Issue #24)
- *   #25 /visibility     — control match visibility (Issue #25)
- *   #26 /transfer-captain — transfer captaincy (Issue #26)
- *   #27 /leave          — leave team (Issue #27)
+ *   #5  /submit         — submit .rofl replay
+ *   #24 /claim-match    — claim unregistered side
+ *   #25 /visibility     — control match visibility
+ *   #26 /transfer-captain — transfer captaincy
+ *   #27 /leave          — leave team
+ *   #70 /register-event — register team for event
+ *   #141 /stats         — quick stats lookup
+ *   #141 /roster        — show team roster
+ *   #141 /remove        — captain removes member
  */
 
 import {
@@ -32,8 +36,11 @@ import * as visibility from "./commands/visibility.js";
 import * as leave from "./commands/leave.js";
 import * as transferCaptain from "./commands/transfer-captain.js";
 import * as registerEvent from "./commands/register-event.js";
+import * as stats from "./commands/stats.js";
+import * as roster from "./commands/roster.js";
+import * as remove from "./commands/remove.js";
 
-const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain, registerEvent];
+const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain, registerEvent, stats, roster, remove];
 
 // ── Build command collection ───────────────────────────────────────────────
 
