@@ -502,4 +502,79 @@ router.put("/:id/matches/visibility", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Failed to update visibility" }); }
 });
 
+// GET /teams/:id/matches — paginated match list for captain hub (#127)
+router.get("/:id/matches", async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.id as string);
+    if (isNaN(teamId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const playerId = req.session.playerId;
+    if (!playerId && !req.session.adminId) {
+      res.status(401).json({ error: "Not authenticated" }); return;
+    }
+
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    if (!team) { res.status(404).json({ error: "Team not found" }); return; }
+    if (!req.session.adminId && team.captainPlayerId !== Number(playerId)) {
+      res.status(403).json({ error: "Captain access only" }); return;
+    }
+
+    const page  = Math.max(1, parseInt((req.query.page  as string) || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || "20")));
+    const search = (req.query.search as string | undefined)?.trim().toLowerCase();
+    const offset = (page - 1) * limit;
+
+    const teamCondition = or(eq(matchesTable.teamAId, teamId), eq(matchesTable.teamBId, teamId))!;
+
+    // Fetch all matching rows (in-memory search + pagination — safe for typical team sizes)
+    let rows = await db
+      .select({
+        id:           matchesTable.id,
+        matchTitle:   matchesTable.matchTitle,
+        sideAName:    matchesTable.sideAName,
+        sideBName:    matchesTable.sideBName,
+        teamAId:      matchesTable.teamAId,
+        teamBId:      matchesTable.teamBId,
+        winnerName:   matchesTable.winnerName,
+        visibleAfter: matchesTable.visibleAfter,
+        createdAt:    matchesTable.createdAt,
+      })
+      .from(matchesTable)
+      .where(teamCondition)
+      .orderBy(desc(matchesTable.createdAt));
+
+    if (search) {
+      rows = rows.filter((m) =>
+        m.sideAName.toLowerCase().includes(search) ||
+        m.sideBName.toLowerCase().includes(search) ||
+        m.matchTitle.toLowerCase().includes(search)
+      );
+    }
+
+    const total      = rows.length;
+    const totalPages = Math.ceil(total / limit);
+    const paginated  = rows.slice(offset, offset + limit);
+
+    res.json({
+      matches: paginated.map((m) => ({
+        id:           m.id,
+        matchTitle:   m.matchTitle,
+        sideAName:    m.sideAName,
+        sideBName:    m.sideBName,
+        teamAId:      m.teamAId ?? null,
+        teamBId:      m.teamBId ?? null,
+        winnerName:   m.winnerName,
+        visibleAfter: m.visibleAfter?.toISOString() ?? null,
+        createdAt:    m.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      totalPages,
+    });
+  } catch (err) {
+    console.error("[teams] get matches:", err);
+    res.status(500).json({ error: "Failed to fetch team matches" });
+  }
+});
+
 export default router;

@@ -398,6 +398,46 @@ export const BulkSetMatchVisibilityResponse = zod.object({
 });
 
 /**
+ * @summary Get paginated match list for a team (captain only)
+ */
+export const GetTeamMatchesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTeamMatchesQueryParams = zod.object({
+  page: zod.coerce.number().optional().describe("Page number (default 1)"),
+  limit: zod.coerce
+    .number()
+    .optional()
+    .describe("Results per page (default 20, max 100)"),
+  search: zod.coerce
+    .string()
+    .optional()
+    .describe("Search by opponent or match title"),
+});
+
+export const GetTeamMatchesResponse = zod.object({
+  matches: zod
+    .array(
+      zod.object({
+        id: zod.number().optional(),
+        matchTitle: zod.string().optional(),
+        sideAName: zod.string().optional(),
+        sideBName: zod.string().optional(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        winnerName: zod.string().nullish(),
+        visibleAfter: zod.string().nullish(),
+        createdAt: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  total: zod.number().optional(),
+  page: zod.number().optional(),
+  totalPages: zod.number().optional(),
+});
+
+/**
  * @summary List all players (admin)
  */
 export const ListPlayersResponseItem = zod.object({
@@ -1464,6 +1504,14 @@ export const ListRegistrationsResponseItem = zod.object({
   id: zod.number(),
   eventId: zod.number(),
   teamId: zod.number().nullish(),
+  teamName: zod
+    .string()
+    .nullish()
+    .describe("Team name when registration is team-based"),
+  teamTag: zod
+    .string()
+    .nullish()
+    .describe("Team tag when registration is team-based"),
   eventTitle: zod.string().nullish(),
   riotId: zod.string(),
   discordUsername: zod.string(),

@@ -43,6 +43,8 @@ import type {
   GetReplayQueueStats200,
   GetReplayStatus200,
   GetReplayStatusParams,
+  GetTeamMatches200,
+  GetTeamMatchesParams,
   GlobalSearch200,
   GlobalSearchParams,
   HealthStatus,
@@ -1659,6 +1661,115 @@ export const useBulkSetMatchVisibility = <
 > => {
   return useMutation(getBulkSetMatchVisibilityMutationOptions(options));
 };
+
+/**
+ * @summary Get paginated match list for a team (captain only)
+ */
+export const getGetTeamMatchesUrl = (
+  id: number,
+  params?: GetTeamMatchesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/teams/${id}/matches?${stringifiedParams}`
+    : `/api/teams/${id}/matches`;
+};
+
+export const getTeamMatches = async (
+  id: number,
+  params?: GetTeamMatchesParams,
+  options?: RequestInit,
+): Promise<GetTeamMatches200> => {
+  return customFetch<GetTeamMatches200>(getGetTeamMatchesUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTeamMatchesQueryKey = (
+  id: number,
+  params?: GetTeamMatchesParams,
+) => {
+  return [`/api/teams/${id}/matches`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTeamMatchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTeamMatches>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  params?: GetTeamMatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamMatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetTeamMatchesQueryKey(id, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamMatches>>> = ({
+    signal,
+  }) => getTeamMatches(id, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTeamMatches>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTeamMatchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTeamMatches>>
+>;
+export type GetTeamMatchesQueryError = ErrorType<void>;
+
+/**
+ * @summary Get paginated match list for a team (captain only)
+ */
+
+export function useGetTeamMatches<
+  TData = Awaited<ReturnType<typeof getTeamMatches>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  params?: GetTeamMatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamMatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTeamMatchesQueryOptions(id, params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all players (admin)

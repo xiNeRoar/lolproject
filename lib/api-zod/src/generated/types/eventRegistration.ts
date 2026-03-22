@@ -10,6 +10,10 @@ export interface EventRegistration {
   id: number;
   eventId: number;
   teamId?: number | null;
+  /** Team name when registration is team-based */
+  teamName?: string | null;
+  /** Team tag when registration is team-based */
+  teamTag?: string | null;
   eventTitle?: string | null;
   riotId: string;
   discordUsername: string;

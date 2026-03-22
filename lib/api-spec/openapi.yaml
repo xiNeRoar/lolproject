@@ -510,6 +510,80 @@ paths:
 
   # ── Players ─────────────────────────────────────────────────
 
+  /teams/{id}/matches:
+    get:
+      operationId: getTeamMatches
+      tags: [teams]
+      summary: Get paginated match list for a team (captain only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: Page number (default 1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Results per page (default 20, max 100)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by opponent or match title
+      responses:
+        "200":
+          description: Paginated match list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        matchTitle:
+                          type: string
+                        sideAName:
+                          type: string
+                        sideBName:
+                          type: string
+                        teamAId:
+                          type: integer
+                          nullable: true
+                        teamBId:
+                          type: integer
+                          nullable: true
+                        winnerName:
+                          type: string
+                          nullable: true
+                        visibleAfter:
+                          type: string
+                          nullable: true
+                        createdAt:
+                          type: string
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+        "401":
+          description: Not authenticated
+        "403":
+          description: Captain access only
+        "404":
+          description: Team not found
+
   /players:
     get:
       operationId: listPlayers
@@ -2849,6 +2923,14 @@ components:
         teamId:
           type: integer
           nullable: true
+        teamName:
+          type: string
+          nullable: true
+          description: Team name when registration is team-based
+        teamTag:
+          type: string
+          nullable: true
+          description: Team tag when registration is team-based
         eventTitle:
           type: string
           nullable: true

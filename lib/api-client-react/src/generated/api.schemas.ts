@@ -411,6 +411,10 @@ export interface EventRegistration {
   id: number;
   eventId: number;
   teamId?: number | null;
+  /** Team name when registration is team-based */
+  teamName?: string | null;
+  /** Team tag when registration is team-based */
+  teamTag?: string | null;
   eventTitle?: string | null;
   riotId: string;
   discordUsername: string;
@@ -674,6 +678,40 @@ export type BulkSetMatchVisibilityBody = {
 export type BulkSetMatchVisibility200 = {
   success?: boolean;
   updatedCount?: number;
+};
+
+export type GetTeamMatchesParams = {
+  /**
+   * Page number (default 1)
+   */
+  page?: number;
+  /**
+   * Results per page (default 20, max 100)
+   */
+  limit?: number;
+  /**
+   * Search by opponent or match title
+   */
+  search?: string;
+};
+
+export type GetTeamMatches200MatchesItem = {
+  id?: number;
+  matchTitle?: string;
+  sideAName?: string;
+  sideBName?: string;
+  teamAId?: number | null;
+  teamBId?: number | null;
+  winnerName?: string | null;
+  visibleAfter?: string | null;
+  createdAt?: string;
+};
+
+export type GetTeamMatches200 = {
+  matches?: GetTeamMatches200MatchesItem[];
+  total?: number;
+  page?: number;
+  totalPages?: number;
 };
 
 export type ListMatchesParams = {

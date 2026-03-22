@@ -88,8 +88,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. Click "Request My POV" button on MatchDetail
 
-**Current state:** Button exists. ✅
-**Issue:** None — this works.
+**Current state:** ✅ POV button is now inline in the player stats table row (contextual, per player). Replit #124 moved it from the match header to each player's row.
 
 ---
 
@@ -107,9 +106,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Entry:** `/players/RiotName`
 **Max steps:** 1
 **Journey:**
-1. Share URL. PlayerProfile shows: teams, aggregate KDA, champion pool, win rate, ELO trajectory, VODs.
+1. Share URL. PlayerProfile shows: teams, aggregate stats (KDA, Win Rate %), champion pool with portrait icons, champion played per match, match dates, ELO trajectory, VODs.
 
-**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool, VODs, multi-team ELO trajectory overlay (#44). "Is this you?" CTA present for unauthenticated visitors.
+**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool with portraits, playerChampion + date in recent matches, Win Rate %, multi-team ELO trajectory, VODs with View All link (#80, #77, #122).
 
 ---
 

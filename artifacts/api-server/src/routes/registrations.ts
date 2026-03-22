@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { eventRegistrationsTable, eventsTable } from "@workspace/db";
+import { eventRegistrationsTable, eventsTable, teamsTable } from "@workspace/db";
 import { eq, and, ne, asc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
@@ -11,12 +11,16 @@ const router = Router();
 
 function formatRegistration(
   r: typeof eventRegistrationsTable.$inferSelect,
-  eventTitle?: string | null
+  eventTitle?: string | null,
+  teamName?: string | null,
+  teamTag?: string | null,
 ) {
   return {
     id: r.id,
     eventId: r.eventId,
     teamId: r.teamId ?? null,
+    teamName: teamName ?? null,
+    teamTag: teamTag ?? null,
     eventTitle: eventTitle ?? null,
     riotId: r.riotId,
     discordUsername: r.discordUsername,
@@ -42,9 +46,12 @@ router.get("/", async (req, res) => {
           .select({
             reg: eventRegistrationsTable,
             eventTitle: eventsTable.title,
+            teamName: teamsTable.name,
+            teamTag: teamsTable.tag,
           })
           .from(eventRegistrationsTable)
           .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
+          .leftJoin(teamsTable, eq(eventRegistrationsTable.teamId, teamsTable.id))
           .where(
             and(
               eq(eventRegistrationsTable.eventId, eventId),
@@ -56,12 +63,15 @@ router.get("/", async (req, res) => {
           .select({
             reg: eventRegistrationsTable,
             eventTitle: eventsTable.title,
+            teamName: teamsTable.name,
+            teamTag: teamsTable.tag,
           })
           .from(eventRegistrationsTable)
           .leftJoin(eventsTable, eq(eventRegistrationsTable.eventId, eventsTable.id))
+          .leftJoin(teamsTable, eq(eventRegistrationsTable.teamId, teamsTable.id))
           .orderBy(asc(eventRegistrationsTable.createdAt));
 
-    res.json(rows.map((r) => formatRegistration(r.reg, r.eventTitle ?? null)));
+    res.json(rows.map((r) => formatRegistration(r.reg, r.eventTitle ?? null, r.teamName ?? null, r.teamTag ?? null)));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch registrations" });
   }
