@@ -30,7 +30,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const { data: player } = useGetPlayerById(pid);
   const { data: badges } = useGetPlayerBadges(pid);
   const { data: seasons } = useListSeasons();
-  const { data: notifications } = useListNotifications();
+  const { data: notifications, isError: notifError } = useListNotifications({ query: { retry: false } });
   const markRead = useMarkNotificationRead();
   const updatePlayer = useUpdatePlayerProfile();
   const queryClient = useQueryClient();
@@ -39,7 +39,14 @@ function DashboardContent({ pid }: { pid: number }) {
 
   const activeSeason = seasons?.find((s) => s.status === "active");
 
-  const unreadCount = (notifications ?? []).filter((n) => !n.isRead).length;
+  const devMockNotifications = import.meta.env.DEV && notifError ? [
+    { id: -1, type: "match_result", title: "Match Result: Team Alpha vs Team Beta", message: "Your team won 2-1 in the Semi Final!", isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), entityId: 38 },
+    { id: -2, type: "event_registration_confirmed", title: "Event Registration Confirmed", message: "You have been registered for VCLoL 5v5 Spring Open.", isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), entityId: null },
+    { id: -3, type: "badge_earned", title: "New Badge Earned!", message: "You earned the \"First Blood\" badge for your first match.", isRead: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), entityId: null },
+  ] : null;
+
+  const displayNotifications = notifications ?? devMockNotifications ?? [];
+  const unreadCount = displayNotifications.filter((n) => !n.isRead).length;
 
   function notifIcon(type: string) {
     if (type === "match_result") return { icon: "⚔️", color: "text-primary" };
@@ -308,11 +315,11 @@ function DashboardContent({ pid }: { pid: number }) {
           </div>
         </CardHeader>
         <CardContent>
-          {!notifications || notifications.length === 0 ? (
+          {displayNotifications.length === 0 ? (
             <p className="text-sm text-muted-foreground">No notifications yet.</p>
           ) : (
             <div className="space-y-1">
-              {notifications.slice(0, 10).map((n) => {
+              {displayNotifications.slice(0, 10).map((n) => {
                 const { icon, color } = notifIcon(n.type);
                 const href = notifHref(n);
                 const timeAgo = (() => {
