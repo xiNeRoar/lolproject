@@ -620,7 +620,7 @@ paths:
     post:
       operationId: registerPlayer
       tags: [players]
-      summary: Register player (via bot or OAuth)
+      summary: Register player via Discord OAuth session (session.discordId required)
       requestBody:
         required: true
         content:
@@ -636,6 +636,12 @@ paths:
                 $ref: "#/components/schemas/Player"
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Discord OAuth session not found — complete login first
           content:
             application/json:
               schema:
@@ -2399,17 +2405,13 @@ components:
       properties:
         riotId:
           type: string
-        discordId:
-          type: string
-        discordUsername:
-          type: string
         puuid:
           type: string
           nullable: true
         email:
           type: string
           nullable: true
-      required: [riotId, discordId, discordUsername]
+      required: [riotId]
 
     UpdatePlayerProfileRequest:
       type: object

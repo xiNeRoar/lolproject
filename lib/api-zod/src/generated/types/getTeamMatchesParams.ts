@@ -7,16 +7,16 @@
  */
 
 export type GetTeamMatchesParams = {
-  /**
-   * Page number (default 1)
-   */
-  page?: number;
-  /**
-   * Results per page (default 20, max 100)
-   */
-  limit?: number;
-  /**
-   * Search by opponent or match title
-   */
-  search?: string;
+/**
+ * Page number (default 1)
+ */
+page?: number;
+/**
+ * Results per page (default 20, max 100)
+ */
+limit?: number;
+/**
+ * Search by opponent or match title
+ */
+search?: string;
 };

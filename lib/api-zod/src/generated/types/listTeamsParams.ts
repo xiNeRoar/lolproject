@@ -7,5 +7,5 @@
  */
 
 export type ListTeamsParams = {
-  active?: boolean;
+active?: boolean;
 };

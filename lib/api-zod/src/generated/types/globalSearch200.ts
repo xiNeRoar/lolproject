@@ -5,10 +5,10 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { GlobalSearch200EventsItem } from "./globalSearch200EventsItem";
-import type { GlobalSearch200MatchesItem } from "./globalSearch200MatchesItem";
-import type { GlobalSearch200PlayersItem } from "./globalSearch200PlayersItem";
-import type { GlobalSearch200TeamsItem } from "./globalSearch200TeamsItem";
+import type { GlobalSearch200EventsItem } from './globalSearch200EventsItem';
+import type { GlobalSearch200MatchesItem } from './globalSearch200MatchesItem';
+import type { GlobalSearch200PlayersItem } from './globalSearch200PlayersItem';
+import type { GlobalSearch200TeamsItem } from './globalSearch200TeamsItem';
 
 export type GlobalSearch200 = {
   teams?: GlobalSearch200TeamsItem[];

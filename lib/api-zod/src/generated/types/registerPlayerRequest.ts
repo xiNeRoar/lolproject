@@ -8,8 +8,6 @@
 
 export interface RegisterPlayerRequest {
   riotId: string;
-  discordId: string;
-  discordUsername: string;
   puuid?: string | null;
   email?: string | null;
 }

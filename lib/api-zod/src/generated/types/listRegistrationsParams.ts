@@ -7,5 +7,5 @@
  */
 
 export type ListRegistrationsParams = {
-  eventId?: number;
+eventId?: number;
 };

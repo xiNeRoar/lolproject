@@ -6,10 +6,11 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export type ListVodsType = (typeof ListVodsType)[keyof typeof ListVodsType];
+export type ListVodsType = typeof ListVodsType[keyof typeof ListVodsType];
+
 
 export const ListVodsType = {
-  spectator: "spectator",
-  pov: "pov",
-  all: "all",
+  spectator: 'spectator',
+  pov: 'pov',
+  all: 'all',
 } as const;

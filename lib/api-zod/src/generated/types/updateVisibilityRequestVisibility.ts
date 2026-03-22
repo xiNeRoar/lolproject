@@ -6,11 +6,11 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export type UpdateVisibilityRequestVisibility =
-  (typeof UpdateVisibilityRequestVisibility)[keyof typeof UpdateVisibilityRequestVisibility];
+export type UpdateVisibilityRequestVisibility = typeof UpdateVisibilityRequestVisibility[keyof typeof UpdateVisibilityRequestVisibility];
+
 
 export const UpdateVisibilityRequestVisibility = {
-  public: "public",
-  private: "private",
-  default: "default",
+  public: 'public',
+  private: 'private',
+  default: 'default',
 } as const;

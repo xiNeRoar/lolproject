@@ -118,10 +118,10 @@ export interface Match {
   updatedAt: string;
 }
 
-export type TeamProfileRecentMatchesItem = Match & {
+export type TeamProfileRecentMatchesItem = Match & ({
   /** Champion played by this player in the match */
   playerChampion?: string | null;
-};
+});
 
 export interface TeamMember {
   id: number;
@@ -190,8 +190,6 @@ export interface CreatePlayerRequest {
 
 export interface RegisterPlayerRequest {
   riotId: string;
-  discordId: string;
-  discordUsername: string;
   puuid?: string | null;
   email?: string | null;
 }
@@ -203,10 +201,10 @@ export interface UpdatePlayerProfileRequest {
   secondaryRole?: string | null;
 }
 
-export type PlayerProfileRecentMatchesItem = Match & {
+export type PlayerProfileRecentMatchesItem = Match & ({
   /** Champion played by this player in the match */
   playerChampion?: string | null;
-};
+});
 
 export interface PlayerTeamEntry {
   teamId: number;
@@ -322,13 +320,13 @@ export interface MatchPlayerEntry {
   createdAt: string;
 }
 
-export type MatchDetail = Match & {
+export type MatchDetail = Match & ({
   eventSlug?: string | null;
   /** Bracket size derived from event registration count */
   bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
-};
+});
 
 export interface CreateMatchRequest {
   teamAId?: number | null;
@@ -350,13 +348,13 @@ export interface CreateMatchRequest {
   isLosersBracket?: boolean | null;
 }
 
-export type UpdateVisibilityRequestVisibility =
-  (typeof UpdateVisibilityRequestVisibility)[keyof typeof UpdateVisibilityRequestVisibility];
+export type UpdateVisibilityRequestVisibility = typeof UpdateVisibilityRequestVisibility[keyof typeof UpdateVisibilityRequestVisibility];
+
 
 export const UpdateVisibilityRequestVisibility = {
-  public: "public",
-  private: "private",
-  default: "default",
+  public: 'public',
+  private: 'private',
+  default: 'default',
 } as const;
 
 export interface UpdateVisibilityRequest {
@@ -644,7 +642,7 @@ export type ListAdminActions200Item = {
 };
 
 export type ListTeamsParams = {
-  active?: boolean;
+active?: boolean;
 };
 
 export type AddTeamMemberBody = {
@@ -681,18 +679,18 @@ export type BulkSetMatchVisibility200 = {
 };
 
 export type GetTeamMatchesParams = {
-  /**
-   * Page number (default 1)
-   */
-  page?: number;
-  /**
-   * Results per page (default 20, max 100)
-   */
-  limit?: number;
-  /**
-   * Search by opponent or match title
-   */
-  search?: string;
+/**
+ * Page number (default 1)
+ */
+page?: number;
+/**
+ * Results per page (default 20, max 100)
+ */
+limit?: number;
+/**
+ * Search by opponent or match title
+ */
+search?: string;
 };
 
 export type GetTeamMatches200MatchesItem = {
@@ -715,19 +713,19 @@ export type GetTeamMatches200 = {
 };
 
 export type ListMatchesParams = {
-  eventId?: number;
-  seasonId?: number;
-  teamId?: number;
-  /**
-   * Filter to matches where player participated
-   */
-  playerId?: number;
-  search?: string;
+eventId?: number;
+seasonId?: number;
+teamId?: number;
+/**
+ * Filter to matches where player participated
+ */
+playerId?: number;
+search?: string;
 };
 
 export type GetReplayStatusParams = {
-  matchId: number;
-  playerId: number;
+matchId: number;
+playerId: number;
 };
 
 export type GetReplayStatus200 = {
@@ -753,31 +751,32 @@ export type RegisterTeamForEvent201 = {
 };
 
 export type ListRegistrationsParams = {
-  eventId?: number;
+eventId?: number;
 };
 
 export type ListVodsParams = {
-  eventId?: number;
-  format?: string;
-  roleTag?: string;
-  search?: string;
-  champion?: string;
-  position?: string;
-  patch?: string;
-  teamId?: number;
-  playerId?: number;
-  /**
-   * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
-   */
-  type?: ListVodsType;
+eventId?: number;
+format?: string;
+roleTag?: string;
+search?: string;
+champion?: string;
+position?: string;
+patch?: string;
+teamId?: number;
+playerId?: number;
+/**
+ * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
+ */
+type?: ListVodsType;
 };
 
-export type ListVodsType = (typeof ListVodsType)[keyof typeof ListVodsType];
+export type ListVodsType = typeof ListVodsType[keyof typeof ListVodsType];
+
 
 export const ListVodsType = {
-  spectator: "spectator",
-  pov: "pov",
-  all: "all",
+  spectator: 'spectator',
+  pov: 'pov',
+  all: 'all',
 } as const;
 
 export type GetBotStatus200 = {
@@ -798,10 +797,10 @@ export type GetReplayQueueStats200 = {
 };
 
 export type GlobalSearchParams = {
-  /**
-   * @minLength 2
-   */
-  q: string;
+/**
+ * @minLength 2
+ */
+q: string;
 };
 
 export type GlobalSearch200TeamsItem = {
@@ -844,3 +843,4 @@ export type GlobalSearch200 = {
   events?: GlobalSearch200EventsItem[];
   matches?: GlobalSearch200MatchesItem[];
 };
+

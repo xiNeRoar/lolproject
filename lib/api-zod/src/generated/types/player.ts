@@ -5,7 +5,7 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { PlayerPrimaryTeam } from "./playerPrimaryTeam";
+import type { PlayerPrimaryTeam } from './playerPrimaryTeam';
 
 export interface Player {
   id: number;
