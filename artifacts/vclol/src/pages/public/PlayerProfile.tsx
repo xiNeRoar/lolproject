@@ -393,18 +393,14 @@ export default function PlayerProfile() {
                         <span className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                           {won ? "W" : "L"}
                         </span>
+                        {champ ? (
+                          <img src={champPortraitUrl(champ)} alt={champ} className="w-8 h-8 rounded shrink-0 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div className="w-8 h-8 rounded shrink-0 bg-muted/30 border border-border/40" />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{match.matchTitle}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                            {champ && (
-                              <>
-                                <span className="inline-flex items-center gap-1">
-                                  <img src={champPortraitUrl(champ)} alt={champ} className="w-4 h-4 rounded inline-block object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                                  <span className="text-foreground/70">{champ}</span>
-                                </span>
-                                <span>·</span>
-                              </>
-                            )}
                             <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
                             <span>·</span>
                             <span className="truncate">{match.sideAName} vs {match.sideBName}</span>
