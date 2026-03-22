@@ -399,14 +399,16 @@ export default function PlayerProfile() {
                           <div className="w-8 h-8 rounded shrink-0 bg-muted/30 border border-border/40" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{match.matchTitle}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                          <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                            <span className="truncate">{match.matchTitle}</span>
+                            {match.isPlayoff && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">Playoff</Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <span>{new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
                             <span>·</span>
                             <span className="truncate">{match.sideAName} vs {match.sideBName}</span>
-                            {match.isPlayoff && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0">Playoff</Badge>
-                            )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
