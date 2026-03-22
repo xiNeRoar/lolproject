@@ -1,18 +1,17 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Shield, ChevronDown, User, LayoutDashboard, Users, LogOut, Settings } from "lucide-react";
+import { Menu, X, Shield, ChevronDown, User, LayoutDashboard, Users, LogOut, Settings, Bell } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { useGetPlayerById } from "@workspace/api-client-react";
+import { useGetPlayerById, useListNotifications } from "@workspace/api-client-react";
 import GlobalSearch from "./GlobalSearch";
-import NotificationBell from "./NotificationBell";
 
 interface PlayerData {
   riotId: string;
   teams?: Array<{ teamId: number; teamName: string; teamTag: string; role?: string | null; status?: string; isCaptain?: boolean }>;
 }
 
-function UserDropdown({ player, playerId, onLogout }: { player?: PlayerData | null; playerId: string; onLogout: () => void }) {
+function UserDropdown({ player, playerId, onLogout, unreadCount = 0 }: { player?: PlayerData | null; playerId: string; onLogout: () => void; unreadCount?: number }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,8 +50,11 @@ function UserDropdown({ player, playerId, onLogout }: { player?: PlayerData | nu
         aria-label="User menu"
         className="flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
       >
-        <div className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-xs font-bold uppercase" aria-hidden="true">
+        <div className="relative w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-xs font-bold uppercase" aria-hidden="true">
           {displayName[0]}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-400 ring-2 ring-background" />
+          )}
         </div>
         <span className="max-w-[120px] truncate">{displayName}</span>
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden="true" />
@@ -74,6 +76,19 @@ function UserDropdown({ player, playerId, onLogout }: { player?: PlayerData | nu
             role="menuitem"
           >
             <LayoutDashboard className="w-4 h-4" /> Dashboard
+          </Link>
+
+          <Link
+            href="/dashboard#notifications"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            role="menuitem"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{unreadCount}</span>
+            )}
           </Link>
 
           {player?.riotId && (
@@ -129,6 +144,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { playerId, logout, playerIdNum } = useAuth();
   const { data: player } = useGetPlayerById(playerIdNum, { query: { enabled: !!playerId && playerIdNum > 0 } });
+  const { data: notifications } = useListNotifications({ query: { enabled: !!playerId, refetchInterval: 30000, retry: false } });
+  const unreadCount = (notifications ?? []).filter((n: { isRead?: boolean }) => !n.isRead).length;
 
   const handleLogout = () => {
     logout();
@@ -175,10 +192,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div className="hidden md:flex items-center space-x-3">
               <GlobalSearch />
               {playerId ? (
-                <>
-                  <NotificationBell />
-                  <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} />
-                </>
+                <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} unreadCount={unreadCount} />
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -196,7 +210,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             <div className="flex items-center gap-1 md:hidden">
               <GlobalSearch />
-              {playerId && <NotificationBell />}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-expanded={mobileMenuOpen}
