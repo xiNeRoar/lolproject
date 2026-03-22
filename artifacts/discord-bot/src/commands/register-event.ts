@@ -46,29 +46,50 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── 2. Find team where invoking player is captain ────────────────────────
-  const [captainMembership] = await db
-    .select({ teamId: teamMembersTable.teamId })
-    .from(teamMembersTable)
-    .innerJoin(teamsTable, and(
-      eq(teamsTable.id, teamMembersTable.teamId),
-      eq(teamsTable.captainPlayerId, player.id),
-      eq(teamsTable.isActive, true),
-    ))
-    .where(and(
-      eq(teamMembersTable.playerId, player.id),
-      eq(teamMembersTable.status, "active"),
-    ))
-    .limit(1);
+  // ── 2. Find all teams where invoking player is captain ───────────────────
+  const captainTeams = await db
+    .select({ teamId: teamsTable.id, teamName: teamsTable.name, teamTag: teamsTable.tag })
+    .from(teamsTable)
+    .where(and(eq(teamsTable.captainPlayerId, player.id), eq(teamsTable.isActive, true)));
 
-  if (!captainMembership) {
+  if (captainTeams.length === 0) {
     await interaction.editReply(
       "❌ You are not the captain of any active team. Only captains can register for events."
     );
     return;
   }
 
-  const teamId = captainMembership.teamId;
+  // Disambiguate if captain of multiple teams
+  let teamId: number;
+
+  if (captainTeams.length === 1) {
+    teamId = captainTeams[0]!.teamId;
+  } else {
+    const selectMenu = new StringSelectMenuBuilder()
+      .setCustomId("register_event_team_select")
+      .setPlaceholder("Which team do you want to register?")
+      .addOptions(captainTeams.map((t) => ({ label: `${t.teamName} [${t.teamTag}]`, value: String(t.teamId) })));
+    const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+    const reply = await interaction.editReply({ content: "Which team do you want to register for this event?", components: [row] });
+
+    try {
+      const sel = await reply.awaitMessageComponent({
+        componentType: ComponentType.StringSelect,
+        filter: (i: StringSelectMenuInteraction) => i.user.id === discordId,
+        time: 30_000,
+      });
+      await sel.deferUpdate();
+      const chosen = captainTeams.find((t) => String(t.teamId) === sel.values[0]);
+      if (!chosen) {
+        await interaction.editReply({ content: "❌ Invalid selection.", components: [] });
+        return;
+      }
+      teamId = chosen.teamId;
+    } catch {
+      await interaction.editReply({ content: "❌ Timed out.", components: [] });
+      return;
+    }
+  }
 
   // ── 3. Call API to register ───────────────────────────────────────────────
   let responseData: {
