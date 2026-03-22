@@ -284,15 +284,15 @@ export default function MatchDetail() {
         <div className="mb-8">
           <div className="flex items-center justify-center gap-4 sm:gap-8 py-4">
             <div className="flex-1 text-right min-w-0">
-              <div className={`text-lg sm:text-xl font-display font-bold truncate ${sideAWon ? "text-primary" : ""}`}>
+              <div className={`text-lg sm:text-xl font-display font-bold truncate flex items-center justify-end gap-2 ${sideAWon ? "text-primary" : ""}`}>
                 {match.teamAId ? (
                   <Link href={`/teams/${match.teamAId}`} className="hover:text-primary/80 transition-colors">
                     {match.sideAName}
                   </Link>
                 ) : match.sideAName}
+                {sideAWon && <Trophy className="w-4 h-4 text-primary shrink-0" />}
               </div>
               {match.teamATag && <div className="text-xs text-muted-foreground">[{match.teamATag}]</div>}
-              {sideAWon && <div className="flex items-center justify-end gap-1 mt-1"><Trophy className="w-4 h-4 text-primary" /></div>}
             </div>
             <div className="text-center shrink-0 px-2">
               <div className="text-4xl sm:text-5xl font-display font-bold tracking-widest text-foreground">
@@ -300,7 +300,8 @@ export default function MatchDetail() {
               </div>
             </div>
             <div className="flex-1 text-left min-w-0">
-              <div className={`text-lg sm:text-xl font-display font-bold truncate ${sideBWon ? "text-primary" : ""}`}>
+              <div className={`text-lg sm:text-xl font-display font-bold truncate flex items-center gap-2 ${sideBWon ? "text-primary" : ""}`}>
+                {sideBWon && <Trophy className="w-4 h-4 text-primary shrink-0" />}
                 {match.teamBId ? (
                   <Link href={`/teams/${match.teamBId}`} className="hover:text-primary/80 transition-colors">
                     {match.sideBName}
@@ -308,7 +309,6 @@ export default function MatchDetail() {
                 ) : match.sideBName}
               </div>
               {match.teamBTag && <div className="text-xs text-muted-foreground">[{match.teamBTag}]</div>}
-              {sideBWon && <div className="flex items-center gap-1 mt-1"><Trophy className="w-4 h-4 text-primary" /></div>}
             </div>
           </div>
 
