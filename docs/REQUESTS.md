@@ -5,38 +5,71 @@ Format: one section per request.
 
 ---
 
-## Request: Wire up notifyPlayer() across all trigger points
+## Request: Wire up notifyPlayer() in Discord Bot /submit
 **Needed for:** Issue #130
-**Files to change:**
-- `artifacts/discord-bot/src/commands/submit.ts` — replace `tx.insert(notificationsTable)` with post-tx call to `notifyPlayer()` so email/DM delivery respects player preference
-- `artifacts/api-server/src/routes/registrations.ts` — after confirm → `notifyPlayer(playerId, "event_registration_confirmed", ...)`, after decline → `notifyPlayer(playerId, "event_registration_declined", ...)`
-- `artifacts/api-server/src/routes/seasons.ts` — after completing season → `notifyPlayer()` for all players in winning team with type `"season_completed"`
-- `artifacts/api-server/src/lib/badges.ts` — after `awardBadge()` → `notifyPlayer(playerId, "badge_earned", ...)`
-**Why:** `notifyPlayer()` is fully implemented (Web + Email via Resend + Discord DM) but has 0 call sites. All 6 notification types defined in the type union are dead code.
+**Endpoint:** N/A (internal function call, not a new endpoint)
+**Why:** Discord Bot `/submit` writes notification rows directly via `tx.insert(notificationsTable)` at `submit.ts:334`, bypassing `notifyPlayer()`. Email (Resend) and Discord DM delivery never fires. Player notification preference (`web`/`email`/`discord`/`both`) is ignored.
+**Response shape:** N/A
+**What to do:** After the transaction commits, call `notifyPlayer(playerId, "match_result", title, message, matchId)` for each known player instead of raw DB insert.
+
+---
+
+## Request: Call notifyPlayer() on event registration confirm/decline
+**Needed for:** Issue #130
+**Endpoint:** `PUT /api/registrations/:id/confirm` and `PUT /api/registrations/:id/withdraw`
+**Why:** When admin confirms or declines a team's event registration, no notification is sent to the captain or team members. PRD §11 lists `notifications` as preserved.
+**Response shape:** N/A
+**What to do:** After confirming → `notifyPlayer(captainPlayerId, "event_registration_confirmed", ...)`. After declining → `notifyPlayer(captainPlayerId, "event_registration_declined", ...)`.
+
+---
+
+## Request: Call notifyPlayer() on season completion
+**Needed for:** Issue #130
+**Endpoint:** `POST /api/seasons/:id/complete`
+**Why:** When a season completes, no notification is sent to any player. The winning team members should be notified.
+**Response shape:** N/A
+**What to do:** After completing season, call `notifyPlayer(playerId, "season_completed", ...)` for all active members of the winning team.
+
+---
+
+## Request: Call notifyPlayer() after badge award
+**Needed for:** Issue #130
+**Endpoint:** N/A (internal function in `badges.ts`)
+**Why:** `awardBadge()` in `badges.ts` inserts a badge row but never notifies the player. Players have no way to know they earned a badge unless they visit their profile.
+**Response shape:** N/A
+**What to do:** After `awardBadge()` succeeds (and badge is new, not duplicate), call `notifyPlayer(playerId, "badge_earned", "New Badge Earned!", "You earned the {badgeName} badge.")`.
 
 ---
 
 ## Request: Implement climber badge trigger logic
 **Needed for:** Issue #131
-**Files to change:** `artifacts/api-server/src/lib/badges.ts`
-**Why:** `climber` badge has frontend label/emoji in `BADGE_META` but zero backend logic. Owner needs to define trigger condition first (e.g., team ELO +200 from start, or 3+ ladder position climb in a season). Then implement in `checkMatchBadges()` or a new checker function.
+**Endpoint:** N/A (internal function in `badges.ts`)
+**Why:** `climber` badge has frontend label + emoji in `BADGE_META` (`lol-utils.ts:42`) but zero backend logic. Comment in `badges.ts:85` says "can be added in a future phase". Owner must define trigger condition.
+**Response shape:** N/A
+**What to do:** Define condition (e.g. team ELO +200 from starting, or 3+ ladder positions climbed in a season), then add check in `checkMatchBadges()` or new function.
 
 ---
 
 ## Request: Add player profile privacy toggle
 **Needed for:** Issue #132
-**Schema change:** Add `profile_visibility` column to `players` table (default `'public'`, options: `'public'` | `'private'`)
-**Endpoint changes:**
-- `PUT /players/:id/profile` — accept `profileVisibility` field in request body
-- `GET /players/:riotId` — when profile is private, return redacted response (riotId + team affiliations only, hide stats/champion pool/match history) unless requester is the player themselves or an admin
-**Why:** PRD v3 §7 requires players can set profile to private. Currently no column exists in schema, no API support, no frontend toggle.
-**Frontend follow-up:** After backend is ready, I will add privacy toggle in PlayerDashboard settings and a "This profile is private" gate in PlayerProfile.
+**Endpoint:** `PUT /api/players/:id/profile` (existing — add `profileVisibility` field)
+**Why:** PRD v3 §7 requires "Player can set to private if desired." No column, no API support, no frontend toggle exists. Verified: 0 matches for `profileVisibility`/`isPrivate` in schema, API, and frontend.
+**Response shape:** `{ profileVisibility: "public" | "private" }` in player object
+**What to do:**
+1. Schema: add `profile_visibility` column to `players` (default `'public'`)
+2. `PUT /players/:id/profile`: accept `profileVisibility` in request body
+3. `GET /players/:riotId`: when private, return redacted data (riotId + teams only, hide stats/matches/champions) unless requester is the player or admin
+4. Frontend follow-up (Replit will do): privacy toggle in Dashboard settings + "This profile is private" gate in PlayerProfile
 
 ---
 
 ## Request: Auto-inactive roster members after N consecutive match absences
 **Needed for:** Issue #133
-**Files to change:** `artifacts/discord-bot/src/commands/submit.ts` (or a new scheduler)
-**Logic:** After each `/submit`, for each team in the match: check all active `team_members`. If a member has been absent from the last N team matches (suggest N=5), set `team_members.status = 'inactive'`. Optionally notify the player via `notifyPlayer()`.
-**Also:** PRD §6.2 shows interactive ✅/❌ buttons for captain to confirm adding unknown players. Current bot only shows "Unlinked" text. Consider adding Discord button components for captain confirmation.
-**Why:** PRD v3 §8: "Roster state is derived from actual match participation." Currently only team-level inactivity exists (30-day scheduler), not individual member inactivity.
+**Endpoint:** N/A (logic in Discord Bot `/submit` or new scheduler)
+**Why:** PRD v3 §8 states "Existing roster member absent from N consecutive .rofl submissions → automatically marked Inactive member." Zero logic exists. Verified: grep for `inactive.*member`/`absent.*consecutive` in `discord-bot/src/` — 0 matches.
+**Response shape:** N/A
+**What to do:**
+1. Define N (suggest N=5)
+2. After each `/submit`, for each team: check all active `team_members`. If a member has been absent from last N team matches, set `team_members.status = 'inactive'`
+3. Optionally call `notifyPlayer()` to inform the player (depends on #130)
+4. Secondary: PRD §6.2 shows interactive ✅/❌ buttons for captain to confirm adding unknown players. Current bot shows "Unlinked" text only. Consider Discord button components.

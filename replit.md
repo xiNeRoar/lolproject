@@ -328,7 +328,36 @@ visibleAfter null = 7-day default
 
 #15, #16, #17, #18, #22, #23, #32, #34, #37, #39, #40, #41, #42, #43, #45, #46, #47, #48, #49, #50, #51, #52, #53, #58, #89, #90, #91, #92, #93, #95, #96, #97, #99, #100, #101, #102, #103, #104, #105, #107. #7 was already closed.
 
+## Open Backend Issues (Audit R2 — filed by Replit)
+
+Opened after full system audit against PRD v3. All require backend/bot changes. Labels: `claude, backend, audit-r2`. Milestone: 4 (Polish).
+
+- **#130** Notification delivery: `notifyPlayer()` never called — Email/Discord DM never fires
+- **#131** `climber` badge: no trigger logic defined or implemented (needs owner design decision)
+- **#132** Player profile privacy toggle missing — PRD §7 (backend first, then Replit does frontend follow-up)
+- **#133** Auto-inactive roster members after N consecutive match absences — PRD §8 (blocked by #130 for notification)
+
+Backend requests documented in `docs/REQUESTS.md`.
+
+## Notification System Status
+
+- **Web notification (DB insert):** ✅ Works — Discord Bot `/submit` writes to `notifications` table
+- **Email (Resend):** ❌ `notifyPlayer()` never called — dead code
+- **Discord DM:** ❌ `notifyPlayer()` never called — dead code
+- **Dashboard display:** ✅ Works — `PlayerDashboard.tsx` shows notifications with icons, mark-read, time ago
+- **Nav indicator:** ✅ Works — UserDropdown shows red dot on avatar + "Notifications (N)" menu item when unread > 0
+- **Player pref toggle:** ✅ Works — Dashboard has web/email/discord/both selector
+- **Dev fallback:** Dev-only mock data when API returns 401 (DevLogin has no session)
+
+## Badge System Status
+
+- `first_blood` ✅ Auto-awarded after first match (`badges.ts:63`)
+- `veteran` ✅ Auto-awarded at 20+ matches (`badges.ts:68`)
+- `win_streak` ✅ Auto-awarded on 3 consecutive wins (`badges.ts:75`)
+- `season_champion` ✅ Auto-awarded on season completion (`badges.ts:108`)
+- `climber` ❌ No trigger logic — see #131
+
 ## API Status
 
 All endpoints working. #32 DB schema drift fixed (manual ALTER TABLE for missing columns).
-Working: `/api/players`, `/api/teams`, `/api/teams/:id`, `/api/matches`, `/api/matches/:id`, `/api/search?q=`, `/api/vods`, `/api/bot-status`, `/api/replay-queue-stats`, `/api/bans`, `/api/admin/actions`
+Working: `/api/players`, `/api/teams`, `/api/teams/:id`, `/api/matches`, `/api/matches/:id`, `/api/search?q=`, `/api/vods`, `/api/bot-status`, `/api/replay-queue-stats`, `/api/bans`, `/api/admin/actions`, `/api/notifications`, `/api/notifications/:id/read`
