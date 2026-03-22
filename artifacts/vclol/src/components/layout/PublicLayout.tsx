@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useGetPlayerById } from "@workspace/api-client-react";
 import GlobalSearch from "./GlobalSearch";
+import NotificationBell from "./NotificationBell";
 
 interface PlayerData {
   riotId: string;
@@ -174,7 +175,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div className="hidden md:flex items-center space-x-3">
               <GlobalSearch />
               {playerId ? (
-                <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} />
+                <>
+                  <NotificationBell />
+                  <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} />
+                </>
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -192,6 +196,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             <div className="flex items-center gap-1 md:hidden">
               <GlobalSearch />
+              {playerId && <NotificationBell />}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-expanded={mobileMenuOpen}
