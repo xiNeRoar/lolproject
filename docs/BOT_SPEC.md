@@ -4,7 +4,7 @@
 
 ## Identity
 
-The Discord bot is the **primary interaction layer** for VCLoL. All user actions — team registration, player management, match submission — happen through the bot. The website is read-only for non-admin users.
+The Discord bot is the **entry point and .rofl submission layer** for VCLoL. New users discover the platform via the bot in their scrim server. `.rofl` submission is bot-only (preserving the viral loop). The website is a **full management + display layer** — registered users can manage rosters, visibility, settings, and event registration directly on the web after Discord OAuth login. Bot commands and web management co-exist.
 
 **Package:** `artifacts/discord-bot/` (new monorepo package)
 **Runtime:** discord.js v14 + TypeScript
@@ -300,7 +300,7 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 
 | Error | Bot Response |
 |-------|-------------|
-| .rofl too large | "File too large ({size}MB). Discord limit is 8MB. Use `/submit-web` for a direct upload link." |
+| .rofl too large | "Replay file too large ({size}MB). Discord's default limit is 8 MB. Upload directly to VCLoL instead: `curl -X POST {apiBase}/api/matches/submit-rofl ...`" |
 | .rofl corrupt / not ROFL2 | "Invalid replay file. Make sure this is from patch 14.11 or later." |
 | .rofl missing player data | "Could not extract player data from this replay." |
 | Team not found for players | "Could not match {N} players to a registered team: {names}. Ask your captain to `/add` them." |
