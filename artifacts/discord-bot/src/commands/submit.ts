@@ -482,7 +482,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── 9. Auto-inactive roster members (PRD §8) ───────────────────────────
   // Fire-and-forget: don't block reply. After match recorded, check each
   // identified team — members absent from last N matches → set inactive.
-  const identifiedTeamIds = [sideA.teamId, sideB.teamId].filter((id): id is number => id !== null);
   if (identifiedTeamIds.length > 0) {
     checkRosterInactivity(identifiedTeamIds, matchId!).catch((err) =>
       console.error("[roster-inactivity] Check failed:", err)

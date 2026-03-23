@@ -119,7 +119,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teamId, captainPlayerId: player.id }),
     });
-    responseData = await res.json();
+    responseData = await res.json() as typeof responseData;
 
     if (!res.ok) {
       await interaction.editReply(`❌ ${responseData.error ?? "Failed to register."}`);
