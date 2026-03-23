@@ -315,6 +315,7 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 | Not a member of any team | "You are not a member of any team." |
 | Roster full | "Team roster is full ({count}/{max}). Remove an inactive member with `/remove` first." |
 | Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
+| Rate limit (submit) | "**{teamName}** submitted a match less than 2 minutes ago. Please wait {N}s before submitting again." |
 | No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |
 | Riot ID already linked | "This Riot ID is already linked to another player." |
 | Riot ID not found | "This Riot ID does not exist." |

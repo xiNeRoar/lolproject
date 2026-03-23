@@ -236,6 +236,29 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   }
 
+  // ── 6c. Submit rate limit (2-minute cooldown per team) ──────────────────
+  if (identifiedTeamIds.length > 0) {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const [recentTeam] = await db
+      .select({ id: teamsTable.id, name: teamsTable.name, lastMatchAt: teamsTable.lastMatchAt })
+      .from(teamsTable)
+      .where(
+        and(
+          inArray(teamsTable.id, identifiedTeamIds),
+          gt(teamsTable.lastMatchAt, twoMinutesAgo)
+        )
+      )
+      .limit(1);
+
+    if (recentTeam && recentTeam.lastMatchAt) {
+      const waitSeconds = Math.ceil((recentTeam.lastMatchAt.getTime() + 2 * 60 * 1000 - Date.now()) / 1000);
+      await interaction.editReply(
+        `⏳ **${recentTeam.name}** submitted a match less than 2 minutes ago. Please wait ${waitSeconds}s before submitting again.`
+      );
+      return;
+    }
+  }
+
   // Determine winner side
   const blueWon = match.blueSide[0]?.win ?? false;
 

@@ -244,4 +244,5 @@ gameDuration: milliseconds
 MAX_ROSTER_SIZE: 15 (5 starters + 10 subs, enforced in /add)
 INACTIVITY_THRESHOLD: 5 (consecutive match absences before auto-inactive)
 CLIMB_THRESHOLD: 3 (ladder positions climbed for climber badge)
+SUBMIT_COOLDOWN_MS: 120000 (2 minutes between submissions per team)
 ```
