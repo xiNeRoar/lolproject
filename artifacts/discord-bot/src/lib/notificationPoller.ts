@@ -7,6 +7,8 @@
  * Runs on startup and then on a 60-second interval.
  * Processes in batches of 10 with a 1-second delay between batches
  * to respect Discord's rate limit of 5 DMs/second.
+ *
+ * Inner loop: drains the entire pending queue per cycle, not just one batch.
  */
 
 import type { Client } from "discord.js";
@@ -15,76 +17,111 @@ import { eq, and } from "drizzle-orm";
 
 const POLL_INTERVAL_MS = 60 * 1000; // 60 seconds
 const BATCH_SIZE = 10;
-const BATCH_DELAY_MS = 1000; // 1 second between batches
+const BATCH_DELAY_MS = 1000; // 1 second between DM sends
+
+let isShuttingDown = false;
+
+/** Call on SIGTERM/SIGINT to stop the poller from starting new batches. */
+export function stopNotificationPoller(): void {
+  isShuttingDown = true;
+}
 
 export function startNotificationPoller(client: Client): void {
   async function poll() {
+    if (isShuttingDown) return;
+
     try {
-      // Fetch unread, unsent, non-failed notifications
-      const pending = await db
-        .select({
-          id: notificationsTable.id,
-          playerId: notificationsTable.playerId,
-          title: notificationsTable.title,
-          message: notificationsTable.message,
-          type: notificationsTable.type,
-        })
-        .from(notificationsTable)
-        .where(
-          and(
-            eq(notificationsTable.isRead, false),
-            eq(notificationsTable.dmSent, false),
-            eq(notificationsTable.dmFailed, false)
-          )
-        )
-        .limit(BATCH_SIZE);
+      let totalProcessed = 0;
 
-      if (pending.length === 0) return;
-
-      console.log(`[poller] Processing ${pending.length} notification(s)`);
-
-      for (const notif of pending) {
-        // Look up player discordId and preference
-        const [player] = await db
+      // Inner loop: keep fetching batches until queue is drained or shutdown requested
+      while (!isShuttingDown) {
+        const pending = await db
           .select({
-            discordId: playersTable.discordId,
-            notificationPreference: playersTable.notificationPreference,
+            id: notificationsTable.id,
+            playerId: notificationsTable.playerId,
+            title: notificationsTable.title,
+            message: notificationsTable.message,
+            type: notificationsTable.type,
           })
-          .from(playersTable)
-          .where(eq(playersTable.id, notif.playerId))
-          .limit(1);
+          .from(notificationsTable)
+          .where(
+            and(
+              eq(notificationsTable.isRead, false),
+              eq(notificationsTable.dmSent, false),
+              eq(notificationsTable.dmFailed, false)
+            )
+          )
+          .limit(BATCH_SIZE);
 
-        if (!player) {
-          // Player deleted — mark as failed so we don't retry forever
-          await db
-            .update(notificationsTable)
-            .set({ dmFailed: true })
-            .where(eq(notificationsTable.id, notif.id));
-          continue;
+        if (pending.length === 0) break; // Queue drained
+
+        for (const notif of pending) {
+          if (isShuttingDown) break;
+
+          // Look up player discordId and preference
+          const [player] = await db
+            .select({
+              discordId: playersTable.discordId,
+              notificationPreference: playersTable.notificationPreference,
+            })
+            .from(playersTable)
+            .where(eq(playersTable.id, notif.playerId))
+            .limit(1);
+
+          if (!player) {
+            await db
+              .update(notificationsTable)
+              .set({ dmFailed: true })
+              .where(eq(notificationsTable.id, notif.id));
+            continue;
+          }
+
+          // Skip DM if player has no discordId or prefers web-only.
+          // Mark dmSent=true so the notification exits the pending queue.
+          if (!player.discordId) {
+            await db
+              .update(notificationsTable)
+              .set({ dmSent: true })
+              .where(eq(notificationsTable.id, notif.id));
+            continue;
+          }
+
+          const pref = player.notificationPreference ?? "web";
+          if (pref !== "discord" && pref !== "both") {
+            await db
+              .update(notificationsTable)
+              .set({ dmSent: true })
+              .where(eq(notificationsTable.id, notif.id));
+            continue;
+          }
+
+          // Rate limit: 1-second delay between DM sends
+          await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+
+          try {
+            const user = await client.users.fetch(player.discordId);
+            await user.send(`**${notif.title}**\n${notif.message}`);
+            await db
+              .update(notificationsTable)
+              .set({ dmSent: true })
+              .where(eq(notificationsTable.id, notif.id));
+          } catch (err) {
+            console.error(`[poller] DM failed for notification #${notif.id}:`, err);
+            await db
+              .update(notificationsTable)
+              .set({ dmFailed: true })
+              .where(eq(notificationsTable.id, notif.id));
+          }
         }
 
-        // Skip if player has no discordId or prefers web-only
-        if (!player.discordId) continue;
-        const pref = player.notificationPreference ?? "web";
-        if (pref === "web") continue;
-        if (pref !== "discord" && pref !== "both") continue;
+        totalProcessed += pending.length;
 
-        // Send DM (1-second delay between sends per BOT_SPEC rate limit guidance)
-        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
-        try {
-          const user = await client.users.fetch(player.discordId);
-          await user.send(`**${notif.title}**\n${notif.message}`);
-          await db
-            .update(notificationsTable)
-            .set({ dmSent: true })
-            .where(eq(notificationsTable.id, notif.id));
-        } catch (err) {
-          console.error(`[poller] DM failed for notification #${notif.id}:`, err);
-          await db
-            .update(notificationsTable)
-            .set({ dmFailed: true })
-            .where(eq(notificationsTable.id, notif.id));
-        }
+        // If batch was smaller than BATCH_SIZE, queue is fully drained
+        if (pending.length < BATCH_SIZE) break;
+      }
+
+      if (totalProcessed > 0) {
+        console.log(`[poller] Processed ${totalProcessed} notification(s)`);
       }
     } catch (err) {
       console.error("[poller] Poll cycle error:", err);
