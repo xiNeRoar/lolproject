@@ -73,7 +73,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
   if (attachment.size > MAX_FILE_SIZE) {
     const sizeMB = (attachment.size / 1024 / 1024).toFixed(1);
-    const apiBase = process.env.API_BASE_URL ?? "https://vclol.gg";
+    const apiBase = process.env.PLATFORM_URL ?? "https://vclol.gg";
     await interaction.editReply(
       `❌ Replay file too large (${sizeMB} MB). Discord's default limit is 8 MB.\n\n` +
       `**Upload directly to VCLoL instead:**\n` +
@@ -496,7 +496,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   // ── 10. Build scoreboard data ────────────────────────────────────────────
-  const platformUrl = process.env.API_BASE_URL ?? "https://vclol.gg";
+  const platformUrl = process.env.PLATFORM_URL ?? "https://vclol.gg";
   const durationStr = formatDuration(match.gameLength);
 
   const toScoreboardPlayers = (
@@ -828,7 +828,7 @@ function buildMatchEmbed(opts: {
   }
 
   if (!bothTeamsIdentified) {
-    const platformUrl = process.env.API_BASE_URL ?? "https://vclol.gg";
+    const platformUrl = process.env.PLATFORM_URL ?? "https://vclol.gg";
     embed.addFields({
       name: "⚠️ No ELO change",
       value:

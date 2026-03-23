@@ -86,6 +86,8 @@ gunzip -c /mnt/nas/vclol-backups/vclol_20260320_030000.sql.gz | psql -h $DB_HOST
 | `DISCORD_BOT_TOKEN` | Yes | -- | Discord bot token |
 | `RIOT_API_KEY` | No | -- | Phase 2: validates Riot ID exists |
 | `ROFL_UPLOAD_DIR` | No | `./uploads/rofl` | Where .rofl files are stored |
+| `PLATFORM_URL` | No | `https://vclol.gg` | Public domain for user-facing links in bot embeds and images. Must be the same domain users access the website on. |
+| `API_BASE_URL` | No | `http://localhost:3000` | Internal API server address for bot→server HTTP calls (e.g. /register-event). Not user-facing. |
 | `STATIC_DIR` | No | `../vclol/dist/public` | Path to compiled Vite SPA output (for consolidated serving). |
 | `VITE_SITE_URL` | No | `https://vclol.gg` | Canonical base URL used in OG meta tags. Set to your production domain. |
 | `RESEND_API_KEY` | No | -- | Resend API key for email notifications. If unset, email delivery is skipped. |

@@ -25,7 +25,7 @@ import { eq, and, count } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
 
 const VALID_ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
-const API_BASE_URL = process.env.API_BASE_URL ?? "https://vclol.gg";
+const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
 
 export const data = new SlashCommandBuilder()
   .setName("add")
@@ -267,7 +267,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         `👋 You've been added to **${teamName}** [${teamTag}] by **${interaction.user.username}**.\n` +
         `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
         `• If this was a mistake: \`/leave\`\n` +
-        `• Your team: ${API_BASE_URL}/teams/${teamId}`
+        `• Your team: ${PLATFORM_URL}/teams/${teamId}`
       );
     } catch {
       // DM failed (user has DMs disabled) — not an error, just skip
