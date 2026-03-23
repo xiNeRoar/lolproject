@@ -307,6 +307,8 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 | Duplicate match (same gameId) | "This match has already been submitted (Match #{id})." |
 | Team name taken | "Team name '{name}' is already taken. Choose another." |
 | Tag format invalid | "Tag must be 2-5 uppercase letters/numbers (e.g. TSM, C9, T1)." |
+| Offensive team name | "Team name contains prohibited content. Choose another name." |
+| Offensive team tag | "Team tag contains prohibited content. Choose another tag." |
 | Not captain | "Only the team captain can use this command." |
 | Transfer target not on team | "Must be an active team member to become captain." |
 | Captain tries /leave | "Use `/transfer-captain` first before leaving." |

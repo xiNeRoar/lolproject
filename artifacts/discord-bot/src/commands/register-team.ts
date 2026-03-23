@@ -19,6 +19,7 @@ import {
 } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
+import { checkOffensiveContent } from "../lib/contentFilter.js";
 
 export const data = new SlashCommandBuilder()
   .setName("register-team")
@@ -63,7 +64,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── 2. Find or create player record ──────────────────────────────────────
+  // ── 3. Content moderation ──────────────────────────────────────────────────
+  const offensiveName = checkOffensiveContent(name);
+  if (offensiveName) {
+    console.warn(`[register-team] Blocked offensive name: "${name}" by ${discordId}`);
+    await interaction.editReply("❌ Team name contains prohibited content. Choose another name.");
+    return;
+  }
+  const offensiveTag = checkOffensiveContent(rawTag);
+  if (offensiveTag) {
+    console.warn(`[register-team] Blocked offensive tag: "${rawTag}" by ${discordId}`);
+    await interaction.editReply("❌ Team tag contains prohibited content. Choose another tag.");
+    return;
+  }
+
+  // ── 4. Find or create player record ──────────────────────────────────────
   let player = (
     await db.select().from(playersTable).where(eq(playersTable.discordId, discordId)).limit(1)
   )[0];
