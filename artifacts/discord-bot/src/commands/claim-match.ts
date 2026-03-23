@@ -148,9 +148,32 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── Assign team to unclaimed side ─────────────────────────────────────────
-  const update = hasNullA ? { teamAId: claimTeamId } : { teamBId: claimTeamId };
-  await db.update(matchesTable).set({ ...update, updatedAt: new Date() }).where(eq(matchesTable.id, matchId));
+  // ── Assign team to unclaimed side + update display names ────────────────
+  const claimDisplayName = `${claimTeamName} [${claimTeamTag}]`;
+
+  // Update side name, matchTitle, and winnerName if the claimed side was the winner
+  const newSideAName = hasNullA ? claimDisplayName : match.sideAName;
+  const newSideBName = hasNullB ? claimDisplayName : match.sideBName;
+  const newMatchTitle = `${newSideAName} vs ${newSideBName}`;
+
+  // If the winning side was the unclaimed side, update winnerName too
+  let newWinnerName = match.winnerName;
+  if (hasNullA && match.winnerName === match.sideAName) {
+    newWinnerName = claimDisplayName;
+  } else if (hasNullB && match.winnerName === match.sideBName) {
+    newWinnerName = claimDisplayName;
+  }
+
+  const sideUpdate = hasNullA
+    ? { teamAId: claimTeamId, sideAName: claimDisplayName }
+    : { teamBId: claimTeamId, sideBName: claimDisplayName };
+
+  await db.update(matchesTable).set({
+    ...sideUpdate,
+    matchTitle: newMatchTitle,
+    winnerName: newWinnerName,
+    updatedAt: new Date(),
+  }).where(eq(matchesTable.id, matchId));
 
   // ── Calculate retroactive ELO if both sides now known ────────────────────
   const updatedTeamAId = hasNullA ? claimTeamId : match.teamAId!;
