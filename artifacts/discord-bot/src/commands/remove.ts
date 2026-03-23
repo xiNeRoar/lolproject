@@ -19,6 +19,8 @@ import { playersTable, teamMembersTable, teamsTable, notificationsTable } from "
 import { eq, and } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
 
+const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
+
 export const data = new SlashCommandBuilder()
   .setName("remove")
   .setDescription("Remove a player from your team roster (captain only).")
@@ -162,10 +164,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetUser.id) {
     try {
       const dmUser = await interaction.client.users.fetch(targetUser.id);
-      await dmUser.send(
-        `You have been removed from **${teamName}** [${teamTag}] by the team captain.\n` +
-        `Your match history and stats are preserved.`
-      );
+      const dmEmbed = new EmbedBuilder()
+        .setColor(0xfee75c)
+        .setTitle(`Removed from ${teamName} [${teamTag}]`)
+        .setDescription(
+          `You have been removed from the roster by the team captain.\n` +
+          `Your match history and stats are preserved.`
+        )
+        .setFooter({ text: PLATFORM_URL });
+      await dmUser.send({ embeds: [dmEmbed] });
     } catch {
       // DM failed (user has DMs disabled) — notification row handles fallback
     }

@@ -11,13 +11,24 @@
  * Inner loop: drains the entire pending queue per cycle, not just one batch.
  */
 
-import type { Client } from "discord.js";
+import { type Client, EmbedBuilder } from "discord.js";
 import { db, notificationsTable, playersTable } from "./db.js";
 import { eq, and } from "drizzle-orm";
 
 const POLL_INTERVAL_MS = 60 * 1000; // 60 seconds
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 1000; // 1 second between DM sends
+const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
+
+/** Embed color by notification type — matches web theme. */
+const NOTIF_COLORS: Record<string, number> = {
+  match_result: 0x5865f2,    // primary blue
+  roster_change: 0xfee75c,   // yellow
+  badge_earned: 0x57f287,    // green
+  no_show_flagged: 0xed4245, // red
+  season_completed: 0x5865f2,
+  event_registration_confirmed: 0x57f287,
+};
 
 let isShuttingDown = false;
 
@@ -100,7 +111,13 @@ export function startNotificationPoller(client: Client): void {
 
           try {
             const user = await client.users.fetch(player.discordId);
-            await user.send(`**${notif.title}**\n${notif.message}`);
+            const dmEmbed = new EmbedBuilder()
+              .setColor(NOTIF_COLORS[notif.type] ?? 0x5865f2)
+              .setTitle(notif.title)
+              .setDescription(notif.message)
+              .setFooter({ text: PLATFORM_URL })
+              .setTimestamp();
+            await user.send({ embeds: [dmEmbed] });
             await db
               .update(notificationsTable)
               .set({ dmSent: true })

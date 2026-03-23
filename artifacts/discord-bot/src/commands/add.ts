@@ -263,12 +263,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetDiscordId) {
     try {
       const dmUser = await interaction.client.users.fetch(targetDiscordId);
-      await dmUser.send(
-        `👋 You've been added to **${teamName}** [${teamTag}] by **${interaction.user.username}**.\n` +
-        `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
-        `• If this was a mistake: \`/leave\`\n` +
-        `• Your team: ${PLATFORM_URL}/teams/${teamId}`
-      );
+      const dmEmbed = new EmbedBuilder()
+        .setColor(0x57f287)
+        .setTitle(`Added to ${teamName} [${teamTag}]`)
+        .setDescription(
+          `You've been added by **${interaction.user.username}**.\n\n` +
+          `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
+          `• If this was a mistake: \`/leave\`\n` +
+          `• Your team: ${PLATFORM_URL}/teams/${teamId}`
+        )
+        .setFooter({ text: PLATFORM_URL });
+      await dmUser.send({ embeds: [dmEmbed] });
     } catch {
       // DM failed (user has DMs disabled) — not an error, just skip
     }
