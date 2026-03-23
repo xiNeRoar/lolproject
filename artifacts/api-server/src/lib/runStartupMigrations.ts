@@ -28,6 +28,9 @@ export async function runStartupMigrations(): Promise<void> {
 
       ALTER TABLE players
         ADD COLUMN IF NOT EXISTS profile_visibility TEXT NOT NULL DEFAULT 'public';
+
+      ALTER TABLE bot_heartbeats
+        ADD COLUMN IF NOT EXISTS last_broadcast_date TEXT DEFAULT NULL;
     `);
 
     // Verify all columns exist
@@ -42,7 +45,9 @@ export async function runStartupMigrations(): Promise<void> {
         (SELECT COUNT(*) FROM information_schema.columns
          WHERE table_name='notifications' AND column_name='entity_id') AS has_notification_entity_id,
         (SELECT COUNT(*) FROM information_schema.columns
-         WHERE table_name='players' AND column_name='profile_visibility') AS has_profile_visibility
+         WHERE table_name='players' AND column_name='profile_visibility') AS has_profile_visibility,
+        (SELECT COUNT(*) FROM information_schema.columns
+         WHERE table_name='bot_heartbeats' AND column_name='last_broadcast_date') AS has_last_broadcast_date
     `);
 
     const row = result.rows[0];
@@ -51,7 +56,8 @@ export async function runStartupMigrations(): Promise<void> {
       Number(row.has_last_match_at) > 0 &&
       Number(row.has_default_visibility) > 0 &&
       Number(row.has_notification_entity_id) > 0 &&
-      Number(row.has_profile_visibility) > 0;
+      Number(row.has_profile_visibility) > 0 &&
+      Number(row.has_last_broadcast_date) > 0;
 
     if (allPresent) {
       console.log("[migration] ✅ All schema columns verified");

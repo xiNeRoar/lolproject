@@ -1,24 +1,26 @@
 /**
- * Season Broadcaster — BOT_SPEC §Season Broadcast (lines 343-353)
+ * Season Broadcaster -- BOT_SPEC §Season Broadcast (lines 343-353)
  *
- * Daily check at 00:00 UTC:
- * - If active season endDate - NOW() ≤ 7 days: broadcast to all guilds
- *   - 7 days: warning
- *   - 3 days: warning
- *   - 1 day: final warning
+ * Daily check at 00:00 UTC: if active season endDate <= 7 days away, broadcast
+ * warning to all guilds.
  *
- * On startup: check if any broadcast was missed within the last 24h
- * (handles bot downtime).
+ * Guard: last_broadcast_date in bot_heartbeats prevents duplicate broadcasts
+ * on same-day bot restarts (fixes #151).
  *
  * Note: "Season complete" DM to captains is handled by notifyPlayer()
- * in api-server/src/routes/seasons.ts (called when admin completes season).
+ * in api-server/src/routes/seasons.ts.
  */
 
 import type { Client } from "discord.js";
-import { db, seasonsTable, teamsTable } from "./db.js";
+import { db, seasonsTable, teamsTable, botHeartbeatsTable } from "./db.js";
 import { eq, desc } from "drizzle-orm";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers ------------------------------------------------------------------
+
+/** Today's UTC date as ISO date string, e.g. "2026-03-23" */
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function daysUntil(dateStr: string): number {
   const end = new Date(dateStr);
@@ -48,17 +50,31 @@ async function getTop5(): Promise<string> {
   if (teams.length === 0) return "No active teams yet.";
 
   return teams
-    .map((t, i) => `${i + 1}. **${t.name}** [${t.tag}] — ${t.teamElo} ELO`)
+    .map((t, i) => `${i + 1}. **${t.name}** [${t.tag}] -- ${t.teamElo} ELO`)
     .join("\n");
 }
 
-// ── Broadcast to all guilds ────────────────────────────────────────────────────
+/** Read last broadcast date from the most recent bot_heartbeats row. */
+async function getLastBroadcastDate(): Promise<string | null> {
+  const [row] = await db
+    .select({ lastBroadcastDate: botHeartbeatsTable.lastBroadcastDate })
+    .from(botHeartbeatsTable)
+    .orderBy(desc(botHeartbeatsTable.timestamp))
+    .limit(1);
+  return row?.lastBroadcastDate ?? null;
+}
+
+/** Insert a new heartbeat row recording today as the broadcast date. */
+async function recordBroadcastDate(today: string): Promise<void> {
+  await db.insert(botHeartbeatsTable).values({ timestamp: new Date(), lastBroadcastDate: today });
+}
+
+// -- Broadcast to all guilds --------------------------------------------------
 
 async function broadcastToAllGuilds(client: Client, message: string): Promise<void> {
   let sent = 0;
   for (const guild of client.guilds.cache.values()) {
     try {
-      // Try system channel first, then first available text channel
       const channel =
         (guild.systemChannel?.permissionsFor(guild.members.me!)?.has("SendMessages")
           ? guild.systemChannel
@@ -79,45 +95,60 @@ async function broadcastToAllGuilds(client: Client, message: string): Promise<vo
   console.log(`[season-broadcast] Broadcast sent to ${sent}/${client.guilds.cache.size} guilds.`);
 }
 
-// ── Core check logic ──────────────────────────────────────────────────────────
+// -- Core check ---------------------------------------------------------------
 
+/**
+ * Check if a broadcast is needed today and send it if so.
+ * Idempotent: if last_broadcast_date == today, returns immediately without sending.
+ */
 async function checkAndBroadcast(client: Client): Promise<void> {
-  // Get active season
+  const today = todayUTC();
+
+  // Duplicate-broadcast guard
+  const lastDate = await getLastBroadcastDate();
+  if (lastDate === today) {
+    console.log("[season-broadcast] Already broadcast today -- skipping.");
+    return;
+  }
+
   const [season] = await db
     .select()
     .from(seasonsTable)
     .where(eq(seasonsTable.status, "active"))
     .limit(1);
 
-  if (!season) return; // no active season — nothing to broadcast
+  if (!season) return;
 
   const days = daysUntil(season.endDate);
-
-  if (days > 7 || days < 0) return; // outside broadcast window
+  if (days > 7 || days < 0) return;
 
   const top5 = await getTop5();
 
   let message: string;
   if (days <= 1) {
     message =
-      `🔴 **Season "${season.name}" ends TOMORROW!**\n\n` +
-      `**Final standings:**\n${top5}\n\n` +
-      `Play your matches now — rankings lock at season end.`;
+      `Season "${season.name}" ends TOMORROW!\n\n` +
+      `Final standings:\n${top5}\n\n` +
+      `Play your matches now -- rankings lock at season end.`;
   } else {
     message =
-      `⚠️ **Season "${season.name}" ends in ${days} day${days === 1 ? "" : "s"}!**\n\n` +
-      `**Current top 5:**\n${top5}`;
+      `Season "${season.name}" ends in ${days} days!\n\n` +
+      `Current top 5:\n${top5}`;
   }
 
   await broadcastToAllGuilds(client, message);
+
+  // Record today so same-day restarts skip the broadcast
+  await recordBroadcastDate(today).catch((err) =>
+    console.error("[season-broadcast] Failed to record broadcast date:", err)
+  );
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// -- Public API ---------------------------------------------------------------
 
 export function startSeasonBroadcaster(client: Client): void {
-  // On startup: catch any missed broadcast (e.g. bot was offline at midnight).
-  // Note: no DB-persisted last_broadcast_date, so a restart within a 7-day season
-  // window may re-broadcast to servers. Acceptable for current scale; tracked in #150.
+  // On startup: broadcast if not yet sent today (handles missed midnight broadcast).
+  // Bot restarts within the same UTC day are safely no-ops via lastBroadcastDate guard.
   checkAndBroadcast(client).catch((err) =>
     console.error("[season-broadcast] Startup check failed:", err)
   );
@@ -128,7 +159,6 @@ export function startSeasonBroadcaster(client: Client): void {
     checkAndBroadcast(client).catch((err) =>
       console.error("[season-broadcast] Daily check failed:", err)
     );
-    // Repeat every 24 hours
     setInterval(() => {
       checkAndBroadcast(client).catch((err) =>
         console.error("[season-broadcast] Daily check failed:", err)

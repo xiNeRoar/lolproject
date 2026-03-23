@@ -277,6 +277,7 @@ One of `playerId` or `teamId` must be set. Ban targets either a player or a team
 export const botHeartbeatsTable = pgTable("bot_heartbeats", {
   id: serial("id").primaryKey(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+  lastBroadcastDate: text("last_broadcast_date"), // ISO date string e.g. "2026-03-23"; null = never broadcast
 });
 ```
 
