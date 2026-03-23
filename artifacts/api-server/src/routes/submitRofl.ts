@@ -30,6 +30,7 @@ import { eq, and, inArray, or, isNull, gt } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "@workspace/rofl-parse";
 import { matchTeams } from "@workspace/rofl-parse";
 import { calculateElo } from "@workspace/rofl-parse";
+import { buildSideName } from "@workspace/rofl-parse";
 
 const router = Router();
 
@@ -183,14 +184,6 @@ router.post(
       }
 
       // ── 7. Build display names ──────────────────────────────────────────────
-      async function buildSideName(teamId: number | null, players: { riotIdGameName: string }[]): Promise<string> {
-        if (teamId) {
-          const [team] = await db.select({ name: teamsTable.name, tag: teamsTable.tag }).from(teamsTable).where(eq(teamsTable.id, teamId));
-          if (team) return `${team.name} [${team.tag}]`;
-        }
-        return players[0]?.riotIdGameName ?? "Unknown";
-      }
-
       const blueWon = match.blueSide[0]?.win ?? false;
       const sideAName = await buildSideName(sideA.teamId, match.blueSide);
       const sideBName = await buildSideName(sideB.teamId, match.redSide);

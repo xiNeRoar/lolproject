@@ -12,3 +12,5 @@ export { matchTeams, resolveTeamName } from "./team-matcher.js";
 export type { MatchedPlayer, SideMatch, TeamMatchResult } from "./team-matcher.js";
 
 export { calculateElo, softResetElo } from "./elo.js";
+
+export { buildSideName } from "./helpers.js";
