@@ -173,6 +173,27 @@ router.post(
         }
       }
 
+      // ── 5b. Team ban check ──────────────────────────────────────────────────
+      const identifiedTeamIds = [sideA.teamId, sideB.teamId].filter((id): id is number => id !== null);
+      if (identifiedTeamIds.length > 0) {
+        const [teamBan] = await db
+          .select({ reason: playerBansTable.reason })
+          .from(playerBansTable)
+          .where(
+            and(
+              inArray(playerBansTable.teamId, identifiedTeamIds),
+              eq(playerBansTable.isActive, true),
+              or(isNull(playerBansTable.expiresAt), gt(playerBansTable.expiresAt, new Date()))
+            )
+          )
+          .limit(1);
+
+        if (teamBan) {
+          res.status(403).json({ error: `A team in this match is currently banned: ${teamBan.reason}` });
+          return;
+        }
+      }
+
       // ── 6. Store .rofl file ─────────────────────────────────────────────────
       const uploadDir = process.env.ROFL_UPLOAD_DIR ?? "./uploads/rofl";
       const roflFilePath = join(uploadDir, `${match.gameId}.rofl`);

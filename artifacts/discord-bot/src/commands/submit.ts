@@ -191,6 +191,33 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   }
 
+  // ── 6b. Team ban check ───────────────────────────────────────────────────
+  // Check if either identified team has an active team-level ban.
+  const identifiedTeamIds = [sideA.teamId, sideB.teamId].filter((id): id is number => id !== null);
+  if (identifiedTeamIds.length > 0) {
+    const [teamBan] = await db
+      .select({ reason: playerBansTable.reason })
+      .from(playerBansTable)
+      .where(
+        and(
+          inArray(playerBansTable.teamId, identifiedTeamIds),
+          eq(playerBansTable.isActive, true),
+          or(
+            isNull(playerBansTable.expiresAt),
+            gt(playerBansTable.expiresAt, new Date()),
+          )
+        )
+      )
+      .limit(1);
+
+    if (teamBan) {
+      await interaction.editReply(
+        `❌ A team in this match is currently banned: ${teamBan.reason}`
+      );
+      return;
+    }
+  }
+
   // Determine winner side
   const blueWon = match.blueSide[0]?.win ?? false;
 
