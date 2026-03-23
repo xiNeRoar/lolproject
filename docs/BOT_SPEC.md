@@ -46,9 +46,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 | `/roster` | `roster.ts` | ✅ Implemented | Multi-team member disambiguation |
 | `/remove` | `remove.ts` | ✅ Implemented | Sets inactive, preserves match history |
 
-**Known gaps (tracked):**
-- `POST /api/matches/submit-rofl` fallback for >8MB .rofl files — #150
-- Interactive ✅/❌ captain confirmation buttons for unknown players in `/add` — #133 (secondary)
+**Known gaps:** None — all tracked features implemented.
 
 ### `/register-team <name> <tag>`
 **Who:** Any Discord user
@@ -115,6 +113,12 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
     d. Store .rofl file on disk
     e. Reply: "✅ Match recorded (stats only — no ELO change). {Side} not identified as a registered team. Invite them: {platform URL}/register"
     f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim ELO."
+11. **Unknown player roster confirmation (PRD §6.2):**
+    a. After reply, for each match_player with `playerId = null` on an identified team side: show ✅ "Add {riotId}" / ❌ "Skip" buttons via followUp message
+    b. Only the captain of the relevant team can click ✅
+    c. ✅ → create player record (if not exists) + insert team_members + link match_players row
+    d. ❌ → dismiss, no action
+    e. Buttons auto-expire after 5 minutes (collector timeout)
 
 ### `/link-riot <RiotName#TAG>`
 **Who:** Any Discord user with a player record

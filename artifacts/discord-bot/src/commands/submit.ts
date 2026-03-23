@@ -10,6 +10,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
 } from "discord.js";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -470,6 +474,180 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   });
 
   await interaction.editReply({ embeds: [embed] });
+
+  // ── 11. Interactive ✅/❌ buttons for unknown players (PRD §6.2) ──────────
+  // For each side where a team was identified, show confirm/dismiss buttons
+  // for match_players with playerId=null. Captain can add them to roster.
+  interface UnknownPlayer {
+    riotId: string;
+    puuid: string;
+    teamId: number;
+    teamName: string;
+  }
+
+  const unknowns: UnknownPlayer[] = [];
+
+  if (sideA.teamId) {
+    for (const mp of sideA.matchedPlayers) {
+      if (mp.playerId === null && mp.riotId && mp.puuid) {
+        unknowns.push({ riotId: mp.riotId, puuid: mp.puuid, teamId: sideA.teamId, teamName: sideAName });
+      }
+    }
+  }
+  if (sideB.teamId) {
+    for (const mp of sideB.matchedPlayers) {
+      if (mp.playerId === null && mp.riotId && mp.puuid) {
+        unknowns.push({ riotId: mp.riotId, puuid: mp.puuid, teamId: sideB.teamId, teamName: sideBName });
+      }
+    }
+  }
+
+  if (unknowns.length > 0) {
+    const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+    for (let i = 0; i < unknowns.length && rows.length < 5; i++) {
+      const u = unknowns[i]!;
+      const shortName = u.riotId.length > 20 ? u.riotId.slice(0, 17) + "..." : u.riotId;
+      rows.push(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`add_yes_${i}`)
+            .setLabel(`Add ${shortName}`)
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId(`add_no_${i}`)
+            .setLabel("Skip")
+            .setStyle(ButtonStyle.Secondary),
+        )
+      );
+    }
+
+    const followUp = await interaction.followUp({
+      content: `**${unknowns.length} unknown player(s)** on identified team sides. Add them to rosters?`,
+      components: rows,
+    });
+
+    const collector = followUp.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 5 * 60 * 1000, // 5 minutes
+    });
+
+    const handled = new Set<number>();
+
+    collector.on("collect", async (btn) => {
+      const parts = btn.customId.split("_");
+      const action = parts[1]; // "yes" or "no"
+      const idx = parseInt(parts[2] ?? "", 10);
+      if (isNaN(idx) || idx >= unknowns.length || handled.has(idx)) {
+        await btn.deferUpdate();
+        return;
+      }
+
+      const u = unknowns[idx]!;
+
+      // Only the captain of the relevant team can confirm
+      const [invokerPlayer] = await db
+        .select({ id: playersTable.id })
+        .from(playersTable)
+        .where(eq(playersTable.discordId, btn.user.id))
+        .limit(1);
+
+      if (!invokerPlayer) {
+        await btn.reply({ content: "You don't have a VCLoL player record.", ephemeral: true });
+        return;
+      }
+
+      const [captainCheck] = await db
+        .select({ id: teamsTable.id })
+        .from(teamsTable)
+        .where(and(eq(teamsTable.id, u.teamId), eq(teamsTable.captainPlayerId, invokerPlayer.id)))
+        .limit(1);
+
+      if (!captainCheck) {
+        await btn.reply({ content: "Only the team captain can confirm roster additions.", ephemeral: true });
+        return;
+      }
+
+      handled.add(idx);
+
+      if (action === "yes") {
+        try {
+          // Find or create player record
+          let targetPlayer = (
+            await db.select().from(playersTable).where(eq(playersTable.puuid, u.puuid)).limit(1)
+          )[0];
+          if (!targetPlayer) {
+            targetPlayer = (
+              await db.select().from(playersTable).where(eq(playersTable.riotId, u.riotId)).limit(1)
+            )[0];
+          }
+
+          let playerId: number;
+          if (targetPlayer) {
+            playerId = targetPlayer.id;
+            if (!targetPlayer.puuid && u.puuid) {
+              await db.update(playersTable).set({ puuid: u.puuid }).where(eq(playersTable.id, playerId));
+            }
+          } else {
+            const [created] = await db
+              .insert(playersTable)
+              .values({ riotId: u.riotId, discordUsername: u.riotId, discordId: null, puuid: u.puuid, registrationStatus: "active" })
+              .returning();
+            playerId = created!.id;
+          }
+
+          // Add to team if not already a member
+          const [existingMember] = await db
+            .select({ id: teamMembersTable.id })
+            .from(teamMembersTable)
+            .where(and(eq(teamMembersTable.teamId, u.teamId), eq(teamMembersTable.playerId, playerId), eq(teamMembersTable.status, "active")))
+            .limit(1);
+
+          if (!existingMember) {
+            await db.insert(teamMembersTable).values({ teamId: u.teamId, playerId, role: null, status: "active" });
+          }
+
+          // Link match_players row
+          await db
+            .update(matchPlayersTable)
+            .set({ playerId })
+            .where(and(eq(matchPlayersTable.matchId, matchId!), eq(matchPlayersTable.puuid, u.puuid)));
+
+          await btn.update({ components: disableRow(rows, idx, `✅ ${u.riotId} added`) });
+        } catch (err) {
+          console.error(`[submit] Add unknown player ${u.riotId}:`, err);
+          await btn.update({ components: disableRow(rows, idx, `❌ Failed`) });
+        }
+      } else {
+        await btn.update({ components: disableRow(rows, idx, `Skipped ${u.riotId}`) });
+      }
+    });
+
+    collector.on("end", async () => {
+      try {
+        const disabled = rows.map((row) => {
+          const r = new ActionRowBuilder<ButtonBuilder>();
+          for (const c of row.components) r.addComponents(ButtonBuilder.from(c).setDisabled(true));
+          return r;
+        });
+        await followUp.edit({ components: disabled });
+      } catch { /* message may be deleted */ }
+    });
+  }
+}
+
+/** Replace a button row at idx with a single disabled label. */
+function disableRow(
+  rows: ActionRowBuilder<ButtonBuilder>[],
+  idx: number,
+  label: string,
+): ActionRowBuilder<ButtonBuilder>[] {
+  return rows.map((row, i) =>
+    i === idx
+      ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder().setCustomId(`done_${idx}`).setLabel(label).setStyle(ButtonStyle.Secondary).setDisabled(true),
+        )
+      : row
+  );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
