@@ -21,7 +21,7 @@ export async function runStartupMigrations(): Promise<void> {
         ADD COLUMN IF NOT EXISTS last_match_at TIMESTAMPTZ DEFAULT NULL;
 
       ALTER TABLE teams
-        ADD COLUMN IF NOT EXISTS default_match_visibility TEXT DEFAULT 'participants';
+        ADD COLUMN IF NOT EXISTS default_match_visibility TEXT DEFAULT 'default';
 
       ALTER TABLE notifications
         ADD COLUMN IF NOT EXISTS entity_id INTEGER DEFAULT NULL;

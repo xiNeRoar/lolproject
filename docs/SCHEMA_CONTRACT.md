@@ -23,7 +23,7 @@ export const teamsTable = pgTable("teams", {
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
+  defaultMatchVisibility: text("default_match_visibility").default("default"), // public | private | default
   lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -142,8 +142,6 @@ export const playersTable = pgTable("players", {
   secondaryRole: text("secondary_role"),      // NEW
   isActive: boolean("is_active").notNull().default(true),
   profileVisibility: text("profile_visibility").notNull().default("public"), // public | private — PRD §7
-  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
-  lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),
@@ -265,8 +263,6 @@ export const playerBansTable = pgTable("player_bans", {
   banType: text("ban_type").notNull().default("permanent"), // temporary | permanent
   expiresAt: timestamp("expires_at"), // null = permanent
   isActive: boolean("is_active").notNull().default(true),
-  defaultMatchVisibility: text("default_match_visibility").default("participants"), // private | participants | public
-  lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 ```

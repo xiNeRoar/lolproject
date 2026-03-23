@@ -21,7 +21,7 @@ function formatTeam(t: typeof teamsTable.$inferSelect) {
     wins: t.wins,
     losses: t.losses,
     isActive: t.isActive,
-    defaultMatchVisibility: t.defaultMatchVisibility ?? "participants",
+    defaultMatchVisibility: t.defaultMatchVisibility ?? "default",
     lastMatchAt: t.lastMatchAt?.toISOString() ?? null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
@@ -451,8 +451,8 @@ router.put("/:id/settings", async (req, res) => {
       updates.tag = t;
     }
     if (defaultMatchVisibility !== undefined) {
-      if (!["private", "participants", "public"].includes(defaultMatchVisibility)) {
-        res.status(400).json({ error: "defaultMatchVisibility must be private, participants, or public" }); return;
+      if (!["private", "public", "default"].includes(defaultMatchVisibility)) {
+        res.status(400).json({ error: "defaultMatchVisibility must be private, public, or default" }); return;
       }
       updates.defaultMatchVisibility = defaultMatchVisibility;
     }
