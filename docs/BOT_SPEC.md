@@ -31,20 +31,20 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 
 **Implementation status** (as of Polish milestone):
 
-| Command | File | Status | Notes |
-|---|---|---|---|
-| `/register-team` | `register-team.ts` | ✅ Implemented | 24h captain rate limit |
-| `/add` | `add.ts` | ✅ Implemented | DM includes team URL (PRD §6.1) |
-| `/submit` | `submit.ts` | ✅ Implemented | .rofl parse, ELO, notifications, roster inactivity, climber badge |
-| `/link-riot` | `link-riot.ts` | ✅ Implemented | Trust-based mode logs claim for admin audit |
-| `/claim-match` | `claim-match.ts` | ✅ Implemented | Retroactive ELO |
-| `/visibility` | `visibility.ts` | ✅ Implemented | |
-| `/leave` | `leave.ts` | ✅ Implemented | Blocks captain, redirects to /transfer-captain |
-| `/transfer-captain` | `transfer-captain.ts` | ✅ Implemented | |
-| `/register-event` | `register-event.ts` | ✅ Implemented | Multi-team captain disambiguation |
-| `/stats` | `stats.ts` | ✅ Implemented | team / player / invoker self |
-| `/roster` | `roster.ts` | ✅ Implemented | Multi-team member disambiguation |
-| `/remove` | `remove.ts` | ✅ Implemented | Sets inactive, preserves match history |
+| Command | File | Status | Context | Notes |
+|---|---|---|---|---|
+| `/register-team` | `register-team.ts` | ✅ Implemented | Guild only | 24h rate limit, content filter |
+| `/add` | `add.ts` | ✅ Implemented | Guild only | DM includes team URL (PRD §6.1), roster cap 15 |
+| `/submit` | `submit.ts` | ✅ Implemented | Guild only | .rofl parse, ELO, notifications, roster inactivity, climber badge, ✅/❌ buttons |
+| `/link-riot` | `link-riot.ts` | ✅ Implemented | Guild + DM | Trust-based mode logs claim for admin audit |
+| `/claim-match` | `claim-match.ts` | ✅ Implemented | Guild + DM | Retroactive ELO, updates display names |
+| `/visibility` | `visibility.ts` | ✅ Implemented | Guild + DM | |
+| `/leave` | `leave.ts` | ✅ Implemented | Guild + DM | Blocks captain, redirects to /transfer-captain |
+| `/transfer-captain` | `transfer-captain.ts` | ✅ Implemented | Guild + DM | |
+| `/register-event` | `register-event.ts` | ✅ Implemented | Guild + DM | Multi-team captain disambiguation |
+| `/stats` | `stats.ts` | ✅ Implemented | Guild + DM | team / player / invoker self |
+| `/roster` | `roster.ts` | ✅ Implemented | Guild + DM | Multi-team member disambiguation |
+| `/remove` | `remove.ts` | ✅ Implemented | Guild + DM | Sets inactive, preserves match history |
 
 **Known gaps:** None — all tracked features implemented.
 

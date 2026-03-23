@@ -41,6 +41,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
+  // ── Guild-only guard ────────────────────────────────────────────────────
+  if (!interaction.inGuild()) {
+    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    return;
+  }
+
 
   const name = interaction.options.getString("name", true).trim();
   const rawTag = interaction.options.getString("tag", true).trim().toUpperCase();

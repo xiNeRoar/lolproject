@@ -53,6 +53,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
+  // ── Guild-only guard ────────────────────────────────────────────────────
+  if (!interaction.inGuild()) {
+    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    return;
+  }
+
 
   const discordId = interaction.user.id;
   const playerInput = interaction.options.getString("player", true).trim();

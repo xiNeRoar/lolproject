@@ -34,6 +34,7 @@ import { eq, and, inArray, or, isNull, gt, desc } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "../lib/rofl-parser.js";
 import { matchTeams } from "../lib/team-matcher.js";
 import { calculateElo } from "../lib/elo.js";
+import { checkBan } from "../lib/checkBan.js";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
 
@@ -46,6 +47,19 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
+
+  // ── Guild-only guard ────────────────────────────────────────────────────
+  if (!interaction.inGuild()) {
+    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    return;
+  }
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
 
   const attachment = interaction.options.getAttachment("replay", true);
 
