@@ -241,4 +241,7 @@ Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 
 Seed: Team Alpha id=8, Beta id=9. Players 39-48. xiNe#NA1=id39.
 ELO history: GET /api/elo-history/team/:teamId
 gameDuration: milliseconds
+MAX_ROSTER_SIZE: 15 (5 starters + 10 subs, enforced in /add)
+INACTIVITY_THRESHOLD: 5 (consecutive match absences before auto-inactive)
+CLIMB_THRESHOLD: 3 (ladder positions climbed for climber badge)
 ```

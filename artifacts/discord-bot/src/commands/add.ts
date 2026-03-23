@@ -21,7 +21,7 @@ import {
   teamsTable,
   teamMembersTable,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
 
 const VALID_ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
@@ -217,6 +217,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (existing) {
     await interaction.editReply(
       `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** is already on **${teamName}**.`
+    );
+    return;
+  }
+
+  // ── Check roster size cap ─────────────────────────────────────────────────
+  const MAX_ROSTER_SIZE = 15; // 5 starters + 10 subs
+  const [{ activeCount }] = await db
+    .select({ activeCount: count() })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.teamId, teamId),
+        eq(teamMembersTable.status, "active")
+      )
+    );
+
+  if (activeCount >= MAX_ROSTER_SIZE) {
+    await interaction.editReply(
+      `❌ Team roster is full (${activeCount}/${MAX_ROSTER_SIZE}). Remove an inactive member with \`/remove\` first.`
     );
     return;
   }
