@@ -28,6 +28,7 @@ import {
 import { db, botHeartbeatsTable } from "./lib/db.js";
 import { startNotificationPoller, stopNotificationPoller } from "./lib/notificationPoller.js";
 import { startSeasonBroadcaster } from "./lib/seasonBroadcaster.js";
+import { handleInviteButton, cleanupExpiredInvites } from "./lib/inviteHandler.js";
 
 import * as registerTeam from "./commands/register-team.js";
 import * as add from "./commands/add.js";
@@ -112,9 +113,27 @@ client.once(Events.ClientReady, async (c) => {
 
   // ── Season broadcaster (BOT_SPEC §Season Broadcast) ─────────────────────
   startSeasonBroadcaster(c);
+
+  // ── Clean up expired pending invites from previous sessions ──────────────
+  cleanupExpiredInvites().catch((err) =>
+    console.error("[bot] Failed to clean expired invites:", err)
+  );
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  // ── Handle invite accept/decline buttons (persistent across restarts) ────
+  if (interaction.isButton() && interaction.customId.startsWith("invite_")) {
+    try {
+      await handleInviteButton(interaction);
+    } catch (err) {
+      console.error("[bot] Invite button error:", err);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: "❌ An error occurred.", ephemeral: true }).catch(() => {});
+      }
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const cmd = commandMap.get(interaction.commandName);

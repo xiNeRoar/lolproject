@@ -11,6 +11,8 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuInteraction,
   ComponentType,
@@ -21,7 +23,7 @@ import {
   teamsTable,
   teamMembersTable,
 } from "@workspace/db";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, inArray } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
 
 const VALID_ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
@@ -205,24 +207,41 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── Check not already on team ─────────────────────────────────────────────
-  const existing = (
-    await db
-      .select()
-      .from(teamMembersTable)
-      .where(
-        and(
-          eq(teamMembersTable.teamId, teamId),
-          eq(teamMembersTable.playerId, targetPlayer.id),
-          eq(teamMembersTable.status, "active")
-        )
+  // ── Check not already on team (active or pending) ───────────────────────
+  const [existingActive] = await db
+    .select({ status: teamMembersTable.status })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.teamId, teamId),
+        eq(teamMembersTable.playerId, targetPlayer.id),
+        eq(teamMembersTable.status, "active")
       )
-      .limit(1)
-  )[0];
+    )
+    .limit(1);
 
-  if (existing) {
+  if (existingActive) {
     await interaction.editReply(
       `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** is already on **${teamName}**.`
+    );
+    return;
+  }
+
+  const [existingPending] = await db
+    .select({ status: teamMembersTable.status })
+    .from(teamMembersTable)
+    .where(
+      and(
+        eq(teamMembersTable.teamId, teamId),
+        eq(teamMembersTable.playerId, targetPlayer.id),
+        eq(teamMembersTable.status, "pending")
+      )
+    )
+    .limit(1);
+
+  if (existingPending) {
+    await interaction.editReply(
+      `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** already has a pending invite to **${teamName}**.`
     );
     return;
   }
@@ -247,51 +266,90 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   // ── Add to team ───────────────────────────────────────────────────────────
-  await db.insert(teamMembersTable).values({
+  // Check pending invite limit (max 5 per captain)
+  const MAX_PENDING = 5;
+  const captainTeamIds = (
+    await db.select({ id: teamsTable.id }).from(teamsTable)
+      .where(eq(teamsTable.captainPlayerId, invoker.id))
+  ).map((t) => t.id);
+
+  if (captainTeamIds.length > 0) {
+    const [{ pendingCount }] = await db
+      .select({ pendingCount: count() })
+      .from(teamMembersTable)
+      .where(
+        and(
+          inArray(teamMembersTable.teamId, captainTeamIds),
+          eq(teamMembersTable.status, "pending")
+        )
+      );
+    if (Number(pendingCount) >= MAX_PENDING) {
+      await interaction.editReply(
+        `❌ You have ${pendingCount} pending invites. Wait for responses or cancel them before inviting more.`
+      );
+      return;
+    }
+  }
+
+  // Insert as pending — not active until player accepts
+  const [membership] = await db.insert(teamMembersTable).values({
     teamId,
     playerId: targetPlayer.id,
     role: role ?? null,
-    status: "active",
-  });
+    status: "pending",
+  }).returning();
 
   const displayName =
     !targetPlayer.riotId.startsWith("pending")
       ? targetPlayer.riotId
       : targetUsername ?? `<@${targetDiscordId}>`;
 
-  // ── DM the added player ───────────────────────────────────────────────────
+  // ── DM the invited player with ✅/❌ buttons ────────────────────────────────
+  let dmSent = false;
   if (targetDiscordId) {
     try {
       const dmUser = await interaction.client.users.fetch(targetDiscordId);
       const dmEmbed = new EmbedBuilder()
-        .setColor(0x57f287)
-        .setTitle(`Added to ${teamName} [${teamTag}]`)
+        .setColor(0x5865f2)
+        .setTitle(`Team Invite — ${teamName} [${teamTag}]`)
         .setDescription(
-          `You've been added by **${interaction.user.username}**.\n\n` +
-          `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
-          `• If this was a mistake: \`/leave\`\n` +
-          `• Your team: ${PLATFORM_URL}/teams/${teamId}`
+          `**${interaction.user.username}** has invited you to join **${teamName}** [${teamTag}].\n\n` +
+          `Click **Accept** to join the roster, or **Decline** to dismiss.`
         )
-        .setFooter({ text: PLATFORM_URL });
-      await dmUser.send({ embeds: [dmEmbed] });
+        .setFooter({ text: `${PLATFORM_URL} · Expires in 24 hours` });
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`invite_accept_${membership!.id}`)
+          .setLabel("Accept")
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`invite_decline_${membership!.id}`)
+          .setLabel("Decline")
+          .setStyle(ButtonStyle.Secondary),
+      );
+
+      await dmUser.send({ embeds: [dmEmbed], components: [row] });
+      dmSent = true;
     } catch {
-      // DM failed (user has DMs disabled) — not an error, just skip
+      // DM failed — still create pending invite, player can accept via /roster or website
     }
   }
 
-  // ── Reply ─────────────────────────────────────────────────────────────────
+  // ── Reply to captain ──────────────────────────────────────────────────────
   const embed = new EmbedBuilder()
-    .setColor(0x57f287)
-    .setTitle(`✅ Player added to **${teamName}** [${teamTag}]`)
+    .setColor(0x5865f2)
+    .setTitle(`📨 Invite sent — ${teamName} [${teamTag}]`)
     .addFields(
       { name: "Player", value: displayName, inline: true },
-      { name: "Role", value: role ?? "Unassigned", inline: true }
+      { name: "Role", value: role ?? "Unassigned", inline: true },
+      { name: "Status", value: dmSent ? "DM sent — waiting for response" : "⚠️ Could not DM player — they may need to accept via the website", inline: false },
     );
 
   if (targetPlayer.riotId.startsWith("pending")) {
     embed.addFields({
       name: "⚠️ Riot ID not linked",
-      value: `Ask them to run \`/link-riot YourName#TAG\` to link their account and claim match stats.`,
+      value: `Ask them to run \`/link-riot YourName#TAG\` to link their account.`,
     });
   }
 
