@@ -515,7 +515,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         gold: r.gold,
         damage: r.damageToChampions,
         vision: r.visionScore,
-        items: [r.item0, r.item1, r.item2, r.item3, r.item4, r.item5, r.item6],
+        items: [r.item0 ?? 0, r.item1 ?? 0, r.item2 ?? 0, r.item3 ?? 0, r.item4 ?? 0, r.item5 ?? 0, r.item6 ?? 0],
         linked: mp.playerId !== null,
       };
     });
