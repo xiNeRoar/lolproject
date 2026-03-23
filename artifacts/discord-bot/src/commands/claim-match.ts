@@ -188,7 +188,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       const now = new Date();
       await tx.update(teamsTable).set({
         teamElo: newEloA,
-        peakElo: Math.max(newEloA, eloA),
+        peakElo: Math.max(newEloA, teamA?.peakElo ?? 1000),
         wins: teamAWon ? (teamA?.wins ?? 0) + 1 : (teamA?.wins ?? 0),
         losses: !teamAWon ? (teamA?.losses ?? 0) + 1 : (teamA?.losses ?? 0),
         lastMatchAt: now, updatedAt: now,
@@ -196,7 +196,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
       await tx.update(teamsTable).set({
         teamElo: newEloB,
-        peakElo: Math.max(newEloB, eloB),
+        peakElo: Math.max(newEloB, teamB?.peakElo ?? 1000),
         wins: !teamAWon ? (teamB?.wins ?? 0) + 1 : (teamB?.wins ?? 0),
         losses: teamAWon ? (teamB?.losses ?? 0) + 1 : (teamB?.losses ?? 0),
         lastMatchAt: now, updatedAt: now,

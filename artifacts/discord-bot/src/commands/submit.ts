@@ -225,15 +225,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       let teamBEloBefore: number | null = null;
       let teamBEloAfter: number | null = null;
 
-      // Fetch team settings (ELO + defaultMatchVisibility) for both sides
+      // Fetch team settings (ELO + peakElo + defaultMatchVisibility) for both sides
       const [teamA] = sideA.teamId
         ? await tx
-            .select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
             .from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
         : [undefined];
       const [teamB] = sideB.teamId
         ? await tx
-            .select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
             .from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
         : [undefined];
 
@@ -339,7 +339,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         await tx.update(teamsTable).set({
           teamElo: eloDeltas.teamAAfter,
-          peakElo: Math.max(eloDeltas.teamAAfter, eloDeltas.teamABefore),
+          peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
           wins: blueWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),
           losses: !blueWon ? (teamARow?.losses ?? 0) + 1 : (teamARow?.losses ?? 0),
           lastMatchAt: now,
@@ -348,7 +348,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         await tx.update(teamsTable).set({
           teamElo: eloDeltas.teamBAfter,
-          peakElo: Math.max(eloDeltas.teamBAfter, eloDeltas.teamBBefore),
+          peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
           wins: !blueWon ? (teamBRow?.wins ?? 0) + 1 : (teamBRow?.wins ?? 0),
           losses: blueWon ? (teamBRow?.losses ?? 0) + 1 : (teamBRow?.losses ?? 0),
           lastMatchAt: now,

@@ -203,10 +203,10 @@ router.post(
         let teamBEloAfter: number | null = null;
 
         const [teamA] = sideA.teamId
-          ? await tx.select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
+          ? await tx.select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
           : [undefined];
         const [teamB] = sideB.teamId
-          ? await tx.select({ teamElo: teamsTable.teamElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
+          ? await tx.select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
           : [undefined];
 
         if (sideA.teamId && sideB.teamId) {
@@ -293,7 +293,7 @@ router.post(
 
           await tx.update(teamsTable).set({
             teamElo: eloDeltas.teamAAfter,
-            peakElo: Math.max(eloDeltas.teamAAfter, eloDeltas.teamABefore),
+            peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
             wins: blueWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),
             losses: !blueWon ? (teamARow?.losses ?? 0) + 1 : (teamARow?.losses ?? 0),
             lastMatchAt: now, updatedAt: now,
@@ -301,7 +301,7 @@ router.post(
 
           await tx.update(teamsTable).set({
             teamElo: eloDeltas.teamBAfter,
-            peakElo: Math.max(eloDeltas.teamBAfter, eloDeltas.teamBBefore),
+            peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
             wins: !blueWon ? (teamBRow?.wins ?? 0) + 1 : (teamBRow?.wins ?? 0),
             losses: blueWon ? (teamBRow?.losses ?? 0) + 1 : (teamBRow?.losses ?? 0),
             lastMatchAt: now, updatedAt: now,
