@@ -29,6 +29,27 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 
 ## Commands
 
+**Implementation status** (as of Polish milestone):
+
+| Command | File | Status | Notes |
+|---|---|---|---|
+| `/register-team` | `register-team.ts` | ✅ Implemented | 24h captain rate limit |
+| `/add` | `add.ts` | ✅ Implemented | DM includes team URL (PRD §6.1) |
+| `/submit` | `submit.ts` | ✅ Implemented | .rofl parse, ELO, notifications, roster inactivity, climber badge |
+| `/link-riot` | `link-riot.ts` | ✅ Implemented | Trust-based mode logs claim for admin audit |
+| `/claim-match` | `claim-match.ts` | ✅ Implemented | Retroactive ELO |
+| `/visibility` | `visibility.ts` | ✅ Implemented | |
+| `/leave` | `leave.ts` | ✅ Implemented | Blocks captain, redirects to /transfer-captain |
+| `/transfer-captain` | `transfer-captain.ts` | ✅ Implemented | |
+| `/register-event` | `register-event.ts` | ✅ Implemented | Multi-team captain disambiguation |
+| `/stats` | `stats.ts` | ✅ Implemented | team / player / invoker self |
+| `/roster` | `roster.ts` | ✅ Implemented | Multi-team member disambiguation |
+| `/remove` | `remove.ts` | ✅ Implemented | Sets inactive, preserves match history |
+
+**Known gaps (tracked):**
+- `POST /api/matches/submit-rofl` fallback for >8MB .rofl files — #150
+- Interactive ✅/❌ captain confirmation buttons for unknown players in `/add` — #133 (secondary)
+
 ### `/register-team <name> <tag>`
 **Who:** Any Discord user
 **What:** Creates a new team. The invoking user becomes captain.

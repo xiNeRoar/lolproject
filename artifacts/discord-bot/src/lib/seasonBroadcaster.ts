@@ -103,13 +103,9 @@ async function checkAndBroadcast(client: Client): Promise<void> {
       `🔴 **Season "${season.name}" ends TOMORROW!**\n\n` +
       `**Final standings:**\n${top5}\n\n` +
       `Play your matches now — rankings lock at season end.`;
-  } else if (days <= 3) {
-    message =
-      `⚠️ **Season "${season.name}" ends in ${days} days!**\n\n` +
-      `**Current top 5:**\n${top5}`;
   } else {
     message =
-      `⚠️ **Season "${season.name}" ends in ${days} days!**\n\n` +
+      `⚠️ **Season "${season.name}" ends in ${days} day${days === 1 ? "" : "s"}!**\n\n` +
       `**Current top 5:**\n${top5}`;
   }
 
@@ -119,18 +115,9 @@ async function checkAndBroadcast(client: Client): Promise<void> {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function startSeasonBroadcaster(client: Client): void {
-  // On startup: check if a broadcast was missed within the last 24h.
-  // Guard: only run if bot has been offline (i.e. msUntilNextMidnightUTC < 24h means
-  // we are in the same day as last midnight — so a broadcast may have been missed).
-  // This prevents duplicate broadcasts on repeated restarts within the same day.
-  const msUntilMidnight = msUntilNextMidnightUTC();
-  const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-  // If time until next midnight < 24h, we started today — run the check once.
-  // The check itself is idempotent at the broadcast level only if we track last send,
-  // but since checkAndBroadcast already guards on daysUntil(endDate) window,
-  // the worst case is one extra broadcast per restart within a 7-day window.
-  // To fully prevent duplicates we would need a DB-persisted last_broadcast_date,
-  // which is out of scope. This is a known limitation.
+  // On startup: catch any missed broadcast (e.g. bot was offline at midnight).
+  // Note: no DB-persisted last_broadcast_date, so a restart within a 7-day season
+  // window may re-broadcast to servers. Acceptable for current scale; tracked in #150.
   checkAndBroadcast(client).catch((err) =>
     console.error("[season-broadcast] Startup check failed:", err)
   );

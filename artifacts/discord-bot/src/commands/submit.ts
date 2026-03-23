@@ -514,11 +514,13 @@ function buildMatchEmbed(opts: {
   }
 
   if (!bothTeamsIdentified) {
+    const platformUrl = process.env.API_BASE_URL ?? "https://vclol.gg";
     embed.addFields({
       name: "⚠️ No ELO change",
       value:
         "One or both teams aren't registered. Stats recorded without ELO update.\n" +
-        `Use \`/claim-match ${matchId}\` after registering to claim ELO.`,
+        `Use \`/claim-match ${matchId}\` after registering to claim ELO.\n` +
+        `Invite them to register: ${platformUrl}/register`,
     });
   }
 

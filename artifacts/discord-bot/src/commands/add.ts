@@ -24,6 +24,7 @@ import {
 import { eq, and } from "drizzle-orm";
 
 const VALID_ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
+const API_BASE_URL = process.env.API_BASE_URL ?? "https://vclol.gg";
 
 export const data = new SlashCommandBuilder()
   .setName("add")
@@ -228,7 +229,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetDiscordId) {
     try {
       const dmUser = await interaction.client.users.fetch(targetDiscordId);
-const API_BASE_URL = process.env.API_BASE_URL ?? "https://vclol.gg";
       await dmUser.send(
         `👋 You've been added to **${teamName}** [${teamTag}] by **${interaction.user.username}**.\n` +
         `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
