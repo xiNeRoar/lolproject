@@ -11,9 +11,13 @@
  * in api-server/src/routes/seasons.ts.
  */
 
-import type { Client } from "discord.js";
+import { type Client, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { db, seasonsTable, teamsTable, botHeartbeatsTable } from "./db.js";
 import { eq, desc } from "drizzle-orm";
+import { renderLeaderboard } from "./leaderboardRenderer.js";
+import type { LeaderboardEntry } from "./leaderboardRenderer.js";
+
+const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -39,19 +43,18 @@ function msUntilNextMidnightUTC(): number {
   return midnight.getTime() - now.getTime();
 }
 
-async function getTop5(): Promise<string> {
+async function getTop5(): Promise<LeaderboardEntry[]> {
   const teams = await db
-    .select({ name: teamsTable.name, tag: teamsTable.tag, teamElo: teamsTable.teamElo })
+    .select({ name: teamsTable.name, tag: teamsTable.tag, teamElo: teamsTable.teamElo, wins: teamsTable.wins, losses: teamsTable.losses })
     .from(teamsTable)
     .where(eq(teamsTable.isActive, true))
     .orderBy(desc(teamsTable.teamElo))
     .limit(5);
 
-  if (teams.length === 0) return "No active teams yet.";
-
-  return teams
-    .map((t, i) => `${i + 1}. **${t.name}** [${t.tag}] -- ${t.teamElo} ELO`)
-    .join("\n");
+  return teams.map((t, i) => ({
+    position: i + 1, teamName: t.name, teamTag: t.tag,
+    elo: t.teamElo, wins: t.wins, losses: t.losses,
+  }));
 }
 
 /** Read last broadcast date from the most recent bot_heartbeats row. */
@@ -71,7 +74,7 @@ async function recordBroadcastDate(today: string): Promise<void> {
 
 // -- Broadcast to all guilds --------------------------------------------------
 
-async function broadcastToAllGuilds(client: Client, message: string): Promise<void> {
+async function broadcastToAllGuilds(client: Client, options: { embeds: EmbedBuilder[]; files?: AttachmentBuilder[] }): Promise<void> {
   let sent = 0;
   for (const guild of client.guilds.cache.values()) {
     try {
@@ -86,7 +89,7 @@ async function broadcastToAllGuilds(client: Client, message: string): Promise<vo
             (c as any).permissionsFor?.(guild.members.me!)?.has("SendMessages")
         );
       if (!channel || !channel.isTextBased()) continue;
-      await (channel as any).send(message);
+      await (channel as any).send(options);
       sent++;
     } catch (err) {
       console.error(`[season-broadcast] Failed to send to guild ${guild.id}:`, err);
@@ -122,21 +125,37 @@ async function checkAndBroadcast(client: Client): Promise<void> {
   const days = daysUntil(season.endDate);
   if (days > 7 || days < 0) return;
 
-  const top5 = await getTop5();
+  const entries = await getTop5();
+  const subtitle = days <= 1
+    ? "Rankings lock at season end. Play your matches now!"
+    : `${days} days remaining.`;
 
-  let message: string;
-  if (days <= 1) {
-    message =
-      `Season "${season.name}" ends TOMORROW!\n\n` +
-      `Final standings:\n${top5}\n\n` +
-      `Play your matches now -- rankings lock at season end.`;
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle(days <= 1 ? `Season "${season.name}" ends TOMORROW!` : `Season "${season.name}" — ${days} days left`)
+    .setFooter({ text: PLATFORM_URL });
+
+  const sendOpts: { embeds: EmbedBuilder[]; files?: AttachmentBuilder[] } = { embeds: [embed] };
+
+  if (entries.length === 0) {
+    embed.setDescription(subtitle + "\n\nNo active teams yet.");
   } else {
-    message =
-      `Season "${season.name}" ends in ${days} days!\n\n` +
-      `Current top 5:\n${top5}`;
+    try {
+      const imgBuf = await renderLeaderboard({
+        seasonName: season.name, daysRemaining: days, entries, platformUrl: PLATFORM_URL,
+      });
+      const att = new AttachmentBuilder(imgBuf, { name: "leaderboard.png" });
+      embed.setImage("attachment://leaderboard.png");
+      embed.setDescription(subtitle);
+      sendOpts.files = [att];
+    } catch (err) {
+      console.error("[season-broadcast] Leaderboard render failed:", err);
+      const textList = entries.map((e: LeaderboardEntry) => `${e.position}. **${e.teamName}** [${e.teamTag}] — ${e.elo} ELO`).join("\n");
+      embed.setDescription(`${subtitle}\n\nCurrent top 5:\n${textList}`);
+    }
   }
 
-  await broadcastToAllGuilds(client, message);
+  await broadcastToAllGuilds(client, sendOpts);
 
   // Record today so same-day restarts skip the broadcast
   await recordBroadcastDate(today).catch((err) =>
