@@ -110,7 +110,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       riotId: playersTable.riotId,
       discordUsername: playersTable.discordUsername,
       role: teamMembersTable.role,
-      joinedAt: teamMembersTable.joinedAt,
       captainPlayerId: teamsTable.captainPlayerId,
       playerId: playersTable.id,
     })

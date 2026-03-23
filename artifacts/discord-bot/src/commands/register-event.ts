@@ -11,7 +11,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { db } from "../lib/db.js";
-import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
+import { playersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";

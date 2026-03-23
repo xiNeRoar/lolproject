@@ -10,7 +10,6 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
-  AttachmentBuilder,
 } from "discord.js";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -27,7 +26,7 @@ import {
   playerBadgesTable,
   notificationsTable,
 } from "@workspace/db";
-import { eq, and, inArray, or, isNull, isNotNull, gt, desc } from "drizzle-orm";
+import { eq, and, inArray, or, isNull, gt, desc } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "../lib/rofl-parser.js";
 import { matchTeams } from "../lib/team-matcher.js";
 import { calculateElo } from "../lib/elo.js";

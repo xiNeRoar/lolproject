@@ -25,7 +25,7 @@ import {
   eloHistoryTable,
   ladderSettingsTable,
 } from "@workspace/db";
-import { eq, and, inArray, isNull, or } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { calculateElo } from "../lib/elo.js";
 
 export const data = new SlashCommandBuilder()

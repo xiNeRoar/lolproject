@@ -21,7 +21,7 @@ import {
   teamsTable,
   teamMembersTable,
 } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const VALID_ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
 
