@@ -68,6 +68,7 @@ import type {
   PlayerChampionStats,
   PlayerEventParticipation,
   PlayerProfile,
+  PostMatchesSubmitRofl201,
   RegisterPlayerRequest,
   RegisterTeamForEvent201,
   RegisterTeamForEventBody,
@@ -2315,6 +2316,79 @@ export function useGetPlayerChampions<TData = Awaited<ReturnType<typeof getPlaye
 
 
 
+/**
+ * Accepts raw application/octet-stream binary. Runs the same parse + team-match + ELO pipeline as the Discord bot /submit command. Use when the .rofl file exceeds Discord's 8MB default attachment limit.
+
+ * @summary Upload a .rofl file directly (fallback for >8MB files)
+ */
+export const getPostMatchesSubmitRoflUrl = () => {
+
+
+  
+
+  return `/api/matches/submit-rofl`
+}
+
+export const postMatchesSubmitRofl = async (postMatchesSubmitRoflBody: Blob, options?: RequestInit): Promise<PostMatchesSubmitRofl201> => {
+  
+  return customFetch<PostMatchesSubmitRofl201>(getPostMatchesSubmitRoflUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', ...options?.headers },
+    body: JSON.stringify(
+      postMatchesSubmitRoflBody,)
+  }
+);}
+  
+
+
+
+export const getPostMatchesSubmitRoflMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMatchesSubmitRofl>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMatchesSubmitRofl>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['postMatchesSubmitRofl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMatchesSubmitRofl>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postMatchesSubmitRofl(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMatchesSubmitRoflMutationResult = NonNullable<Awaited<ReturnType<typeof postMatchesSubmitRofl>>>
+    export type PostMatchesSubmitRoflMutationBody = BodyType<Blob>
+    export type PostMatchesSubmitRoflMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a .rofl file directly (fallback for >8MB files)
+ */
+export const usePostMatchesSubmitRofl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMatchesSubmitRofl>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMatchesSubmitRofl>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getPostMatchesSubmitRoflMutationOptions(options));
+    }
+    
 /**
  * @summary List matches
  */

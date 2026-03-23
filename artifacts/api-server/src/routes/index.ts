@@ -19,6 +19,7 @@ import replaysRouter from "./replays";
 import notificationsRouter from "./notifications";
 import bansRouter from "./bans";
 import searchRouter from "./search";
+import submitRoflRouter from "./submitRofl";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use("/replays", replaysRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/bans", bansRouter);
 router.use("/search", searchRouter);
+router.use("/matches", submitRoflRouter);
 
 export default router;

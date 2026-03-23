@@ -817,6 +817,16 @@ export const GetPlayerChampionsResponse = zod.array(GetPlayerChampionsResponseIt
 
 
 /**
+ * Accepts raw application/octet-stream binary. Runs the same parse + team-match + ELO pipeline as the Discord bot /submit command. Use when the .rofl file exceeds Discord's 8MB default attachment limit.
+
+ * @summary Upload a .rofl file directly (fallback for >8MB files)
+ */
+export const PostMatchesSubmitRoflHeader = zod.object({
+  "X-Discord-Id": zod.string().describe('Submitter\'s Discord user ID (must be an active team member)')
+})
+
+
+/**
  * @summary List matches
  */
 export const ListMatchesQueryParams = zod.object({

@@ -822,6 +822,62 @@ paths:
 
   # ── Matches ─────────────────────────────────────────────────
 
+  /matches/submit-rofl:
+    post:
+      summary: Upload a .rofl file directly (fallback for >8MB files)
+      description: >
+        Accepts raw application/octet-stream binary. Runs the same parse +
+        team-match + ELO pipeline as the Discord bot /submit command.
+        Use when the .rofl file exceeds Discord's 8MB default attachment limit.
+      tags: [Matches]
+      parameters:
+        - in: header
+          name: X-Discord-Id
+          required: true
+          schema:
+            type: string
+          description: Submitter's Discord user ID (must be an active team member)
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: Match recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matchId:
+                    type: integer
+                  sideAName:
+                    type: string
+                  sideBName:
+                    type: string
+                  winnerName:
+                    type: string
+                  bothTeamsIdentified:
+                    type: boolean
+                  eloDeltas:
+                    type: object
+                    nullable: true
+        "401":
+          description: Missing X-Discord-Id header
+        "403":
+          description: Submitter not a team member, or participant banned
+        "409":
+          description: Match already submitted
+        "413":
+          description: File too large (>50MB hard ceiling)
+        "415":
+          description: Wrong Content-Type (must be application/octet-stream)
+        "422":
+          description: Invalid .rofl file
+
   /matches:
     get:
       operationId: listMatches

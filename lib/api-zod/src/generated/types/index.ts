@@ -65,6 +65,8 @@ export * from './playerPrimaryTeam';
 export * from './playerProfile';
 export * from './playerProfileRecentMatchesItem';
 export * from './playerTeamEntry';
+export * from './postMatchesSubmitRofl201';
+export * from './postMatchesSubmitRofl201EloDeltas';
 export * from './registerPlayerRequest';
 export * from './registerTeamForEvent201';
 export * from './registerTeamForEventBody';

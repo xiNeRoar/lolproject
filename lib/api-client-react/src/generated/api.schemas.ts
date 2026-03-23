@@ -716,6 +716,17 @@ export type GetTeamMatches200 = {
   totalPages?: number;
 };
 
+export type PostMatchesSubmitRofl201EloDeltas = { [key: string]: unknown } | null;
+
+export type PostMatchesSubmitRofl201 = {
+  matchId?: number;
+  sideAName?: string;
+  sideBName?: string;
+  winnerName?: string;
+  bothTeamsIdentified?: boolean;
+  eloDeltas?: PostMatchesSubmitRofl201EloDeltas;
+};
+
 export type ListMatchesParams = {
 eventId?: number;
 seasonId?: number;

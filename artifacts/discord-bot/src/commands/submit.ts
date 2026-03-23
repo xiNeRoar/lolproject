@@ -51,8 +51,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
   if (attachment.size > MAX_FILE_SIZE) {
+    const sizeMB = (attachment.size / 1024 / 1024).toFixed(1);
+    const apiBase = process.env.API_BASE_URL ?? "https://vclol.gg";
     await interaction.editReply(
-      `❌ Replay file too large (${(attachment.size / 1024 / 1024).toFixed(1)} MB). Maximum is 8 MB.`
+      `❌ Replay file too large (${sizeMB} MB). Discord's default limit is 8 MB.\n\n` +
+      `**Upload directly to VCLoL instead:**\n` +
+      `\`\`\`\ncurl -X POST ${apiBase}/api/matches/submit-rofl \\\n` +
+      `  --data-binary @${attachment.name} \\\n` +
+      `  -H "Content-Type: application/octet-stream" \\\n` +
+      `  -H "X-Discord-Id: ${interaction.user.id}"\n\`\`\``
     );
     return;
   }
