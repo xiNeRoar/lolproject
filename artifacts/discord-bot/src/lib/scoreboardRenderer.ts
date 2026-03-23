@@ -183,15 +183,15 @@ export async function renderScoreboard(data: ScoreboardData): Promise<Buffer> {
   const titleWidth = ctx.measureText(`Match #${data.matchId}`).width;
   ctx.font = '600 13px "Inter SemiBold", sans-serif';
   ctx.fillStyle = COLORS.green;
-  ctx.fillText("✓ Recorded", PADDING + 8 + titleWidth + 12, y + 24);
+  ctx.fillText("Recorded", PADDING + 8 + titleWidth + 12, y + 24);
 
   y += 36;
 
   // Subtitle: teams + duration + patch
   ctx.font = '400 14px "Inter", sans-serif';
   ctx.fillStyle = COLORS.muted;
-  const winIcon = data.blueWon ? "🏆 " : "";
-  const loseIcon = data.blueWon ? "" : " 🏆";
+  const winIcon = data.blueWon ? "WIN " : "";
+  const loseIcon = data.blueWon ? "" : " WIN";
   ctx.fillText(
     `${winIcon}${data.sideAName}  vs  ${data.sideBName}${loseIcon}  ·  ${data.duration}  ·  Patch ${data.gameVersion}`,
     PADDING + 8, y + 16,
@@ -253,7 +253,7 @@ export async function renderScoreboard(data: ScoreboardData): Promise<Buffer> {
   y += 8;
   ctx.font = '400 12px "Inter", sans-serif';
   ctx.fillStyle = COLORS.primary;
-  ctx.fillText(`🔗 ${data.platformUrl}/matches/${data.matchId}`, PADDING + 8, y + 14);
+  ctx.fillText(`${data.platformUrl}/matches/${data.matchId}`, PADDING + 8, y + 14);
 
   // VCLoL branding on right
   ctx.fillStyle = COLORS.muted;
@@ -289,9 +289,14 @@ async function drawSide(
   // Team name
   ctx.font = '600 15px "Outfit SemiBold", sans-serif';
   ctx.fillStyle = won ? COLORS.foreground : COLORS.muted;
-  const sideEmoji = side === "BLUE" ? "🔵" : "🔴";
-  const winBadge = won ? "  🏆" : "";
-  ctx.fillText(`${sideEmoji}  ${teamName}${winBadge}`, PADDING + 14, y + 22);
+  // Draw colored dot instead of emoji
+  ctx.beginPath();
+  ctx.arc(PADDING + 20, y + 16, 6, 0, Math.PI * 2);
+  ctx.fillStyle = accentColor;
+  ctx.fill();
+  const winBadge = won ? "  WIN" : "";
+  ctx.fillStyle = won ? COLORS.foreground : COLORS.muted;
+  ctx.fillText(`${teamName}${winBadge}`, PADDING + 32, y + 22);
 
   y += HEADER_HEIGHT;
 
@@ -344,7 +349,7 @@ async function drawSide(
       // Unlinked indicator
       ctx.font = '400 10px "Inter", sans-serif';
       ctx.fillStyle = COLORS.muted;
-      ctx.fillText("⚠", COLS.name.x + ctx.measureText(displayName).width + 4, rowY + 22);
+      ctx.fillText("!", COLS.name.x + ctx.measureText(displayName).width + 4, rowY + 22);
     }
 
     // KDA
