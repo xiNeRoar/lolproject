@@ -81,7 +81,7 @@ async function showTeamStats(
   const [team] = await db
     .select()
     .from(teamsTable)
-    .where(eq(teamsTable.name, teamName))
+    .where(sql`lower(${teamsTable.name}) = lower(${teamName})`)
     .limit(1);
 
   if (!team) {
