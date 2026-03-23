@@ -34,7 +34,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 | Command | File | Status | Context | Notes |
 |---|---|---|---|---|
 | `/register-team` | `register-team.ts` | ✅ Implemented | Guild only | 24h rate limit, content filter |
-| `/add` | `add.ts` | ✅ Implemented | Guild only | DM includes team URL (PRD §6.1), roster cap 15 |
+| `/add` | `add.ts` | ✅ Implemented | Guild only | Invite+accept flow, DM buttons, 5-invite cap, roster cap 15 |
 | `/submit` | `submit.ts` | ✅ Implemented | Guild only | .rofl parse, ELO, notifications, roster inactivity, climber badge, ✅/❌ buttons |
 | `/link-riot` | `link-riot.ts` | ✅ Implemented | Guild + DM | Trust-based mode logs claim for admin audit |
 | `/claim-match` | `claim-match.ts` | ✅ Implemented | Guild + DM | Retroactive ELO, updates display names |
@@ -61,24 +61,27 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 
 ### `/add <@user|RiotName#TAG> [role]`
 **Who:** Team captain only
-**What:** Adds a player to the captain's team. Accepts Discord mention (same server) or Riot ID (cross-server).
+**What:** Sends a team invite to a player. Player must accept before joining the roster. (Industry standard — no force-add.)
 **Flow:**
 1. Determine input mode:
    - Discord mention `@user` → look up player by `discordId`
    - Text `RiotName#TAG` → look up player by `riotId`
 2. If captain has multiple active teams → Discord select menu: "Which team?"
    If captain has one team → use that team directly.
-3. Check: is player already an active member of this team? → "Already on team."
-4. If no player record exists:
+3. Check: is player already an active OR pending member of this team? → reject with appropriate message.
+4. Check: captain has fewer than 5 pending invites across all teams? → reject if at limit.
+5. If no player record exists:
    - Discord mention → create player: `discordId` + `discordUsername` set, `riotId = "pending"`
    - Riot ID → create player: `riotId` set, `discordId = null`, `discordUsername = riotId`
-5. Insert `team_members` row (role = provided or null, status = active)
-6. DM the added player (if `discordId` is known):
-   "You've been added to **{team}** [{tag}] by **{captain}**.
-   • Link your Riot ID: `/link-riot YourName#TAG`
-   • If this was a mistake: `/leave`
-   • Your team: {platform URL}/teams/{teamId}"
-7. Reply in channel: "@user added to **{team}** as {role || 'unassigned'}."
+6. Insert `team_members` row (role = provided or null, **status = 'pending'**)
+7. DM the invited player (if `discordId` is known) with embed + ✅ Accept / ❌ Decline buttons:
+   "**{captain}** has invited you to join **{team}** [{tag}]. Click Accept to join the roster, or Decline to dismiss."
+   Buttons use persistent customId format: `invite_accept_{membershipId}` / `invite_decline_{membershipId}`
+8. Reply to captain: "📨 Invite sent — {team} [{tag}]. Waiting for response."
+9. **Accept flow (inviteHandler.ts):** Player clicks ✅ → verify clicking user owns invite → update status to 'active' → notify captain via notification row → update DM embed to "Joined {team}"
+10. **Decline flow:** Player clicks ❌ → delete pending team_members row → notify captain → update DM embed to "Invite declined"
+11. **Expiry:** Pending invites expire after 24 hours. cleanupExpiredInvites() runs on bot startup, deletes rows where status='pending' AND joinedAt > 24h ago.
+12. **Persistence:** Button handler registered in index.ts interactionCreate (not ephemeral collector) — survives bot restarts.
 
 ### `/submit` (with .rofl file attachment)
 **Who:** Any team member
@@ -306,6 +309,10 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | Captain tries /leave | "Use `/transfer-captain` first before leaving." |
 | Not a member of any team | "You are not a member of any team." |
 | Roster full | "Team roster is full ({count}/{max}). Remove an inactive member with `/remove` first." |
+| Already has pending invite | "{player} already has a pending invite to {team}." |
+| Too many pending invites | "You have {count} pending invites. Wait for responses or cancel them before inviting more." |
+| Invite expired | "This invite has expired." |
+| Invite not for you | "This invite is not for you." |
 | Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
 | Rate limit (submit) | "**{teamName}** submitted a match less than 2 minutes ago. Please wait {N}s before submitting again." |
 | No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |

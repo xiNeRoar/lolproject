@@ -39,7 +39,7 @@ export const teamMembersTable = pgTable("team_members", {
   playerId: integer("player_id").notNull()
     .references(() => playersTable.id, { onDelete: "cascade" }),
   role: text("role"),                        // top, jg, mid, adc, sup, fill, null
-  status: text("status").notNull().default("active"), // active, inactive
+  status: text("status").notNull().default("active"), // active, inactive, pending
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   lastActiveAt: timestamp("last_active_at"),          // updated when member appears in .rofl
 });
