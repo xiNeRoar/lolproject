@@ -303,8 +303,7 @@ async function drawSide(
   // Column headers
   ctx.font = '400 11px "Inter", sans-serif';
   ctx.fillStyle = COLORS.muted;
-  ctx.fillText("CHAMPION", COLS.icon.x, y + 16);
-  ctx.fillText("PLAYER", COLS.name.x, y + 16);
+  ctx.fillText("PLAYER", COLS.icon.x, y + 16);
   ctx.fillText("KDA", COLS.kda.x, y + 16);
   ctx.fillText("CS", COLS.cs.x, y + 16);
   ctx.fillText("GOLD", COLS.gold.x, y + 16);
