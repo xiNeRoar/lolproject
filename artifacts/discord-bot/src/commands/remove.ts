@@ -15,7 +15,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
-import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
+import { playersTable, teamMembersTable, teamsTable, notificationsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
 
@@ -145,6 +145,31 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .update(teamMembersTable)
     .set({ status: "inactive" })
     .where(eq(teamMembersTable.id, membership.id));
+
+  // ── Notify removed player ──────────────────────────────────────────────────
+  // Insert notification row (poller handles DM delivery)
+  await db.insert(notificationsTable).values({
+    playerId: targetPlayer.id,
+    type: "roster_change",
+    title: "Removed from team",
+    message: `You have been removed from ${teamName} [${teamTag}] by the team captain.`,
+    isRead: false,
+    dmSent: false,
+    dmFailed: false,
+  }).catch((err) => console.error("[remove] Failed to insert notification:", err));
+
+  // Also DM directly (fire-and-forget, same pattern as /add DM)
+  if (targetUser.id) {
+    try {
+      const dmUser = await interaction.client.users.fetch(targetUser.id);
+      await dmUser.send(
+        `You have been removed from **${teamName}** [${teamTag}] by the team captain.\n` +
+        `Your match history and stats are preserved.`
+      );
+    } catch {
+      // DM failed (user has DMs disabled) — notification row handles fallback
+    }
+  }
 
   const displayName = targetPlayer.riotId.startsWith("pending")
     ? `<@${targetUser.id}>`

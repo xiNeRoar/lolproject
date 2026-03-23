@@ -16,7 +16,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
-import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
+import { playersTable, teamMembersTable, teamsTable, notificationsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 export const data = new SlashCommandBuilder()
@@ -113,6 +113,22 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .update(teamMembersTable)
     .set({ status: "inactive" })
     .where(eq(teamMembersTable.id, membership.membershipId));
+
+  // ── Notify captain that member left ────────────────────────────────────────
+  if (membership.captainPlayerId) {
+    const displayName = invoker.riotId?.startsWith("pending")
+      ? interaction.user.username
+      : (invoker.riotId ?? interaction.user.username);
+    await db.insert(notificationsTable).values({
+      playerId: membership.captainPlayerId,
+      type: "roster_change",
+      title: "Team member left",
+      message: `${displayName} has left ${membership.teamName} [${membership.teamTag}].`,
+      isRead: false,
+      dmSent: false,
+      dmFailed: false,
+    }).catch((err) => console.error("[leave] Failed to notify captain:", err));
+  }
 
   const embed = new EmbedBuilder()
     .setColor(0xfee75c)
