@@ -12,8 +12,11 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  AttachmentBuilder,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { renderTeamCard } from "../lib/teamCardRenderer.js";
+import { renderPlayerCard } from "../lib/playerCardRenderer.js";
 import {
   playersTable,
   teamsTable,
@@ -22,6 +25,8 @@ import {
   matchPlayersTable,
 } from "@workspace/db";
 import { eq, and, desc, count, avg, sum, sql } from "drizzle-orm";
+
+const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
 
 export const data = new SlashCommandBuilder()
   .setName("stats")
@@ -130,7 +135,24 @@ async function showTeamStats(
     embed.addFields({ name: "Recent Matches", value: matchLines.join("\n") });
   }
 
-  await interaction.editReply({ embeds: [embed] });
+  const recentResults = recentMatches.map((m) =>
+    m.winnerName === (m.teamAId === team.id ? m.sideAName : m.sideBName)
+  );
+  try {
+    const imgBuf = await renderTeamCard({
+      teamName: team.name, teamTag: team.tag, elo: team.teamElo,
+      wins: team.wins, losses: team.losses, recentResults, platformUrl: PLATFORM_URL,
+    });
+    const att = new AttachmentBuilder(imgBuf, { name: "team-card.png" });
+    embed.setImage("attachment://team-card.png");
+    embed.spliceFields(0, embed.data.fields?.length ?? 0);
+    embed.setFooter({ text: `${PLATFORM_URL}/teams/${team.id}` });
+    await interaction.editReply({ embeds: [embed], files: [att] });
+  } catch (err) {
+    console.error("[stats] Team card render failed:", err);
+    embed.setFooter({ text: `${PLATFORM_URL}/teams/${team.id}` });
+    await interaction.editReply({ embeds: [embed] });
+  }
 }
 
 // ── Player stats ──────────────────────────────────────────────────────────────
@@ -255,5 +277,22 @@ async function buildPlayerEmbed(
     });
   }
 
-  await interaction.editReply({ embeds: [embed] });
+  try {
+    const imgBuf = await renderPlayerCard({
+      riotId: player.riotId, totalGames, winRate,
+      avgKills: avgK, avgDeaths: avgD, avgAssists: avgA,
+      champions: champRows.map((c) => ({ name: c.champion!, games: Number(c.games) })),
+      teams: teamRows.map((t) => ({ name: t.teamName!, tag: t.teamTag!, active: t.status === "active" })),
+      platformUrl: PLATFORM_URL,
+    });
+    const att = new AttachmentBuilder(imgBuf, { name: "player-card.png" });
+    embed.setImage("attachment://player-card.png");
+    embed.spliceFields(0, embed.data.fields?.length ?? 0);
+    embed.setFooter({ text: `${PLATFORM_URL}/players/${player.id}` });
+    await interaction.editReply({ embeds: [embed], files: [att] });
+  } catch (err) {
+    console.error("[stats] Player card render failed:", err);
+    embed.setFooter({ text: `${PLATFORM_URL}/players/${player.id}` });
+    await interaction.editReply({ embeds: [embed] });
+  }
 }
