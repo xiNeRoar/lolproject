@@ -26,7 +26,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { db, botHeartbeatsTable } from "./lib/db.js";
-import { startNotificationPoller } from "./lib/notificationPoller.js";
+import { startNotificationPoller, stopNotificationPoller } from "./lib/notificationPoller.js";
 import { startSeasonBroadcaster } from "./lib/seasonBroadcaster.js";
 
 import * as registerTeam from "./commands/register-team.js";
@@ -134,3 +134,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(token);
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────
+
+async function shutdown(signal: string) {
+  console.log(`[bot] Received ${signal}. Shutting down gracefully...`);
+  stopNotificationPoller();
+  client.destroy();
+  console.log("[bot] Client destroyed. Exiting.");
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
