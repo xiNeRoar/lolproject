@@ -19,7 +19,7 @@ import {
   teamMembersTable,
   teamsTable,
 } from "@workspace/db";
-import { eq, inArray, and } from "drizzle-orm";
+import { eq, inArray, and, count } from "drizzle-orm";
 import type { RoflPlayer } from "./rofl-parser.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,17 +137,51 @@ async function matchSide(players: RoflPlayer[]): Promise<SideMatch> {
     teamCounts.get(m.teamId)!.add(m.playerId);
   }
 
-  // Find team with most matches; must be >= MIN_MATCHES
+  // Find team with most matches; must be >= MIN_MATCHES.
+  // Tiebreaker: if multiple teams tie on match count, pick the one with the
+  // smallest active roster (more concentrated match = more likely correct).
+  // If still tied after roster comparison, leave teamId as null (requires /claim-match).
   let bestTeamId: number | null = null;
   let bestCount = 0;
+  const tiedTeams: number[] = [];
+
   for (const [teamId, playerSet] of teamCounts) {
     if (playerSet.size > bestCount) {
       bestCount = playerSet.size;
       bestTeamId = teamId;
+      tiedTeams.length = 0;
+      tiedTeams.push(teamId);
+    } else if (playerSet.size === bestCount && bestCount > 0) {
+      tiedTeams.push(teamId);
     }
   }
 
-  if (bestCount < MIN_MATCHES) bestTeamId = null;
+  if (bestCount < MIN_MATCHES) {
+    bestTeamId = null;
+  } else if (tiedTeams.length > 1) {
+    // Resolve tie by smallest active roster
+    let smallestRoster = Infinity;
+    let tieWinner: number | null = null;
+    let stillTied = false;
+
+    for (const tid of tiedTeams) {
+      const [{ rosterSize }] = await db
+        .select({ rosterSize: count() })
+        .from(teamMembersTable)
+        .where(and(eq(teamMembersTable.teamId, tid), eq(teamMembersTable.status, "active")));
+
+      const size = Number(rosterSize);
+      if (size < smallestRoster) {
+        smallestRoster = size;
+        tieWinner = tid;
+        stillTied = false;
+      } else if (size === smallestRoster) {
+        stillTied = true;
+      }
+    }
+
+    bestTeamId = stillTied ? null : tieWinner;
+  }
 
   // Step 4: Build playerId lookup for .rofl players
   // PUUID → playerId (primary key lookup)
