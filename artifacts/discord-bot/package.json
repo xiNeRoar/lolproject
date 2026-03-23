@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.97",
     "@workspace/db": "workspace:*",
     "@workspace/rofl-parse": "workspace:*",
     "discord.js": "^14.14.1",

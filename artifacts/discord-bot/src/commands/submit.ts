@@ -10,6 +10,7 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  AttachmentBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -18,6 +19,8 @@ import {
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { db } from "../lib/db.js";
+import { renderScoreboard } from "../lib/scoreboardRenderer.js";
+import type { ScoreboardPlayer } from "../lib/scoreboardRenderer.js";
 import {
   matchesTable,
   matchPlayersTable,
@@ -492,32 +495,87 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   }
 
-  // ── 10. Build reply embed ────────────────────────────────────────────────
+  // ── 10. Build scoreboard data ────────────────────────────────────────────
+  const platformUrl = process.env.API_BASE_URL ?? "https://vclol.gg";
+  const durationStr = formatDuration(match.gameLength);
+
+  const toScoreboardPlayers = (
+    matchedPlayers: typeof sideA.matchedPlayers,
+    roflPlayers: typeof match.blueSide,
+  ): ScoreboardPlayer[] =>
+    matchedPlayers.map((mp, i) => {
+      const r = roflPlayers[i]!;
+      return {
+        riotId: mp.riotId,
+        champion: r.champion,
+        kills: r.kills,
+        deaths: r.deaths,
+        assists: r.assists,
+        cs: r.cs + r.neutralCs,
+        gold: r.gold,
+        damage: r.damageToChampions,
+        vision: r.visionScore,
+        items: [r.item0, r.item1, r.item2, r.item3, r.item4, r.item5, r.item6],
+        linked: mp.playerId !== null,
+      };
+    });
+
+  const blueScoreboard = toScoreboardPlayers(sideA.matchedPlayers, match.blueSide);
+  const redScoreboard = toScoreboardPlayers(sideB.matchedPlayers, match.redSide);
+
+  // Build text embed (always — serves as fallback + embed title/description)
   const embed = buildMatchEmbed({
     matchId: matchId!,
     sideAName,
     sideBName,
     winnerName,
     blueWon,
-    duration: formatDuration(match.gameLength),
+    duration: durationStr,
     gameVersion: match.gameVersion,
-    bluePlayers: sideA.matchedPlayers.map((mp, i) => ({
-      riotId: mp.riotId,
-      champion: match.blueSide[i]?.champion ?? "?",
-      kda: `${match.blueSide[i]?.kills ?? 0}/${match.blueSide[i]?.deaths ?? 0}/${match.blueSide[i]?.assists ?? 0}`,
-      linked: mp.playerId !== null,
+    bluePlayers: blueScoreboard.map((p) => ({
+      riotId: p.riotId,
+      champion: p.champion,
+      kda: `${p.kills}/${p.deaths}/${p.assists}`,
+      linked: p.linked,
     })),
-    redPlayers: sideB.matchedPlayers.map((mp, i) => ({
-      riotId: mp.riotId,
-      champion: match.redSide[i]?.champion ?? "?",
-      kda: `${match.redSide[i]?.kills ?? 0}/${match.redSide[i]?.deaths ?? 0}/${match.redSide[i]?.assists ?? 0}`,
-      linked: mp.playerId !== null,
+    redPlayers: redScoreboard.map((p) => ({
+      riotId: p.riotId,
+      champion: p.champion,
+      kda: `${p.kills}/${p.deaths}/${p.assists}`,
+      linked: p.linked,
     })),
     eloDeltas,
     bothTeamsIdentified: !!(sideA.teamId && sideB.teamId),
   });
 
-  await interaction.editReply({ embeds: [embed] });
+  // ── 10b. Render scoreboard image (fallback to text embed on failure) ────
+  try {
+    const imgBuffer = await renderScoreboard({
+      matchId: matchId!,
+      sideAName,
+      sideBName,
+      winnerName,
+      blueWon,
+      duration: durationStr,
+      gameVersion: match.gameVersion,
+      bluePlayers: blueScoreboard,
+      redPlayers: redScoreboard,
+      eloDeltas,
+      platformUrl,
+    });
+
+    const attachment = new AttachmentBuilder(imgBuffer, { name: "scoreboard.png" });
+    embed.setImage("attachment://scoreboard.png");
+    // Clear text player fields — image has full stats, text would be redundant
+    embed.spliceFields(0, embed.data.fields?.length ?? 0);
+    embed.setFooter({ text: `${platformUrl}/matches/${matchId!}` });
+
+    await interaction.editReply({ embeds: [embed], files: [attachment] });
+  } catch (err) {
+    console.error("[submit] Scoreboard image render failed, using text fallback:", err);
+    embed.setFooter({ text: `${platformUrl}/matches/${matchId!}` });
+    await interaction.editReply({ embeds: [embed] });
+  }
 
   // ── 11. Interactive ✅/❌ buttons for unknown players (PRD §6.2) ──────────
   // For each side where a team was identified, show confirm/dismiss buttons

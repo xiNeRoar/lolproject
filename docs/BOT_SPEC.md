@@ -269,30 +269,22 @@ Typical 5v5 custom game .rofl size: **~5-15 MB** (varies by game length).
 
 ## Embed Formatting
 
-Match result embed:
-```
-🏆 Match Result
-━━━━━━━━━━━━━━━━━
-TeamA [TAG] vs TeamB [TAG]
+Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/canvas`) matching the web MatchDetail design language:
 
-Winner: TeamA ✓
-Duration: 32:45 | Patch 15.6
+- **Background:** Dark charcoal (`#0E1015` / `#151920`) matching web `--background` / `--card`
+- **Primary accent:** Steel blue (`#2B8AEE`) matching web `--primary`
+- **Fonts:** Inter (body), Outfit (headings) — same as web
+- **Layout:** Two team sections (blue/red accent strips), each with:
+  - Champion square icon (from Data Dragon CDN)
+  - Player name (with ⚠ unlinked indicator)
+  - KDA, CS, Gold, Damage, Vision columns
+  - Item icons (7 slots, from Data Dragon CDN)
+- **ELO bar:** Shows before → after with green/red delta for both teams
+- **Footer:** Website link `🔗 {platformUrl}/matches/{matchId}` + VCLoL branding
 
-TeamA (Blue Side)        KDA    CS   DMG
-┌ Player1 (Aatrox)      5/2/8  210  24.5k
-│ Player2 (LeeSin)      3/1/12 155  15.2k
-│ Player3 (Ahri)        8/3/4  245  28.1k
-│ Player4 (Jinx)        7/2/6  280  32.0k
-└ Player5 (Thresh)      1/4/15  45  8.3k
+**Fallback:** If image rendering fails (e.g. missing canvas dependency, CDN timeout), the embed falls back to text fields showing champion · KDA · player name per row. The website link footer is always present regardless of render mode.
 
-TeamB (Red Side)         KDA    CS   DMG
-┌ Player6 (Gnar)        2/5/3  190  18.2k
-│ ...
-
-ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
-━━━━━━━━━━━━━━━━━
-🔗 Full details: https://vclol.gg/matches/42
-```
+**Implementation:** `artifacts/discord-bot/src/lib/scoreboardRenderer.ts` + `iconCache.ts`
 
 ---
 
