@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { calculateElo } from "../lib/elo.js";
+import { checkBan } from "../lib/checkBan.js";
 
 export const data = new SlashCommandBuilder()
   .setName("claim-match")
@@ -37,6 +38,14 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
+
 
   const matchId = interaction.options.getInteger("match-id", true);
   const discordId = interaction.user.id;

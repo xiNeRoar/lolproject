@@ -314,6 +314,7 @@ ELO: TeamA 1024 (+16) | TeamB 1008 (-16)
 | Match already claimed | "This match already has both teams assigned." |
 | Team doesn't match claim | "Your team does not match enough players in this match." |
 | Participant banned | "A participant in this match is currently banned: {reason}" |
+| Invoker banned | "Your account is currently banned: {reason}" (checked on all action commands: register-team, add, submit, visibility, transfer-captain, remove, register-event, claim-match) |
 | Invalid game mode | "This replay is from {gameMode}. Only Summoner's Rift custom games are accepted." |
 | Bot lacks permissions | "I need permission to send messages and attach embeds in this channel." |
 

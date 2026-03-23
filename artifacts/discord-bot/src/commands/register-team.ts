@@ -18,6 +18,7 @@ import {
   eloHistoryTable,
 } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
+import { checkBan } from "../lib/checkBan.js";
 
 export const data = new SlashCommandBuilder()
   .setName("register-team")
@@ -31,6 +32,14 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ ephemeral: false });
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
+
 
   const name = interaction.options.getString("name", true).trim();
   const rawTag = interaction.options.getString("tag", true).trim().toUpperCase();

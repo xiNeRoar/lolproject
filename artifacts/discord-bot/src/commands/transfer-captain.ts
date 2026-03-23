@@ -18,6 +18,7 @@ import {
 import { db } from "../lib/db.js";
 import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { checkBan } from "../lib/checkBan.js";
 
 export const data = new SlashCommandBuilder()
   .setName("transfer-captain")
@@ -28,6 +29,14 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ ephemeral: true });
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
+
 
   const discordId = interaction.user.id;
   const targetDiscordUser = interaction.options.getUser("player", true);

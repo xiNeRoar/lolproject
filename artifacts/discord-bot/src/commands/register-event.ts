@@ -17,6 +17,7 @@ import {
 import { db } from "../lib/db.js";
 import { playersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { checkBan } from "../lib/checkBan.js";
 
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
 
@@ -32,6 +33,14 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ ephemeral: true });
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
+
 
   const eventArg = interaction.options.getString("event", true).trim();
   const discordId = interaction.user.id;

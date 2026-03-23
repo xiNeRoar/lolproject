@@ -22,6 +22,7 @@ import {
   playersTable,
 } from "@workspace/db";
 import { eq, and, or, desc } from "drizzle-orm";
+import { checkBan } from "../lib/checkBan.js";
 
 export const data = new SlashCommandBuilder()
   .setName("visibility")
@@ -43,6 +44,14 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ ephemeral: true });
+
+  // ── Ban check ──────────────────────────────────────────────────────────────
+  const banReason = await checkBan(interaction.user.id);
+  if (banReason) {
+    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    return;
+  }
+
 
   const setting = interaction.options.getString("setting", true) as "public" | "private" | "default";
   const explicitMatchId = interaction.options.getInteger("match-id");
