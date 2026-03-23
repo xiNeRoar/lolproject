@@ -13,7 +13,7 @@
 
 import { type Client, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { db, seasonsTable, teamsTable, botHeartbeatsTable } from "./db.js";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, lt, sql } from "drizzle-orm";
 import { renderLeaderboard } from "./leaderboardRenderer.js";
 import type { LeaderboardEntry } from "./leaderboardRenderer.js";
 
@@ -165,9 +165,37 @@ async function checkAndBroadcast(client: Client): Promise<void> {
 
 // -- Public API ---------------------------------------------------------------
 
+const TEAM_INACTIVITY_DAYS = 30;
+
+/**
+ * PRD §8: Teams with no match in 30 days → isActive=false (off leaderboard).
+ * Data preserved. Runs daily alongside season broadcast.
+ */
+async function deactivateInactiveTeams(): Promise<void> {
+  const cutoff = new Date(Date.now() - TEAM_INACTIVITY_DAYS * 24 * 60 * 60 * 1000);
+
+  // Teams inactive if: (lastMatchAt < cutoff) OR (lastMatchAt IS NULL AND createdAt < cutoff)
+  const deactivated = await db
+    .update(teamsTable)
+    .set({ isActive: false })
+    .where(
+      and(
+        eq(teamsTable.isActive, true),
+        sql`(${teamsTable.lastMatchAt} < ${cutoff} OR (${teamsTable.lastMatchAt} IS NULL AND ${teamsTable.createdAt} < ${cutoff}))`
+      )
+    )
+    .returning({ id: teamsTable.id, name: teamsTable.name });
+
+  if (deactivated.length > 0) {
+    console.log(`[team-inactivity] Deactivated ${deactivated.length} team(s): ${deactivated.map((t) => t.name).join(", ")}`);
+  }
+}
+
 export function startSeasonBroadcaster(client: Client): void {
-  // On startup: broadcast if not yet sent today (handles missed midnight broadcast).
-  // Bot restarts within the same UTC day are safely no-ops via lastBroadcastDate guard.
+  // On startup: run both checks
+  deactivateInactiveTeams().catch((err) =>
+    console.error("[team-inactivity] Startup check failed:", err)
+  );
   checkAndBroadcast(client).catch((err) =>
     console.error("[season-broadcast] Startup check failed:", err)
   );
@@ -175,10 +203,16 @@ export function startSeasonBroadcaster(client: Client): void {
   // Schedule daily check at next 00:00 UTC, then every 24 hours
   const msToMidnight = msUntilNextMidnightUTC();
   setTimeout(() => {
+    deactivateInactiveTeams().catch((err) =>
+      console.error("[team-inactivity] Daily check failed:", err)
+    );
     checkAndBroadcast(client).catch((err) =>
       console.error("[season-broadcast] Daily check failed:", err)
     );
     setInterval(() => {
+      deactivateInactiveTeams().catch((err) =>
+        console.error("[team-inactivity] Daily check failed:", err)
+      );
       checkAndBroadcast(client).catch((err) =>
         console.error("[season-broadcast] Daily check failed:", err)
       );
