@@ -228,10 +228,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetDiscordId) {
     try {
       const dmUser = await interaction.client.users.fetch(targetDiscordId);
+const API_BASE_URL = process.env.API_BASE_URL ?? "https://vclol.gg";
       await dmUser.send(
         `👋 You've been added to **${teamName}** [${teamTag}] by **${interaction.user.username}**.\n` +
         `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
-        `• If this was a mistake: \`/leave\``
+        `• If this was a mistake: \`/leave\`\n` +
+        `• Your team: ${API_BASE_URL}/teams/${teamId}`
       );
     } catch {
       // DM failed (user has DMs disabled) — not an error, just skip

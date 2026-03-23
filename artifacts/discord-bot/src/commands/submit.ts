@@ -537,6 +537,7 @@ function buildMatchEmbed(opts: {
 
   return embed;
 }
+
 // ─── Roster inactivity check (PRD §8) ─────────────────────────────────────────
 
 const INACTIVITY_THRESHOLD = 5; // consecutive match absences before auto-inactive
