@@ -9,6 +9,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuInteraction,
+  ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
 import { playersTable, teamsTable } from "@workspace/db";
