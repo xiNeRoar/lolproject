@@ -441,6 +441,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
     });
   } catch (err) {
+    // Unique constraint on gameId — concurrent submit of same .rofl
+    if ((err as { code?: string }).code === "23505") {
+      await interaction.editReply(
+        `❌ This match has already been submitted by another user.`
+      );
+      return;
+    }
     console.error("[submit] Transaction error:", err);
     await interaction.editReply("❌ Failed to record match. Please try again.");
     return;

@@ -364,6 +364,10 @@ router.post(
         bothTeamsIdentified: !!(sideA.teamId && sideB.teamId),
       });
     } catch (err) {
+      if ((err as { code?: string }).code === "23505") {
+        res.status(409).json({ error: "This match has already been submitted by another user." });
+        return;
+      }
       console.error("[submit-rofl] Error:", err);
       res.status(500).json({ error: "Failed to record match" });
     }
