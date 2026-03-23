@@ -121,6 +121,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
+  // ── 3b. Max active teams per captain ────────────────────────────────────
+  const MAX_ACTIVE_TEAMS = 3;
+  const [{ activeTeamCount }] = await db
+    .select({ activeTeamCount: count() })
+    .from(teamsTable)
+    .where(
+      and(
+        eq(teamsTable.captainPlayerId, player.id),
+        eq(teamsTable.isActive, true)
+      )
+    );
+
+  if (Number(activeTeamCount) >= MAX_ACTIVE_TEAMS) {
+    await interaction.editReply(
+      `❌ You already captain ${activeTeamCount} active teams (max ${MAX_ACTIVE_TEAMS}). Transfer captaincy or wait for inactive teams to be archived.`
+    );
+    return;
+  }
+
   // ── 4. Insert team + first member (captain) ───────────────────────────────
   try {
     const [team] = await db
