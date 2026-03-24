@@ -7,7 +7,7 @@ import { getTeamEloHistory, getGetTeamEloHistoryQueryKey } from "@workspace/api-
 import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video } from "lucide-react";
+import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video, EyeOff } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -124,10 +124,11 @@ export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
   const { isLoggedIn } = useAuth();
   const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
-  const { data: badges }        = useGetPlayerBadges(player?.id ?? 0,    { query: { enabled: !!player?.id } });
-  const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id } });
-  const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id } });
-  const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id } });
+  const isPrivate = !!(player as any)?.isPrivate;
+  const { data: badges }        = useGetPlayerBadges(player?.id ?? 0,    { query: { enabled: !!player?.id && !isPrivate } });
+  const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id && !isPrivate } });
+  const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id && !isPrivate } });
+  const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id && !isPrivate } });
 
   const allTeams = player?.teams ?? [];
 
@@ -153,6 +154,52 @@ export default function PlayerProfile() {
           <Link href="/players" className="text-primary hover:underline text-sm mt-2 inline-block">
             ← Back to Players
           </Link>
+        </div>
+      </PublicLayout>
+    );
+  }
+
+  if (isPrivate) {
+    return (
+      <PublicLayout>
+        <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
+          <Card className="bg-card/40 border-border/40 mb-8">
+            <CardContent className="p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <div className="w-16 h-16 rounded-full bg-muted/30 border border-border/40 flex items-center justify-center text-2xl font-display font-bold text-muted-foreground flex-shrink-0">
+                  {player.riotId.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-3xl font-display font-bold">{player.riotId}</h1>
+                  {allTeams.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {allTeams.map((t) => (
+                        <Link key={t.teamId} href={`/teams/${t.teamId}`} className="text-sm text-primary hover:underline">
+                          {t.teamName} [{t.teamTag}]
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/40 border-border/40">
+            <CardContent className="py-12 text-center">
+              <EyeOff className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+              <p className="text-lg font-display font-semibold mb-2">This profile is private</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                This player has chosen to keep their stats, champion pool, and match history private.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="mt-6 text-center">
+            <Link href="/players" className="text-primary hover:underline text-sm">
+              ← Back to Players
+            </Link>
+          </div>
         </div>
       </PublicLayout>
     );

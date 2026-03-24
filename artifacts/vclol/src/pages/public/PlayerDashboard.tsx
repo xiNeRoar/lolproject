@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BADGE_META } from "@/lib/lol-utils";
-import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle, Eye, EyeOff } from "lucide-react";
 
 function LoggedOutState() {
   return (
@@ -36,6 +36,7 @@ function DashboardContent({ pid }: { pid: number }) {
   const queryClient = useQueryClient();
 
   const [notifPref, setNotifPref] = useState<string | null>(null);
+  const [privacyPref, setPrivacyPref] = useState<string | null>(null);
 
   const activeSeason = seasons?.find((s) => s.status === "active");
 
@@ -76,15 +77,32 @@ function DashboardContent({ pid }: { pid: number }) {
     );
   };
 
+  const handleSavePrivacy = () => {
+    if (!privacyPref) return;
+    updatePlayer.mutate(
+      { id: pid, data: { profileVisibility: privacyPref } },
+      {
+        onSuccess: () => {
+          toast.success(`Profile set to ${privacyPref}`);
+          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+        },
+        onError: () => {
+          toast.error("Failed to update privacy setting");
+        },
+      }
+    );
+  };
+
   if (!player) return <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 animate-pulse"><div className="h-48 bg-card rounded-xl" /></div>;
 
   const currentNotifPref = notifPref ?? player.notificationPreference ?? "web";
+  const currentPrivacy = privacyPref ?? player.profileVisibility ?? "public";
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
 
-      {(player.riotId === "pending" || !player.puuid) && (
+      {(player.riotId.startsWith("pending") || !player.puuid) && (
         <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3">
           <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
           <div>
@@ -389,6 +407,46 @@ function DashboardContent({ pid }: { pid: number }) {
             ))}
           </div>
           <Button size="sm" onClick={handleSaveNotif} disabled={updatePlayer.isPending}>
+            {updatePlayer.isPending ? "Saving..." : "Save"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-display flex items-center gap-2">
+            {currentPrivacy === "private" ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
+            Profile Privacy
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            {currentPrivacy === "private"
+              ? "Your profile is private. Only your Riot ID and team affiliations are visible to others."
+              : "Your profile is public. Anyone can see your stats, champion pool, and match history."}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "public", label: "Public", desc: "Full profile visible" },
+              { value: "private", label: "Private", desc: "Stats hidden" },
+            ].map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded border border-border/40 hover:border-primary/40">
+                <input
+                  type="radio"
+                  name="privacyPref"
+                  value={opt.value}
+                  checked={currentPrivacy === opt.value}
+                  onChange={() => setPrivacyPref(opt.value)}
+                  className="accent-primary"
+                />
+                <div>
+                  <div className="font-medium">{opt.label}</div>
+                  <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <Button size="sm" onClick={handleSavePrivacy} disabled={updatePlayer.isPending}>
             {updatePlayer.isPending ? "Saving..." : "Save"}
           </Button>
         </CardContent>
