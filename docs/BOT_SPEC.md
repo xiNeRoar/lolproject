@@ -314,6 +314,7 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | Invite expired | "This invite has expired." |
 | Invite not for you | "This invite is not for you." |
 | Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
+| Max active teams (register-team) | "You already captain {count} active teams (max 3). Transfer captaincy or wait for inactive teams to be archived." |
 | Rate limit (submit) | "**{teamName}** submitted a match less than 2 minutes ago. Please wait {N}s before submitting again." |
 | No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |
 | Riot ID already linked | "This Riot ID is already linked to another player." |
@@ -380,6 +381,18 @@ Bot runs a daily check (e.g., 00:00 UTC):
 3. On season complete (admin triggers via web): DM every active team captain with final standings and placement.
 
 If bot was offline on a broadcast day, on startup check if any missed (compare dates, send if within 24h).
+
+---
+
+## Team Inactivity (PRD §8)
+
+Daily check (runs alongside Season Broadcast — startup + 00:00 UTC):
+- Query: `teams WHERE isActive = true AND (lastMatchAt < 30 days ago OR (lastMatchAt IS NULL AND createdAt < 30 days ago))`
+- Action: set `isActive = false` — team removed from leaderboard, data preserved
+- Reactivation: automatic when team submits a new match (updates `lastMatchAt`)
+- Constant: `TEAM_INACTIVITY_DAYS = 30`
+
+Implementation: `deactivateInactiveTeams()` in `seasonBroadcaster.ts`
 
 ---
 

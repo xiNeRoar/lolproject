@@ -245,4 +245,7 @@ MAX_ROSTER_SIZE: 15 (5 starters + 10 subs, enforced in /add)
 INACTIVITY_THRESHOLD: 5 (consecutive match absences before auto-inactive)
 CLIMB_THRESHOLD: 3 (ladder positions climbed for climber badge)
 SUBMIT_COOLDOWN_MS: 120000 (2 minutes between submissions per team)
+MAX_ACTIVE_TEAMS: 3 (concurrent active teams per captain, enforced in /register-team)
+TEAM_INACTIVITY_DAYS: 30 (no match in 30 days → isActive=false, daily check in seasonBroadcaster)
+MAX_PENDING_INVITES: 5 (per captain, enforced in /add)
 ```
