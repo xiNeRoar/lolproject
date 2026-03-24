@@ -12,6 +12,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { playersTable, matchPlayersTable } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 
@@ -34,7 +35,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Parse RiotName#TAG ────────────────────────────────────────────────────
   const match = rawInput.match(/^(.+)#([A-Za-z0-9]{1,5})$/);
   if (!match) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ Invalid format. Use `RiotName#TAG` (e.g. `xiNe#NA1`)."
     );
     return;
@@ -52,7 +53,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!player) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You don't have a player record yet. Ask a team captain to `/add` you first."
     );
     return;
@@ -68,7 +69,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (conflict && conflict.id !== player.id) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ This Riot ID is already linked to another player."
     );
     return;
@@ -88,7 +89,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       );
 
       if (resp.status === 404) {
-        await interaction.editReply("❌ This Riot ID does not exist. Check spelling and try again.");
+        await replyError(interaction, "❌ This Riot ID does not exist. Check spelling and try again.");
         return;
       }
       if (!resp.ok) {

@@ -15,6 +15,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { playersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
@@ -37,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
@@ -53,7 +54,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .limit(1);
 
   if (!player) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You are not registered on VCLoL. Use `/register-team` first."
     );
     return;
@@ -66,7 +67,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(and(eq(teamsTable.captainPlayerId, player.id), eq(teamsTable.isActive, true)));
 
   if (captainTeams.length === 0) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You are not the captain of any active team. Only captains can register for events."
     );
     return;
@@ -94,12 +95,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await sel.deferUpdate();
       const chosen = captainTeams.find((t) => String(t.teamId) === sel.values[0]);
       if (!chosen) {
-        await interaction.editReply({ content: "❌ Invalid selection.", components: [] });
+        await replyError(interaction, { content: "❌ Invalid selection.", components: [] });
         return;
       }
       teamId = chosen.teamId;
     } catch {
-      await interaction.editReply({ content: "❌ Timed out.", components: [] });
+      await replyError(interaction, { content: "❌ Timed out.", components: [] });
       return;
     }
   }
@@ -122,12 +123,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     responseData = await res.json() as typeof responseData;
 
     if (!res.ok) {
-      await interaction.editReply(`❌ ${responseData.error ?? "Failed to register."}`);
+      await replyError(interaction, `❌ ${responseData.error ?? "Failed to register."}`);
       return;
     }
   } catch (err) {
     console.error("[register-event] API error:", err);
-    await interaction.editReply("❌ Could not connect to VCLoL API. Try again later.");
+    await replyError(interaction, "❌ Could not connect to VCLoL API. Try again later.");
     return;
   }
 

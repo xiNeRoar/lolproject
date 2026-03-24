@@ -13,15 +13,16 @@ import type { ChatInputCommandInteraction } from "discord.js";
 
 export async function replyError(
   interaction: ChatInputCommandInteraction,
-  message: string,
+  message: string | { content: string; components?: unknown[] },
 ): Promise<void> {
+  const content = typeof message === "string" ? message : message.content;
   try {
     await interaction.deleteReply();
   } catch {
     // deleteReply may fail if reply was never sent — safe to ignore
   }
   try {
-    await interaction.followUp({ content: message, ephemeral: true });
+    await interaction.followUp({ content, ephemeral: true });
   } catch {
     // followUp may fail if interaction expired — nothing we can do
   }

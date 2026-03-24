@@ -15,6 +15,7 @@ import {
   AttachmentBuilder,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { renderTeamCard } from "../lib/teamCardRenderer.js";
 import { renderPlayerCard } from "../lib/playerCardRenderer.js";
 import {
@@ -66,7 +67,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await showPlayerStats(interaction, name ?? "");
   } else {
     // type not specified but name given — try to detect
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ Please specify `team` or `player`. Example: `/stats team VancouverStorm` or `/stats player xiNe#NA1`."
     );
   }
@@ -79,7 +80,7 @@ async function showTeamStats(
   teamName: string
 ) {
   if (!teamName) {
-    await interaction.editReply("❌ Please provide a team name. Example: `/stats team VancouverStorm`.");
+    await replyError(interaction, "❌ Please provide a team name. Example: `/stats team VancouverStorm`.");
     return;
   }
 
@@ -90,7 +91,7 @@ async function showTeamStats(
     .limit(1);
 
   if (!team) {
-    await interaction.editReply(`❌ Team **${teamName}** not found.`);
+    await replyError(interaction, `❌ Team **${teamName}** not found.`);
     return;
   }
 
@@ -162,7 +163,7 @@ async function showPlayerStats(
   riotId: string
 ) {
   if (!riotId) {
-    await interaction.editReply("❌ Please provide a Riot ID. Example: `/stats player xiNe#NA1`.");
+    await replyError(interaction, "❌ Please provide a Riot ID. Example: `/stats player xiNe#NA1`.");
     return;
   }
 
@@ -173,7 +174,7 @@ async function showPlayerStats(
     .limit(1);
 
   if (!player) {
-    await interaction.editReply(`❌ Player **${riotId}** not found.`);
+    await replyError(interaction, `❌ Player **${riotId}** not found.`);
     return;
   }
 
@@ -190,7 +191,7 @@ async function showInvokerStats(interaction: ChatInputCommandInteraction) {
     .limit(1);
 
   if (!player) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You don't have a VCLoL profile yet. Ask a captain to `/add` you."
     );
     return;

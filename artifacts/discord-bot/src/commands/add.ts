@@ -18,6 +18,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import {
   playersTable,
   teamsTable,
@@ -51,13 +52,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
   // ── Guild-only guard ────────────────────────────────────────────────────
   if (!interaction.inGuild()) {
-    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    await replyError(interaction, "❌ This command can only be used in a Discord server, not in DMs.");
     return;
   }
 
@@ -75,7 +76,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!invoker) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You don't have a player record. Use `/register-team` to create a team first."
     );
     return;
@@ -92,7 +93,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(and(eq(teamsTable.captainPlayerId, invoker.id), eq(teamsTable.isActive, true)));
 
   if (captainTeams.length === 0) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You are not the captain of any active team. Use `/register-team` to create one."
     );
     return;
@@ -134,14 +135,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await selection.deferUpdate();
       const selected = captainTeams.find((t) => String(t.id) === selection.values[0]);
       if (!selected) {
-        await interaction.editReply({ content: "❌ Invalid selection.", components: [] });
+        await replyError(interaction, { content: "❌ Invalid selection.", components: [] });
         return;
       }
       teamId = selected.id;
       teamName = selected.name;
       teamTag = selected.tag;
     } catch {
-      await interaction.editReply({ content: "❌ Timed out. Please try again.", components: [] });
+      await replyError(interaction, { content: "❌ Timed out. Please try again.", components: [] });
       return;
     }
   }
@@ -201,7 +202,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       targetPlayer = created!;
     }
   } else {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ Invalid format. Use `@DiscordMention` or `RiotName#TAG` (e.g. `xiNe#NA1`)."
     );
     return;
@@ -221,7 +222,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .limit(1);
 
   if (existingActive) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** is already on **${teamName}**.`
     );
     return;
@@ -240,7 +241,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .limit(1);
 
   if (existingPending) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ **${targetPlayer.riotId.startsWith("pending") ? targetUsername ?? "That player" : targetPlayer.riotId}** already has a pending invite to **${teamName}**.`
     );
     return;
@@ -259,7 +260,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
   if (activeCount >= MAX_ROSTER_SIZE) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ Team roster is full (${activeCount}/${MAX_ROSTER_SIZE}). Remove an inactive member with \`/remove\` first.`
     );
     return;
@@ -284,7 +285,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         )
       );
     if (Number(pendingCount) >= MAX_PENDING) {
-      await interaction.editReply(
+      await replyError(interaction, 
         `❌ You have ${pendingCount} pending invites. Wait for responses or cancel them before inviting more.`
       );
       return;

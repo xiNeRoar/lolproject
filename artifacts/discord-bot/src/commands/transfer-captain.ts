@@ -16,6 +16,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
@@ -33,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
@@ -42,7 +43,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const targetDiscordUser = interaction.options.getUser("player", true);
 
   if (targetDiscordUser.id === discordId) {
-    await interaction.editReply("❌ You can't transfer captaincy to yourself.");
+    await replyError(interaction, "❌ You can't transfer captaincy to yourself.");
     return;
   }
 
@@ -51,7 +52,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await db.select().from(playersTable).where(eq(playersTable.discordId, discordId)).limit(1)
   )[0];
   if (!invoker) {
-    await interaction.editReply("❌ You don't have a player record.");
+    await replyError(interaction, "❌ You don't have a player record.");
     return;
   }
 
@@ -62,7 +63,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(and(eq(teamsTable.captainPlayerId, invoker.id), eq(teamsTable.isActive, true)));
 
   if (captainTeams.length === 0) {
-    await interaction.editReply("❌ You are not the captain of any active team.");
+    await replyError(interaction, "❌ You are not the captain of any active team.");
     return;
   }
 
@@ -92,12 +93,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       });
       await sel.deferUpdate();
       const chosen = captainTeams.find((t) => String(t.id) === sel.values[0]);
-      if (!chosen) { await interaction.editReply({ content: "❌ Invalid.", components: [] }); return; }
+      if (!chosen) { await replyError(interaction, { content: "❌ Invalid.", components: [] }); return; }
       teamId = chosen.id;
       teamName = chosen.name;
       teamTag = chosen.tag;
     } catch {
-      await interaction.editReply({ content: "❌ Timed out.", components: [] });
+      await replyError(interaction, { content: "❌ Timed out.", components: [] });
       return;
     }
   }
@@ -108,7 +109,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!targetPlayer) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ <@${targetDiscordUser.id}> doesn't have a VCLoL player record. They need to be added to the team with \`/add\` first.`
     );
     return;
@@ -130,7 +131,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!membership) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ <@${targetDiscordUser.id}> is not an active member of **${teamName}**. Only active team members can become captain.`
     );
     return;

@@ -11,6 +11,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import {
   teamsTable,
   teamMembersTable,
@@ -37,13 +38,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
   // ── Guild-only guard ────────────────────────────────────────────────────
   if (!interaction.inGuild()) {
-    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    await replyError(interaction, "❌ This command can only be used in a Discord server, not in DMs.");
     return;
   }
 
@@ -56,7 +57,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // ── 1. Validate name length ───────────────────────────────────────────────
   if (name.length < 2 || name.length > 50) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ Team name must be between 2 and 50 characters."
     );
     return;
@@ -64,7 +65,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // ── 2. Validate tag format ────────────────────────────────────────────────
   if (!/^[A-Z0-9]{2,5}$/.test(rawTag)) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ Tag must be 2–5 uppercase letters/numbers (e.g. `TSM`, `C9`, `VCS`)."
     );
     return;
@@ -74,13 +75,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const offensiveName = checkOffensiveContent(name);
   if (offensiveName) {
     console.warn(`[register-team] Blocked offensive name: "${name}" by ${discordId}`);
-    await interaction.editReply("❌ Team name contains prohibited content. Choose another name.");
+    await replyError(interaction, "❌ Team name contains prohibited content. Choose another name.");
     return;
   }
   const offensiveTag = checkOffensiveContent(rawTag);
   if (offensiveTag) {
     console.warn(`[register-team] Blocked offensive tag: "${rawTag}" by ${discordId}`);
-    await interaction.editReply("❌ Team tag contains prohibited content. Choose another tag.");
+    await replyError(interaction, "❌ Team tag contains prohibited content. Choose another tag.");
     return;
   }
 
@@ -115,7 +116,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
   if (recentCount > 0) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "⏳ You already created a team in the last 24 hours. Try again later."
     );
     return;
@@ -134,7 +135,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
   if (Number(activeTeamCount) >= MAX_ACTIVE_TEAMS) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ You already captain ${activeTeamCount} active teams (max ${MAX_ACTIVE_TEAMS}). Transfer captaincy or wait for inactive teams to be archived.`
     );
     return;
@@ -194,15 +195,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if ((err as { code?: string }).code === "23505") {
       const detail = (err as { detail?: string }).detail ?? "";
       if (detail.includes("name")) {
-        await interaction.editReply(`❌ Team name **${name}** is already taken. Choose another.`);
+        await replyError(interaction, `❌ Team name **${name}** is already taken. Choose another.`);
       } else if (detail.includes("tag")) {
-        await interaction.editReply(`❌ Tag **${rawTag}** is already taken. Choose another.`);
+        await replyError(interaction, `❌ Tag **${rawTag}** is already taken. Choose another.`);
       } else {
-        await interaction.editReply("❌ Team name or tag is already taken.");
+        await replyError(interaction, "❌ Team name or tag is already taken.");
       }
       return;
     }
     console.error("[register-team] Error:", err);
-    await interaction.editReply("❌ Something went wrong creating your team. Please try again.");
+    await replyError(interaction, "❌ Something went wrong creating your team. Please try again.");
   }
 }

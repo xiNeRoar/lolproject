@@ -19,6 +19,7 @@ import {
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { renderScoreboard } from "../lib/scoreboardRenderer.js";
 import type { ScoreboardPlayer } from "../lib/scoreboardRenderer.js";
 import {
@@ -53,14 +54,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // ── Guild-only guard ────────────────────────────────────────────────────
   if (!interaction.inGuild()) {
-    await interaction.editReply("❌ This command can only be used in a Discord server, not in DMs.");
+    await replyError(interaction, "❌ This command can only be used in a Discord server, not in DMs.");
     return;
   }
 
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
@@ -68,13 +69,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // ── 1. Validate file ────────────────────────────────────────────────────
   if (!attachment.name?.endsWith(".rofl")) {
-    await interaction.editReply("❌ Please attach a `.rofl` replay file.");
+    await replyError(interaction, "❌ Please attach a `.rofl` replay file.");
     return;
   }
   if (attachment.size > MAX_FILE_SIZE) {
     const sizeMB = (attachment.size / 1024 / 1024).toFixed(1);
     const apiBase = process.env.PLATFORM_URL ?? "https://vclol.gg";
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ Replay file too large (${sizeMB} MB). Discord's default limit is 8 MB.\n\n` +
       `**Upload directly to VCLoL instead:**\n` +
       `\`\`\`\ncurl -X POST ${apiBase}/api/matches/submit-rofl \\\n` +
@@ -92,7 +93,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     roflBuffer = Buffer.from(await resp.arrayBuffer());
   } catch (err) {
-    await interaction.editReply("❌ Failed to download the replay file. Please try again.");
+    await replyError(interaction, "❌ Failed to download the replay file. Please try again.");
     return;
   }
 
@@ -102,9 +103,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     match = parseRofl(roflBuffer);
   } catch (err) {
     if (err instanceof RoflParseError) {
-      await interaction.editReply(`❌ ${err.message}`);
+      await replyError(interaction, `❌ ${err.message}`);
     } else {
-      await interaction.editReply("❌ Could not read the replay file. Is it a valid .rofl?");
+      await replyError(interaction, "❌ Could not read the replay file. Is it a valid .rofl?");
     }
     return;
   }
@@ -119,7 +120,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (existing) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ This match has already been submitted (Match #${existing.id}).`
     );
     return;
@@ -160,7 +161,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )[0];
 
     if (activeBan) {
-      await interaction.editReply(
+      await replyError(interaction, 
         `❌ A participant in this match is currently banned: ${activeBan.reason}`
       );
       return;
@@ -195,7 +196,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         .limit(1);
 
       if (!membership) {
-        await interaction.editReply(
+        await replyError(interaction, 
           "❌ You can only submit replays for matches you participated in."
         );
         return;
@@ -204,7 +205,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // invokerPlayer is null → unregistered user; block since a team was identified
     // (they could be maliciously submitting for a team they're not part of)
     else {
-      await interaction.editReply(
+      await replyError(interaction, 
         "❌ You must be a registered team member to submit a match for an identified team. " +
         "Ask your captain to `/add` you first."
       );
@@ -232,7 +233,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .limit(1);
 
     if (teamBan) {
-      await interaction.editReply(
+      await replyError(interaction, 
         `❌ A team in this match is currently banned: ${teamBan.reason}`
       );
       return;
@@ -255,7 +256,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     if (recentTeam && recentTeam.lastMatchAt) {
       const waitSeconds = Math.ceil((recentTeam.lastMatchAt.getTime() + 2 * 60 * 1000 - Date.now()) / 1000);
-      await interaction.editReply(
+      await replyError(interaction, 
         `⏳ **${recentTeam.name}** submitted a match less than 2 minutes ago. Please wait ${waitSeconds}s before submitting again.`
       );
       return;
@@ -469,13 +470,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (err) {
     // Unique constraint on gameId — concurrent submit of same .rofl
     if ((err as { code?: string }).code === "23505") {
-      await interaction.editReply(
+      await replyError(interaction, 
         `❌ This match has already been submitted by another user.`
       );
       return;
     }
     console.error("[submit] Transaction error:", err);
-    await interaction.editReply("❌ Failed to record match. Please try again.");
+    await replyError(interaction, "❌ Failed to record match. Please try again.");
     return;
   }
 

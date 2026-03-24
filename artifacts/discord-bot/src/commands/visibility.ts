@@ -15,6 +15,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import {
   matchesTable,
   teamsTable,
@@ -48,7 +49,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
@@ -62,7 +63,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await db.select().from(playersTable).where(eq(playersTable.discordId, discordId)).limit(1)
   )[0];
   if (!invoker) {
-    await interaction.editReply("❌ You don't have a player record.");
+    await replyError(interaction, "❌ You don't have a player record.");
     return;
   }
 
@@ -73,7 +74,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(and(eq(teamsTable.captainPlayerId, invoker.id), eq(teamsTable.isActive, true)));
 
   if (captainTeams.length === 0) {
-    await interaction.editReply("❌ Only team captains can change match visibility.");
+    await replyError(interaction, "❌ Only team captains can change match visibility.");
     return;
   }
 
@@ -101,7 +102,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     if (!recentMatch) {
-      await interaction.editReply("❌ No matches found for your team(s). Submit a match first.");
+      await replyError(interaction, "❌ No matches found for your team(s). Submit a match first.");
       return;
     }
 
@@ -111,7 +112,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Fetch match ───────────────────────────────────────────────────────────
   const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, matchId));
   if (!match) {
-    await interaction.editReply(`❌ Match #${matchId} not found.`);
+    await replyError(interaction, `❌ Match #${matchId} not found.`);
     return;
   }
 
@@ -122,7 +123,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     (match.teamBId && captainTeamIds.includes(match.teamBId));
 
   if (!isParticipant) {
-    await interaction.editReply("❌ You are not a captain of any team in this match.");
+    await replyError(interaction, "❌ You are not a captain of any team in this match.");
     return;
   }
 

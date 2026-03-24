@@ -15,6 +15,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import { playersTable, teamMembersTable, teamsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
@@ -35,7 +36,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .limit(1);
 
   if (!invoker) {
-    await interaction.editReply(
+    await replyError(interaction, 
       "❌ You don't have a VCLoL player record. Ask a captain to `/add` you."
     );
     return;
@@ -60,7 +61,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
   if (memberships.length === 0) {
-    await interaction.editReply("❌ You are not an active member of any team.");
+    await replyError(interaction, "❌ You are not an active member of any team.");
     return;
   }
 
@@ -92,14 +93,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await sel.deferUpdate();
       const chosen = memberships.find((m) => String(m.teamId) === sel.values[0]);
       if (!chosen) {
-        await interaction.editReply({ content: "❌ Invalid selection.", components: [] });
+        await replyError(interaction, { content: "❌ Invalid selection.", components: [] });
         return;
       }
       teamId = chosen.teamId;
       teamName = chosen.teamName;
       teamTag = chosen.teamTag;
     } catch {
-      await interaction.editReply({ content: "❌ Timed out.", components: [] });
+      await replyError(interaction, { content: "❌ Timed out.", components: [] });
       return;
     }
   }
@@ -124,7 +125,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
 
   if (members.length === 0) {
-    await interaction.editReply({ content: "❌ No active members found.", components: [] });
+    await replyError(interaction, { content: "❌ No active members found.", components: [] });
     return;
   }
 

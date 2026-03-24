@@ -16,6 +16,7 @@ import {
   ComponentType,
 } from "discord.js";
 import { db } from "../lib/db.js";
+import { replyError } from "../lib/replyError.js";
 import {
   matchesTable,
   matchPlayersTable,
@@ -42,7 +43,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // ── Ban check ──────────────────────────────────────────────────────────────
   const banReason = await checkBan(interaction.user.id);
   if (banReason) {
-    await interaction.editReply(`❌ Your account is currently banned: ${banReason}`);
+    await replyError(interaction, `❌ Your account is currently banned: ${banReason}`);
     return;
   }
 
@@ -56,7 +57,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!invoker) {
-    await interaction.editReply("❌ You don't have a player record. Ask a captain to `/add` you.");
+    await replyError(interaction, "❌ You don't have a player record. Ask a captain to `/add` you.");
     return;
   }
 
@@ -67,7 +68,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(and(eq(teamsTable.captainPlayerId, invoker.id), eq(teamsTable.isActive, true)));
 
   if (captainTeams.length === 0) {
-    await interaction.editReply("❌ You are not the captain of any active team.");
+    await replyError(interaction, "❌ You are not the captain of any active team.");
     return;
   }
 
@@ -78,7 +79,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .where(eq(matchesTable.id, matchId));
 
   if (!match) {
-    await interaction.editReply(`❌ Match #${matchId} not found.`);
+    await replyError(interaction, `❌ Match #${matchId} not found.`);
     return;
   }
 
@@ -87,7 +88,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const hasNullB = match.teamBId === null;
 
   if (!hasNullA && !hasNullB) {
-    await interaction.editReply("❌ This match already has both teams assigned.");
+    await replyError(interaction, "❌ This match already has both teams assigned.");
     return;
   }
 
@@ -117,12 +118,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       });
       await sel.deferUpdate();
       const chosen = captainTeams.find((t) => String(t.id) === sel.values[0]);
-      if (!chosen) { await interaction.editReply({ content: "❌ Invalid selection.", components: [] }); return; }
+      if (!chosen) { await replyError(interaction, { content: "❌ Invalid selection.", components: [] }); return; }
       claimTeamId = chosen.id;
       claimTeamName = chosen.name;
       claimTeamTag = chosen.tag;
     } catch {
-      await interaction.editReply({ content: "❌ Timed out.", components: [] });
+      await replyError(interaction, { content: "❌ Timed out.", components: [] });
       return;
     }
   }
@@ -150,7 +151,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const overlap = memberPuuids.filter((p) => matchPuuids.includes(p));
 
   if (overlap.length < 3) {
-    await interaction.editReply(
+    await replyError(interaction, 
       `❌ Your team only matches ${overlap.length}/5 players on the unclaimed side (need 3+). ` +
       `Make sure your team members have run \`/link-riot\`.`
     );
