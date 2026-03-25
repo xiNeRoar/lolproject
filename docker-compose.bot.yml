@@ -1,29 +1,49 @@
-# VCLoL Discord Bot — Docker Compose
+# VCLoL Bot — All-in-one (PostgreSQL + Bot)
 #
-# Usage:
-#   1. Copy this file to your VPS
-#   2. Fill in the env vars below
-#   3. Run: docker compose -f docker-compose.bot.yml up -d --build
+# Portainer: Stacks → Add → Repository
+#   URL: https://github.com/xiNeRoar/lolproject
+#   Ref: refs/heads/variant
+#   Compose path: docker-compose.bot.yml
+#   Environment variables: fill DISCORD_BOT_TOKEN only
 #
-# Or in Portainer: New Stack → paste this → fill env vars → Deploy
+# Bot auto-waits for PostgreSQL, auto-runs DB migration, then starts.
 
 services:
-  vclol-bot:
+  db:
+    image: postgres:16-alpine
+    container_name: vclol-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vclol
+      POSTGRES_PASSWORD: vclol_dev_2026
+      POSTGRES_DB: vclol
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vclol"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  bot:
     build:
       context: .
       dockerfile: Dockerfile.bot
     container_name: vclol-bot
     restart: unless-stopped
-    network_mode: host  # connects to postgres on localhost
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-      - DISCORD_CLIENT_ID=1486274314482356225
-      - DATABASE_URL=${DATABASE_URL}
-      - PLATFORM_URL=${PLATFORM_URL:-https://vclol.gg}
-      - API_BASE_URL=${API_BASE_URL:-http://localhost:3000}
-      - ROFL_UPLOAD_DIR=/data/rofl
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_CLIENT_ID: "1486274314482356225"
+      DATABASE_URL: postgresql://vclol:vclol_dev_2026@db:5432/vclol
+      PLATFORM_URL: ${PLATFORM_URL:-https://vclol.gg}
+      API_BASE_URL: http://localhost:3000
+      ROFL_UPLOAD_DIR: /data/rofl
     volumes:
       - rofl-uploads:/data/rofl
 
 volumes:
+  pgdata:
   rofl-uploads:
