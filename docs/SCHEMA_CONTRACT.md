@@ -105,14 +105,16 @@ export const matchesTable = pgTable("matches", {
   teamAEloAfter: integer("team_a_elo_after"),
   teamBEloBefore: integer("team_b_elo_before"),
   teamBEloAfter: integer("team_b_elo_after"),
-  // Game metadata from .rofl
+  // Game metadata from .rofl or Tournament API
   gameId: text("game_id"),
   gameDuration: integer("game_duration"),     // milliseconds from .rofl gameLength
   gameVersion: text("game_version"),          // patch from .rofl
-  resultSource: text("result_source").notNull().default("rofl_parse"),
+  matchType: text("match_type").notNull().default("scrim"), // scrim | ranked_tournament | event — PRD v3.1 §8: only ranked_tournament + event count toward ELO
+  resultSource: text("result_source").notNull().default("rofl_parse"), // rofl_parse | tournament_api | admin_manual
+  tournamentCode: text("tournament_code"),    // Riot Tournament API code, nullable
   roflFilePath: text("rofl_file_path"),       // stored .rofl for VOD pipeline
-  // Visibility: private for 7 days, then auto-public. Captain can override.
-  visibleAfter: timestamp("visible_after"),   // NULL = use default (createdAt + 7 days). Captain can set to far-future (permanent private) or past (immediate public).
+  // Visibility: scrim = private by default. Tournament/event = public by default. Captain can override.
+  visibleAfter: timestamp("visible_after"),   // new Date(0) = always public. 9999-01-01 = permanent private. now+7days = delayed.
   // Season + Event links
   seasonId: integer("season_id").references(() => seasonsTable.id, { onDelete: "set null" }),
   eventId: integer("event_id").references(() => eventsTable.id, { onDelete: "set null" }),
@@ -137,11 +139,15 @@ export const playersTable = pgTable("players", {
   riotId: text("riot_id").notNull().unique(),
   discordUsername: text("discord_username").notNull(),
   discordId: text("discord_id"),
-  puuid: text("puuid"),                       // NEW: from .rofl, nullable until verified
-  primaryRole: text("primary_role"),          // NEW: top/jg/mid/adc/sup
-  secondaryRole: text("secondary_role"),      // NEW
+  puuid: text("puuid"),                       // from .rofl or RSO OAuth. Nullable until verified.
+  primaryRole: text("primary_role"),          // top/jg/mid/adc/sup
+  secondaryRole: text("secondary_role"),
   isActive: boolean("is_active").notNull().default(true),
-  profileVisibility: text("profile_visibility").notNull().default("public"), // public | private — PRD §7
+  profileVisibility: text("profile_visibility").notNull().default("private"), // private | public | participants-only — v3.1: default PRIVATE (was "public")
+  rsoOptIn: boolean("rso_opt_in").notNull().default(false),   // v3.1: true after RSO verified + player consents
+  rsoAccessToken: text("rso_access_token"),   // v3.1: encrypted, nullable
+  rsoRefreshToken: text("rso_refresh_token"), // v3.1: encrypted, nullable
+  rsoLinkedAt: timestamp("rso_linked_at"),    // v3.1: nullable
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),
@@ -151,6 +157,7 @@ export const playersTable = pgTable("players", {
 ```
 
 **Removed from v1:** `currentElo`, `peakElo`, `wins`, `losses`
+**Changed in v3.1:** `profileVisibility` default → `"private"`. Added `rsoOptIn`, RSO token fields.
 
 ### `eloHistory` (MODIFY — add teamId)
 ```typescript
@@ -229,7 +236,7 @@ export const eventRegistrationsTable = pgTable("event_registrations", {
 
 - `adminUsers` — admin auth
 - `events` — event structure (`discordUrl` column added #115: optional Discord invite URL)
-- `vod_entries` — `gameNumber`, `vodType`, `teamId` columns added (#116)
+- `vod_entries` — `gameNumber`, `vodType`, `teamId` columns added (#116), `playerEloAtTime` renamed to `teamEloAtTime` (v3.1)
 - `seasons` — season lifecycle
 - `vodEntries` — VOD records (already has matchId FK)
 - `vodTimestamps` — VOD timestamp markers
@@ -276,6 +283,30 @@ export const botHeartbeatsTable = pgTable("bot_heartbeats", {
   lastBroadcastDate: text("last_broadcast_date"), // ISO date string e.g. "2026-03-23"; null = never broadcast
 });
 ```
+
+#### `auth_sessions` (NEW v3.1 — /connect RSO token flow)
+```typescript
+export const authSessionsTable = pgTable("auth_sessions", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),         // random token in /connect URL
+  discordId: text("discord_id").notNull(),         // who initiated /connect
+  expiresAt: timestamp("expires_at").notNull(),    // 10 minute expiry
+  completedAt: timestamp("completed_at"),          // set when RSO completes
+  puuid: text("puuid"),                            // set when RSO completes
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+### Changed Tables (v3.1)
+
+**`vod_entries`:** `playerEloAtTime` → `teamEloAtTime` (integer, nullable). Players have no individual ELO (PRD v3.1 §8).
+
+### Removed Concepts (v3.1)
+
+- ELO calculation on scrim (.rofl) submission — scrim only records W/L
+- `elo_history` entries with `reason: 'registration'` — no ELO on team creation
+- `/add` command roster building — replaced by .rofl auto-discovery
+- `/link-riot` trust-based verification — replaced by RSO `/connect`
 
 ---
 
@@ -336,5 +367,6 @@ export * from "./notifications";
 export * from "./adminActions";       // NEW — audit log
 export * from "./playerBans";         // NEW — ban system
 export * from "./botHeartbeats";      // NEW — bot health monitoring
+export * from "./authSessions";       // NEW v3.1 — /connect RSO token flow
 // REMOVED: challenges, matchmakingQueue, interestSubmissions, adminScheduleSettings
 ```

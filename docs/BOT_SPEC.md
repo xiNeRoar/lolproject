@@ -29,64 +29,45 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 
 ## Commands
 
-**Implementation status** (as of Polish milestone):
+**Implementation status** (as of v3.1 redesign):
 
 | Command | File | Status | Context | Notes |
 |---|---|---|---|---|
-| `/register-team` | `register-team.ts` | ✅ Implemented | Guild only | 24h rate limit, content filter |
-| `/add` | `add.ts` | ✅ Implemented | Guild only | Invite+accept flow, DM buttons, 5-invite cap, roster cap 15 |
-| `/submit` | `submit.ts` | ✅ Implemented | Guild only | .rofl parse, ELO, notifications, roster inactivity, climber badge, ✅/❌ buttons |
-| `/link-riot` | `link-riot.ts` | ✅ Implemented | Guild + DM | Trust-based mode logs claim for admin audit |
-| `/claim-match` | `claim-match.ts` | ✅ Implemented | Guild + DM | Retroactive ELO, updates display names |
+| `/register-team` | `register-team.ts` | ⚠️ Needs update | Guild only | **v3.1: add RSO check** |
+| `/submit` | `submit.ts` | ⚠️ Needs update | Guild only | **v3.1: remove ELO, revert unknown player to active** |
+| `/connect` | `connect.ts` | ❌ New | Guild + DM | **v3.1: RSO verification link** |
+| `/claim-match` | `claim-match.ts` | ⚠️ Needs update | Guild + DM | **v3.1: remove retroactive ELO** |
 | `/visibility` | `visibility.ts` | ✅ Implemented | Guild + DM | |
-| `/leave` | `leave.ts` | ✅ Implemented | Guild + DM | Blocks captain, redirects to /transfer-captain |
+| `/leave` | `leave.ts` | ✅ Implemented | Guild + DM | Blocks captain |
 | `/transfer-captain` | `transfer-captain.ts` | ✅ Implemented | Guild + DM | |
-| `/register-event` | `register-event.ts` | ✅ Implemented | Guild + DM | Multi-team captain disambiguation |
-| `/stats` | `stats.ts` | ✅ Implemented | Guild + DM | team / player / invoker self |
-| `/roster` | `roster.ts` | ✅ Implemented | Guild + DM | Multi-team member disambiguation |
-| `/remove` | `remove.ts` | ✅ Implemented | Guild + DM | Sets inactive, preserves match history |
+| `/register-event` | `register-event.ts` | ✅ Implemented | Guild + DM | |
+| `/stats` | `stats.ts` | ⚠️ Needs update | Guild + DM | **v3.1: ELO conditional** |
+| `/roster` | `roster.ts` | ✅ Implemented | Guild + DM | |
+| `/remove` | `remove.ts` | ✅ Implemented | Guild + DM | |
 
-**Known gaps:** None — all tracked features implemented.
+**Deleted (v3.1):** ~~/add~~ (→ .rofl auto-discovery) · ~~/link-riot~~ (→ RSO /connect)
 
-### `/register-team <name> <tag>`
+### `/connect`
 **Who:** Any Discord user
+**What:** Sends a one-time RSO verification link. Player clicks → browser → Discord OAuth + Riot RSO OAuth → verified.
+**Flow:**
+1. Generate random token (crypto.randomUUID)
+2. Insert `auth_sessions` row (token, discordId, expiresAt = now + 10 min)
+3. Reply (ephemeral): embed with URL `https://vclol.gg/connect?token={token}` + "Link expires in 10 minutes"
+4. Website handles OAuth: Discord OAuth → RSO OAuth → writes puuid to auth_sessions + player record
+5. Bot detects completion on next command (check `puuid IS NOT NULL`)
+
+### `/register-team <n> <tag>`
+**Who:** RSO-verified Discord user (puuid IS NOT NULL)
 **What:** Creates a new team. The invoking user becomes captain.
 **Flow:**
-1. **Rate limit (Defect 17):** Check `SELECT COUNT(*) FROM teams WHERE captainPlayerId = ? AND createdAt > NOW() - INTERVAL '24 hours'`. If > 0 → "You already created a team in the last 24 hours. Try again later."
-2. Check: does a player record exist for this Discord user? If not, create one (discordId + discordUsername, riotId = "pending")
-3. Validate: team name unique, tag is 2-5 uppercase alphanumeric, tag unique
-4. Insert `teams` row (captainPlayerId = player.id, discordServerId = guild.id)
-5. Insert `team_members` row (teamId, playerId, role = null, status = active)
-6. Reply: "Team **{name}** [{tag}] created! Use `/add` to add your teammates. Link your Riot ID: `/link-riot YourName#TAG`"
-
-### `/add [discord-user] [riot-id] [role]`
-**Who:** Team captain only
-**What:** Sends a team invite to a player. Player must accept before joining the roster. (Industry standard — no force-add.)
-**Options:**
-- `discord-user` (UserOption, optional) — Discord's native user picker. Gives proper User object with `.id`.
-- `riot-id` (StringOption, optional) — For cross-server players: `RiotName#TAG` format. Game name max 16 chars.
-- `role` (StringOption, optional) — top/jungle/mid/adc/support/fill.
-- At least one of `discord-user` or `riot-id` required (validated in code).
-**Flow:**
-1. Determine input mode:
-   - `discord-user` provided → look up player by `discordId` from User object
-   - `riot-id` provided → look up player by `riotId` (validated with regex `^(.+)#([A-Za-z0-9]{1,5})$`)
-2. If captain has multiple active teams → Discord select menu: "Which team?"
-   If captain has one team → use that team directly.
-3. Check: is player already an active OR pending member of this team? → reject with appropriate message.
-4. Check: captain has fewer than 5 pending invites across all teams? → reject if at limit.
-5. If no player record exists:
-   - Discord mention → create player: `discordId` + `discordUsername` set, `riotId = "pending"`
-   - Riot ID → create player: `riotId` set, `discordId = null`, `discordUsername = riotId`
-6. Insert `team_members` row (role = provided or null, **status = 'pending'**)
-7. DM the invited player (if `discordId` is known) with embed + ✅ Accept / ❌ Decline buttons:
-   "**{captain}** has invited you to join **{team}** [{tag}]. Click Accept to join the roster, or Decline to dismiss."
-   Buttons use persistent customId format: `invite_accept_{membershipId}` / `invite_decline_{membershipId}`
-8. Reply to captain: "📨 Invite sent — {team} [{tag}]. Waiting for response."
-9. **Accept flow (inviteHandler.ts):** Player clicks ✅ → verify clicking user owns invite → check team still `isActive` (reject if deactivated by 30-day inactivity) → update status to 'active' → notify captain via notification row → update DM embed to "Joined {team}"
-10. **Decline flow:** Player clicks ❌ → delete pending team_members row → notify captain → update DM embed to "Invite declined"
-11. **Expiry:** Pending invites expire after 24 hours. cleanupExpiredInvites() runs on bot startup, deletes rows where status='pending' AND joinedAt > 24h ago.
-12. **Persistence:** Button handler registered in index.ts interactionCreate (not ephemeral collector) — survives bot restarts.
+1. **RSO check:** Captain's player record must have `puuid IS NOT NULL`. If not → "Please verify your Riot Account first: `/connect`"
+2. **Rate limit:** Check teams created in last 24h. If > 0 → "You already created a team in the last 24 hours."
+3. Check: does a player record exist for this Discord user? If not → "Please run `/connect` first."
+4. Validate: team name unique, tag 2-5 uppercase alphanumeric, tag unique, content filter
+5. Insert `teams` row (captainPlayerId, discordServerId, teamElo=1000, isActive=true)
+6. Insert `team_members` row (teamId, playerId, role=null, status=active)
+7. Reply: "Team **{name}** [{tag}] created! Submit a match: `/submit` with a .rofl file."
 
 ### `/submit` (with .rofl file attachment)
 **Who:** Any team member
@@ -109,55 +90,35 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 9. **Both teams identified:**
    a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter` derived from team's `defaultMatchVisibility`: `public` → `new Date(0)`, `private` → `new Date('9999-01-01')`, `default`/unset → `createdAt + 7 days`)
    b. Create 10 `match_players` rows
-   c. Calculate + update team ELO for both teams
-   d. Write `elo_history` for both teams
+   c. Update wins/losses + lastMatchAt for both teams
    e. Store .rofl file on disk
-   f. Reply: embed with match summary (teams, score, ELO changes, top performers)
+   f. Reply: embed with match summary (teams, score, top performers). No ELO (scrim = W/L only).
    g. Mark linked vs unlinked players in embed (Defect 20)
 10. **One or both teams unidentified (Defect 1 — graceful handling):**
     a. Create `matches` row (`teamAId` and/or `teamBId` = null for unmatched side, `sideAName`/`sideBName` from .rofl riotIds)
     b. Create 10 `match_players` rows (same identity resolution as step 7)
-    c. **ELO NOT updated** (requires both teamIds to calculate)
+    c. W/L updated for identified team only. No ELO for any scrim.
     d. Store .rofl file on disk
     e. Reply: "✅ Match recorded (stats only — no ELO change). {Side} not identified as a registered team. Invite them: {platform URL}/register"
-    f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim ELO."
+    f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim W/L."
 11. **Unknown player roster confirmation (PRD §6.2):**
     a. After reply, for each match_player with `playerId = null` on an identified team side: show 📨 "Add {riotId}" / "Skip" buttons via followUp message
     b. Only the captain of the relevant team can click 📨
-    c. 📨 → create player record (if not exists) + insert `team_members` with **`status = 'pending'`** (consistent with invite+accept flow from /add) + link match_players row + DM player with Accept/Decline buttons if discordId known
+    c. ✅ → create player record (if not exists) + insert `team_members` with **`status = 'active'`** + link match_players row. Auto-added to roster (v3.1: .rofl auto-discovery).
     d. "Skip" → dismiss, no action
     e. Buttons auto-expire after 5 minutes (collector timeout)
-    f. Player must Accept the DM invite before becoming an active roster member (same inviteHandler.ts flow as /add)
-
-### `/link-riot <RiotName#TAG>`
-**Who:** Any Discord user with a player record
-**What:** Link Riot ID to player account. Enables identity resolution and retroactive stat claiming.
-**Flow:**
-1. Parse → gameName + tagLine. Validate: gameName max 16 chars, tagLine 1-5 alphanumeric.
-2. Find invoker's player record by `discordId`
-   - Not found → "You don't have a player record yet. Ask a team captain to `/add` you."
-3. Check `riotId` uniqueness: is this riotId linked to a DIFFERENT player?
-   - Yes → "This Riot ID is already linked to another player."
-4. If `RIOT_API_KEY` exists:
-   - Call Riot ACCOUNT-V1 API → get PUUID
-   - 404 → "This Riot ID does not exist."
-   - Success → update `players.riotId` + `players.puuid`
-5. If no API key:
-   - Update `players.riotId` only. PUUID populated from next .rofl.
-6. Retroactive claim: `UPDATE match_players SET playerId = {id} WHERE puuid = {puuid} AND playerId IS NULL`
-7. Reply: "✅ Linked as RiotName#TAG. Claimed {N} match records."
 
 ### `/claim-match <matchId>`
 **Who:** Captain of a registered team
-**What:** Claim an unregistered side of a match for the captain's team (retroactive ELO).
+**What:** Claim an unregistered side of a match for the captain's team (display name + W/L update).
 **Flow:**
 1. Look up match by id. Verify it has a null `teamAId` or `teamBId`.
    - Both sides already claimed → "This match already has both teams assigned."
 2. Check: does captain's team have 3+ members whose PUUIDs appear in the unclaimed side's `match_players`?
    - No → "Your team does not match enough players in this match."
 3. Set the null `teamAId` or `teamBId` to captain's team id.
-4. If BOTH sides now have teamIds: calculate ELO retroactively for both teams. Write `elo_history`.
-5. Reply: "✅ Match #{matchId} claimed for **{team}**. ELO updated: {team} {delta}."
+4. If BOTH sides now have teamIds: update wins/losses for both teams. No ELO (scrim).
+5. Reply: "✅ Match #{matchId} claimed for **{team}**. W/L updated."
 
 ### `/visibility [match-id] <public|private|default>`
 **Who:** Captain of either participating team
@@ -181,7 +142,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 **Who:** Anyone
 **What:** Quick stats lookup in Discord.
 **Flow:**
-- `/stats team TeamName` → team ELO, W/L, recent 5 matches
+- `/stats team TeamName` → team W/L, recent 5 matches (ELO shown only if tournament data exists)
 - `/stats player RiotId#TAG` → KDA avg, champion pool top 3, teams
 - No arguments → invoker's own stats
 
@@ -252,11 +213,6 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 5. Reply: "You have left **{team}**."
 **Note:** Captain cannot `/leave`. Must `/transfer-captain` first. This prevents orphaned teams with no authority.
 
-### `/add` — Multi-team captain disambiguation
-If the invoking captain is captain of multiple active teams:
-1. Bot replies with Discord select menu: "Which team do you want to add **@user** to?"
-2. Captain selects → continues original `/add` flow
-If captain has only one team → direct execution (no menu).
 
 ---
 
@@ -304,7 +260,7 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | .rofl too large | "Replay file too large ({size}MB). Discord's default limit is 8 MB. Upload directly to VCLoL instead: `curl -X POST {apiBase}/api/matches/submit-rofl ...`" |
 | .rofl corrupt / not ROFL2 | "Invalid replay file. Make sure this is from patch 14.11 or later." |
 | .rofl missing player data | "Could not extract player data from this replay." |
-| Team not found for players | "Could not match {N} players to a registered team: {names}. Ask your captain to `/add` them." |
+| Team not found for players | "Could not match {N} players to a registered team: {names}. They will be auto-added from .rofl submissions." |
 | Duplicate match (same gameId) | "This match has already been submitted (Match #{id})." |
 | Team name taken | "Team name '{name}' is already taken. Choose another." |
 | Tag format invalid | "Tag must be 2-5 uppercase letters/numbers (e.g. TSM, C9, T1)." |
@@ -323,7 +279,6 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
 | Max active teams (register-team) | "You already captain {count} active teams (max 3). Transfer captaincy or wait for inactive teams to be archived." |
 | Rate limit (submit) | "**{teamName}** submitted a match less than 2 minutes ago. Please wait {N}s before submitting again." |
-| No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |
 | Riot ID already linked | "This Riot ID is already linked to another player." |
 | Riot ID not found | "This Riot ID does not exist." |
 | Game name too long | "Game name too long (max 16 characters)." |
@@ -346,16 +301,14 @@ artifacts/discord-bot/
 │   ├── index.ts          # Entry: login, register commands
 │   ├── commands/
 │   │   ├── register-team.ts
-│   │   ├── add.ts
-│   │   ├── submit.ts
+│   │   │   ├── submit.ts
 │   │   ├── stats.ts
 │   │   ├── roster.ts
 │   │   ├── remove.ts
 │   │   ├── register-event.ts
 │   │   ├── transfer-captain.ts
 │   │   ├── leave.ts
-│   │   ├── link-riot.ts
-│   │   ├── claim-match.ts
+│   │   │   ├── claim-match.ts
 │   │   └── visibility.ts
 │   ├── lib/
 │   │   ├── rofl-parser.ts  # .rofl binary parsing
