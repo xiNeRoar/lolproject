@@ -19,6 +19,7 @@
 import {
   Client,
   GatewayIntentBits,
+  Partials,
   Collection,
   Events,
   REST,
@@ -89,6 +90,10 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
+  ],
+  partials: [
+    Partials.Channel,  // Required for DM button interactions (invite accept/decline)
+    Partials.Message,  // Required for DM message component collection
   ],
 });
 

@@ -59,13 +59,18 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 5. Insert `team_members` row (teamId, playerId, role = null, status = active)
 6. Reply: "Team **{name}** [{tag}] created! Use `/add` to add your teammates. Link your Riot ID: `/link-riot YourName#TAG`"
 
-### `/add <@user|RiotName#TAG> [role]`
+### `/add [discord-user] [riot-id] [role]`
 **Who:** Team captain only
 **What:** Sends a team invite to a player. Player must accept before joining the roster. (Industry standard — no force-add.)
+**Options:**
+- `discord-user` (UserOption, optional) — Discord's native user picker. Gives proper User object with `.id`.
+- `riot-id` (StringOption, optional) — For cross-server players: `RiotName#TAG` format.
+- `role` (StringOption, optional) — top/jungle/mid/adc/support/fill.
+- At least one of `discord-user` or `riot-id` required (validated in code).
 **Flow:**
 1. Determine input mode:
-   - Discord mention `@user` → look up player by `discordId`
-   - Text `RiotName#TAG` → look up player by `riotId`
+   - `discord-user` provided → look up player by `discordId` from User object
+   - `riot-id` provided → look up player by `riotId` (validated with regex `^(.+)#([A-Za-z0-9]{1,5})$`)
 2. If captain has multiple active teams → Discord select menu: "Which team?"
    If captain has one team → use that team directly.
 3. Check: is player already an active OR pending member of this team? → reject with appropriate message.
