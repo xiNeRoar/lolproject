@@ -638,7 +638,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             playerId = created!.id;
           }
 
-          // Add to team as PENDING — consistent with invite+accept flow (#179)
+          // Add to team as active (v3.1: .rofl auto-discovery, no invite needed)
           const [existingMember] = await db
             .select({ id: teamMembersTable.id })
             .from(teamMembersTable)
@@ -646,31 +646,26 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .limit(1);
 
           if (!existingMember) {
-            const [newMembership] = await db.insert(teamMembersTable)
-              .values({ teamId: u.teamId, playerId, role: null, status: "active" })
-              .returning();
+            await db.insert(teamMembersTable)
+              .values({ teamId: u.teamId, playerId, role: null, status: "active" });
 
-            // DM invite buttons if player has discordId
-            if (targetPlayer?.discordId && newMembership) {
+            // DM notification if player has discordId (v3.1: auto-added, no invite needed)
+            if (targetPlayer?.discordId) {
               try {
                 const dmUser = await btn.client.users.fetch(targetPlayer.discordId);
                 const [teamInfo] = await db.select({ name: teamsTable.name, tag: teamsTable.tag })
                   .from(teamsTable).where(eq(teamsTable.id, u.teamId)).limit(1);
                 const tLabel = teamInfo ? `${teamInfo.name} [${teamInfo.tag}]` : u.teamName;
                 const dmEmbed = new EmbedBuilder()
-                  .setColor(0x5865f2)
-                  .setTitle(`Team Invite — ${tLabel}`)
+                  .setColor(0x57f287)
+                  .setTitle(`Added to ${tLabel}`)
                   .setDescription(
-                    `You played in a recorded match and the captain wants to add you to **${tLabel}**.\n\n` +
-                    `Click **Accept** to join the roster, or **Decline** to dismiss.`
+                    `You were added to **${tLabel}** from a match replay.\n\n` +
+                    `Run \`/connect\` to verify your Riot Account and claim your profile.`
                   )
-                  .setFooter({ text: `${process.env.PLATFORM_URL ?? "https://vclol.gg"} · Expires in 24 hours` });
-                const inviteRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                  new ButtonBuilder().setCustomId(`invite_accept_${newMembership.id}`).setLabel("Accept").setStyle(ButtonStyle.Success),
-                  new ButtonBuilder().setCustomId(`invite_decline_${newMembership.id}`).setLabel("Decline").setStyle(ButtonStyle.Secondary),
-                );
-                await dmUser.send({ embeds: [dmEmbed], components: [inviteRow] });
-              } catch { /* DM failed — player can accept via website */ }
+                  .setFooter({ text: process.env.PLATFORM_URL ?? "https://vclol.gg" });
+                await dmUser.send({ embeds: [dmEmbed] });
+              } catch { /* DM failed — player can claim via website */ }
             }
           }
 

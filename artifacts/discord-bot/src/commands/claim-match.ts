@@ -150,7 +150,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (overlap.length < 3) {
     await replyError(interaction, 
       `❌ Your team only matches ${overlap.length}/5 players on the unclaimed side (need 3+). ` +
-      `Make sure your team members have run \`/link-riot\`.`
+      `Make sure your team members have run \`/connect\` to verify their accounts.`
     );
     return;
   }

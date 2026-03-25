@@ -52,7 +52,7 @@ First start takes 3-5 minutes (pull images + clone + install). Subsequent restar
 [setup] Running DB migration...
 [setup] Starting bot...
 [bot] Logged in as VCLoL#xxxx
-[bot] Registering 12 slash commands...
+[bot] Registering 11 slash commands...
 [bot] Slash commands registered.
 [poller] Notification poller started.
 [season-broadcast] Broadcaster started.
@@ -114,7 +114,10 @@ gunzip -c /mnt/nas/vclol-backups/vclol_20260320_030000.sql.gz | psql -h $DB_HOST
 | `DISCORD_CLIENT_SECRET` | Yes | -- | Discord OAuth app |
 | `DISCORD_REDIRECT_URI` | Yes | `http://localhost:5173/auth/discord/callback` | Must match Discord app config |
 | `DISCORD_BOT_TOKEN` | Yes | -- | Discord bot token |
-| `RIOT_API_KEY` | No | -- | Phase 2: validates Riot ID exists |
+| `RIOT_API_KEY` | No | -- | Production API Key (apply at developer.riotgames.com). Required for RSO + Tournament API. |
+| `RSO_CLIENT_ID` | Yes (launch) | -- | RSO OAuth2 client ID. Provided by Riot after Production Key approval. |
+| `RSO_CLIENT_SECRET` | Yes (launch) | -- | RSO OAuth2 client secret. Keep secure. |
+| `RSO_REDIRECT_URI` | Yes (launch) | -- | RSO OAuth callback URL. Must match Riot Developer Portal config. e.g. `https://vclol.gg/auth/rso/callback` |
 | `ROFL_UPLOAD_DIR` | No | `./uploads/rofl` | Where .rofl files are stored |
 | `PLATFORM_URL` | No | `https://vclol.gg` | Public domain for user-facing links in bot embeds and images. Must be the same domain users access the website on. |
 | `API_BASE_URL` | No | `http://localhost:3000` | Internal API server address for bot→server HTTP calls (e.g. /register-event). Not user-facing. |
@@ -185,13 +188,23 @@ Complete every item before going live. Each checkbox must be ticked.
 - [ ] Bot section → **Reset Token** → copy → set as `DISCORD_BOT_TOKEN`
 - [ ] Bot section → **Privileged Gateway Intents** → enable:
   - **MESSAGE CONTENT INTENT** (required — bot reads attachment metadata)
-  - **SERVER MEMBERS INTENT** (required — bot fetches user info for /add)
+  - **SERVER MEMBERS INTENT** (required — bot fetches user info for team management)
   - PRESENCE INTENT — not needed
 - [ ] OAuth2 → Redirects → add `https://yourdomain/auth/discord/callback`
 - [ ] Copy **Client Secret** → set as `DISCORD_CLIENT_SECRET`
 - [ ] OAuth2 URL Generator → Scopes: `bot`, `applications.commands` → Permissions: `Send Messages`, `Embed Links`, `Attach Files`, `Read Message History`, `Use Slash Commands`
 - [ ] Copy generated invite URL → update `/register` page button (remove `disabled`)
 - [ ] Set `DISCORD_REDIRECT_URI` to your production callback URL
+
+### Riot RSO Setup (launch requirement)
+
+- [ ] Register product at https://developer.riotgames.com with deployed site + ToS + Privacy Policy
+- [ ] Receive Production API Key approval → set as `RIOT_API_KEY`
+- [ ] Apply for RSO client (Riot contacts you after Production Key approval)
+- [ ] Receive RSO client credentials → set `RSO_CLIENT_ID` and `RSO_CLIENT_SECRET`
+- [ ] Configure RSO redirect URI in Riot Developer Portal → set `RSO_REDIRECT_URI`
+- [ ] Verify RSO flow end-to-end: `/connect` → click link → Riot login → redirect → player record updated with PUUID
+- [ ] Verify `/register-team` blocks unverified users with "Please run `/connect` first"
 
 ### Security
 
@@ -220,8 +233,10 @@ Complete every item before going live. Each checkbox must be ticked.
 - [ ] `GET /api/bot-status` returns `{"online":true}` within 10 min of bot starting
 - [ ] Admin login works at `/admin/login`
 - [ ] Discord OAuth login completes end-to-end (click login → Discord → redirect back → session set)
-- [ ] Bot responds to `/register-team test T123` in a private test Discord server
-- [ ] First `/submit` with a real `.rofl` file records match in DB
+- [ ] RSO OAuth flow completes end-to-end (`/connect` → click link → Riot login → redirect → PUUID stored)
+- [ ] Bot blocks `/register-team` for unverified user → "Please run `/connect` first"
+- [ ] After RSO verification: `/register-team test T123` succeeds in private test Discord server
+- [ ] First `/submit` with a real `.rofl` file records match + auto-adds unknown players
 
 ### Schema Migration (before first deploy and after each schema change)
 

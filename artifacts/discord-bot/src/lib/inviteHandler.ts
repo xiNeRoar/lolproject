@@ -104,7 +104,7 @@ export async function handleInviteButton(interaction: ButtonInteraction): Promis
           .setTitle(`Joined ${teamLabel}`)
           .setDescription(
             `You are now an active member.\n\n` +
-            `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
+            `• Verify your Riot Account: \`/connect\`\n` +
             `• Your team: ${PLATFORM_URL}/teams/${membership.teamId}`
           )
           .setFooter({ text: PLATFORM_URL }),

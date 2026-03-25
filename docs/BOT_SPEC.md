@@ -21,7 +21,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 1. No network hop — lower latency for user-facing commands
 2. No auth needed — bot is a trusted internal service, not an external client
 3. Simpler — no need to maintain a separate API key or session for the bot
-4. Transaction safety — bot can wrap complex operations (match + 10 match_players + ELO) in a single DB transaction
+4. Transaction safety — bot can wrap complex operations (match + 10 match_players + W/L update) in a single DB transaction
 
 **Trade-off:** If schema changes, both API server and bot need redeployment. Acceptable for a solo developer.
 
@@ -99,7 +99,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
     b. Create 10 `match_players` rows (same identity resolution as step 7)
     c. W/L updated for identified team only. No ELO for any scrim.
     d. Store .rofl file on disk
-    e. Reply: "✅ Match recorded (stats only — no ELO change). {Side} not identified as a registered team. Invite them: {platform URL}/register"
+    e. Reply: "✅ Match recorded (stats only). {Side} not identified as a registered team. Invite them: {platform URL}"
     f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim W/L."
 11. **Unknown player roster confirmation (PRD §6.2):**
     a. After reply, for each match_player with `playerId = null` on an identified team side: show 📨 "Add {riotId}" / "Skip" buttons via followUp message
@@ -244,7 +244,6 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
   - Player name (with ⚠ unlinked indicator)
   - KDA, CS, Gold, Damage, Vision columns
   - Item icons (7 slots, from Data Dragon CDN)
-- **ELO bar:** Shows before → after with green/red delta for both teams
 - **Footer:** Website link `🔗 {platformUrl}/matches/{matchId}` + VCLoL branding
 
 **Fallback:** If image rendering fails (e.g. missing canvas dependency, CDN timeout), the embed falls back to text fields showing champion · KDA · player name per row. The website link footer is always present regardless of render mode.

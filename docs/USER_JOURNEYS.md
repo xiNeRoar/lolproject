@@ -30,7 +30,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. MatchDetail page is self-explanatory: shows teams, result, stats, AND a "What is VCLoL?" micro-explainer
 
-**Current state:** ✅ Complete. Private matches return redacted result (#8). First-visit explainer banner added (#40). Step count: 1.
+**Current state:** ⚠️ Needs v3.1 update. Scrim matches: non-participants see Team A vs B + score only (no per-player stats). Tournament matches: fully public. Auth gate required (#8 redaction logic needs updating for 3-layer privacy).
 
 ---
 
@@ -42,7 +42,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Go to /register — see bot guide + Discord invite link
 3. Add bot to their server
 
-**Current state:** ✅ Complete. /register exists with bot guide + Step 3.5 /link-riot (#61). Bot invite link enabled (#37). Step count: 3.
+**Current state:** ⚠️ Needs v3.1 update. /register page needs update: remove /link-riot reference, add /connect + RSO flow explanation. Step 3 adds bot → Step 3.5 run /connect to verify Riot Account.
 
 ---
 
@@ -53,7 +53,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Use search bar (global search)
 2. Land on PlayerProfile or TeamProfile
 
-**Current state:** ✅ Global search bar in nav. Searches teams, players, events, and matches (#57). Home page shows Recent Matches section (#59). Matches page has team name filter + date sort (#64).
+**Current state:** ⚠️ Needs v3.1 update. Player search must only return RSO opt-in players (rsoOptIn=true). Non-opted players invisible in search. Team search unaffected (team aggregate always public).
 
 ---
 
@@ -92,13 +92,18 @@ If a feature doesn't appear in this document, it doesn't get built.
 
 ---
 
-#### J-07: Link my Riot ID
-**Entry:** Discord DM from bot (after being /add-ed)
-**Max steps:** 1 (Discord)
-**Journey:**
-1. Type `/link-riot RiotName#TAG` in Discord
+#### J-07: Verify my Riot Account (claim my profile)
+**Entry:** Discord (any server with VCLoL bot) or website
+**Max steps:** 2
+**Journey (Discord path):**
+1. `/connect` → bot sends one-time link
+2. Click link → browser: Discord OAuth + RSO OAuth → verified
 
-**Current state:** ✅ /link-riot command built and deployed (#6). Step count: 1.
+**Journey (website path):**
+1. Visit vclol.gg → "Login with Discord" → "Connect Riot Account"
+2. RSO OAuth → Riot login → redirect back → verified
+
+**Current state:** ⚠️ /connect command built (#191). Website RSO OAuth handler not yet built. Replaces /link-riot (deleted — trust-based = impersonation risk).
 
 ---
 
@@ -106,9 +111,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Entry:** `/players/RiotName`
 **Max steps:** 1
 **Journey:**
-1. Share URL. PlayerProfile shows: teams, aggregate stats (KDA, Win Rate %), champion pool with portrait icons, champion played per match, match dates, ELO trajectory, VODs.
+1. Share URL. PlayerProfile shows: career resume (teams played for, per-team W/L + KDA), champion pool with portrait icons, match dates, VODs. Only visible if player has opted in via RSO.
 
-**Current state:** ✅ Complete. PlayerProfile shows all stats, champion pool with portraits, playerChampion + date in recent matches, Win Rate %, multi-team ELO trajectory, VODs with View All link (#80, #77, #122).
+**Current state:** ⚠️ Needs v3.1 update. Remove ELO trajectory. Add career resume layout (per-team stats). Add RSO opt-in gate: profile only visible to others if player opted in. Non-opted profiles show "This player has not linked their account."
 
 ---
 
@@ -159,17 +164,14 @@ If a feature doesn't appear in this document, it doesn't get built.
 ---
 
 #### J-13: Add a new player to my roster
-**Entry:** Discord (primary) or Captain Hub (secondary)
-**Max steps:** 1 (Discord) / 3 (web)
-**Journey (Discord):**
-1. `/add @player` or `/add RiotName#TAG`
+**Entry:** Automatic via .rofl submission
+**Max steps:** 1
+**Journey:**
+1. Captain `/submit` .rofl → bot auto-identifies teammates via PUUID → captain confirms ✅ per player → added to roster with status active
 
-**Journey (web — Captain Hub):**
-1. Captain Hub → Roster section
-2. Click "Add Member" → enter RiotId
-3. Confirm
+Cross-server: teammates don't need to be in same Discord server. Teammates claim their profile later via `/connect` or website RSO.
 
-**Current state:** ✅ Bot /add command built (#4). CaptainHub roster section with Add by RiotId (#10, #15). Both paths work.
+**Current state:** ⚠️ Needs v3.1 update. /add command deleted (#191). .rofl auto-discovery with captain confirmation buttons is the only path. CaptainHub web "Add Member" needs removal or redesign.
 
 ---
 
@@ -191,9 +193,9 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Entry:** Captain Hub
 **Max steps:** 1
 **Journey:**
-1. Captain Hub → Roster section shows link status per member (✅ linked / ⚠️ pending)
+1. Captain Hub → Roster section shows RSO verification status per member (✅ verified / ⚠️ unlinked)
 
-**Current state:** ✅ CaptainHub Roster shows ✅ linked / ⚠️ pending per member. #15 done.
+**Current state:** ⚠️ Needs v3.1 update. Change indicator from /link-riot status to RSO verification status. ✅ = RSO verified (puuid set). ⚠️ = unverified (auto-added from .rofl).
 
 ---
 
@@ -206,7 +208,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 1. Players page — filter by role: Mid
 2. Scan list showing: riotId, team, games played, win rate — shortlist candidates
 
-**Current state:** ✅ Players page shows team, totalGames, winRate. Role filter + sort by games/winRate + min games filter. #22 + #43 done.
+**Current state:** ⚠️ Needs v3.1 update. Players page must only show RSO opt-in players. Non-opted players invisible. Add note: "Only players who have verified their Riot Account appear here."
 
 ---
 
@@ -216,8 +218,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 **Journey:**
 1. PlayerProfile shows: all teams, aggregate stats, champion pool, public VODs
 
-**Current state:** All this exists. ✅
-**Issue:** None.
+**Current state:** ⚠️ Needs v3.1 update. Profile only visible if player opted in. Non-opted: show placeholder page with CTA to /connect.
 
 ---
 
@@ -286,22 +287,22 @@ If a feature doesn't appear in this document, it doesn't get built.
 
 | Journey | Max Steps | Current Steps | Gap |
 |---------|-----------|---------------|-----|
-| J-01 Match link → understand context | 1 | 1 | ✅ #8 + #40 done |
-| J-02 Discover → join | 3 | 3 | ✅ #37 + #61 done |
-| J-03 Find player/team | 2 | 2 | ✅ #23 + #59 + #64 done |
+| J-01 Match link → understand context | 1 | 1 | ⚠️ v3.1 privacy gate needed |
+| J-02 Discover → join | 3 | 3.5 | ⚠️ v3.1: add /connect step |
+| J-03 Find player/team | 2 | 2 | ⚠️ v3.1: opt-in gate on player search |
 | J-04 See recent match performance | 2 | 2 | ✅ #16 + #68 done |
 | J-05 Watch match VOD | 3 | 3 | ✅ #16 done |
 | J-06 Request POV render | 1 | 1 | ✅ |
-| J-07 Link Riot ID | 1 | 1 | ✅ #6 done |
-| J-08 Competitive resume | 1 | 1 | ✅ #44 done |
+| J-07 Verify Riot Account | 2 | 2 | ⚠️ /connect built, website RSO pending |
+| J-08 Competitive resume | 1 | 1 | ⚠️ v3.1: remove ELO, add resume layout + opt-in gate |
 | J-09 Set match public | 2 | 2 | ✅ #14 + #15 + #62 done |
 | J-10 Set visibility default | 2 | 2 | ✅ #14 + #15 done |
 | J-11 Bulk set visibility | 3 | 3 | ✅ #14 + #15 done |
 | J-12 See team VODs | 1 | 1 | ✅ #17 done |
-| J-13 Add player to roster | 1/3 | 1/3 | ✅ #4 + #10 + #15 done |
+| J-13 Add player (auto from .rofl) | 1 | 1 | ⚠️ /add deleted, .rofl auto-add built |
 | J-14 Transfer captain | 1/3 | 1/3 | ✅ #4 + #14 + #15 done |
-| J-15 Check teammate link status | 1 | 1 | ✅ #15 done |
-| J-16 Find players by criteria | 2 | 2 | ✅ #22 done |
+| J-15 Check teammate verify status | 1 | 1 | ⚠️ v3.1: RSO status not link-riot |
+| J-16 Find players by criteria | 2 | 2 | ⚠️ v3.1: opt-in gate |
 | J-17 Verify player record | 1 | 1 | ✅ |
 | J-18 Watch player VOD | 2 | 2 | ✅ |
 | J-19 Platform health overview | 1 | 1 | ✅ #18 done |

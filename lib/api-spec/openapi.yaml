@@ -166,6 +166,73 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthMeResponse"
 
+  /auth/rso/authorize:
+    get:
+      operationId: getRsoAuthorize
+      tags: [auth]
+      summary: "v3.1: Redirect to Riot RSO OAuth login"
+      description: "Initiates RSO OAuth flow. If token query param is present (from bot /connect), links discordId. Otherwise requires existing Discord OAuth session."
+      parameters:
+        - name: token
+          in: query
+          schema:
+            type: string
+          description: "One-time token from bot /connect command (optional)"
+      responses:
+        "302":
+          description: Redirect to auth.riotgames.com
+
+  /auth/rso/callback:
+    get:
+      operationId: getRsoCallback
+      tags: [auth]
+      summary: "v3.1: RSO OAuth callback"
+      description: "Riot redirects here after player authenticates. Exchanges code for PUUID, links to player record."
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to success page
+
+  /auth/connect:
+    post:
+      operationId: postAuthConnect
+      tags: [auth]
+      summary: "v3.1: Exchange bot /connect token for auth session"
+      description: "Bot generates token via /connect command. Website calls this to validate token and begin RSO flow."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Token valid, proceed with RSO
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  discordId:
+                    type: string
+                  expiresAt:
+                    type: string
+        "400":
+          description: Token expired or invalid
+
   # ── Teams ───────────────────────────────────────────────────
 
   /teams:
@@ -683,6 +750,10 @@ paths:
       operationId: getPlayer
       tags: [players]
       summary: Get player by Riot ID
+      description: |
+        v3.1 visibility gate: only returns full profile if player has rsoOptIn=true.
+        Non-opted players return limited data (id only) or 404 for public access.
+        The player themselves (authenticated) always see their own full profile.
       parameters:
         - name: riotId
           in: path
@@ -827,7 +898,8 @@ paths:
       summary: Upload a .rofl file directly (fallback for >8MB files)
       description: >
         Accepts raw application/octet-stream binary. Runs the same parse +
-        team-match + ELO pipeline as the Discord bot /submit command.
+        team-match pipeline as the Discord bot /submit command.
+        v3.1: scrim matches record W/L only (no ELO). ELO only for tournament/event matches.
         Use when the .rofl file exceeds Discord's 8MB default attachment limit.
       tags: [Matches]
       parameters:
@@ -865,6 +937,7 @@ paths:
                   eloDeltas:
                     type: object
                     nullable: true
+                    description: "v3.1: always null for scrim matches. Only populated for tournament/event matches."
         "401":
           description: Missing X-Discord-Id header
         "403":
@@ -937,6 +1010,10 @@ paths:
       operationId: getMatch
       tags: [matches]
       summary: Get match with per-player stats
+      description: |
+        v3.1 visibility gates:
+        - matchType=scrim: non-participants see Team A vs B + score only (no matchPlayers). Login + participant sees full 10-player stats.
+        - matchType=ranked_tournament/event: public by default (full stats to all). Captain can override to private.
       parameters:
         - name: id
           in: path
@@ -998,10 +1075,11 @@ paths:
       operationId: getMatchPlayers
       tags: [matches]
       summary: Per-player stats for a match
-      description: >
-        Returns 10 player entries for a match. Subject to the same visibility gate as
-        GET /matches/{id}: public matches return full data to all; private matches return
-        full data to team members and admins only; non-members receive an empty array.
+      description: |
+        Returns 10 player entries for a match. v3.1 visibility gates:
+        - matchType=scrim: login + participant sees all 10. Non-participant gets empty array.
+        - matchType=ranked_tournament/event: public by default, returns all 10 to everyone. Captain can override to private.
+        Non-opted players (rsoOptIn=false) are masked in public views: riotId/puuid omitted, stats included anonymously.
       parameters:
         - name: id
           in: path
@@ -1686,7 +1764,11 @@ paths:
     get:
       operationId: getLadder
       tags: [ladder]
-      summary: Team ELO ladder
+      summary: Team leaderboard (W/L record; ELO when tournament data exists)
+      description: |
+        v3.1: sorted by wins desc at launch (scrim W/L record board).
+        When tournament matches exist, includes ELO ranking.
+        Team aggregate data (W/L, ELO) is always public.
       responses:
         "200":
           description: Ladder
@@ -1732,6 +1814,7 @@ paths:
       operationId: getTeamEloHistory
       tags: [eloHistory]
       summary: ELO history for a team
+      description: "v3.1: only contains entries from tournament/event matches. Scrim matches do not generate ELO history. May be empty if team has no tournament matches."
       parameters:
         - name: teamId
           in: path
@@ -2410,7 +2493,14 @@ components:
           type: boolean
         profileVisibility:
           type: string
-          description: public | private
+          description: "private | public | participants-only (v3.1: default PRIVATE)"
+        rsoOptIn:
+          type: boolean
+          description: "v3.1: true after RSO verified + player consents to public display"
+        rsoLinkedAt:
+          type: string
+          nullable: true
+          description: "When RSO was linked"
         email:
           type: string
           nullable: true
@@ -2489,7 +2579,7 @@ components:
           nullable: true
         profileVisibility:
           type: string
-          description: public | private
+          description: "private | public | participants-only (v3.1: default PRIVATE)"
           nullable: true
 
     PlayerProfile:
@@ -2686,6 +2776,15 @@ components:
           nullable: true
         resultSource:
           type: string
+          enum: [rofl_parse, tournament_api, admin_manual]
+        matchType:
+          type: string
+          enum: [scrim, ranked_tournament, event]
+          description: "v3.1: scrim = no ELO. ranked_tournament/event = ELO counted."
+        tournamentCode:
+          type: string
+          nullable: true
+          description: "Riot Tournament API code. Set for ranked_tournament matches."
         visibleAfter:
           type: string
           nullable: true
@@ -2727,7 +2826,7 @@ components:
           type: string
         updatedAt:
           type: string
-      required: [id, sideAName, sideBName, matchTitle, winnerName, resultSource, isPlayoff, createdAt, updatedAt]
+      required: [id, sideAName, sideBName, matchTitle, winnerName, resultSource, matchType, isPlayoff, createdAt, updatedAt]
 
     MatchDetail:
       allOf:
@@ -2777,6 +2876,13 @@ components:
           type: string
           nullable: true
         resultSource:
+          type: string
+          nullable: true
+        matchType:
+          type: string
+          nullable: true
+          description: "scrim | ranked_tournament | event"
+        tournamentCode:
           type: string
           nullable: true
         eventId:

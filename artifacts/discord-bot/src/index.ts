@@ -2,18 +2,19 @@
  * VCLoL Discord Bot — Entry Point
  *
  * Commands implemented:
- *   #3  /register-team  — create team, become captain
- *   #4  /add            — add player to team
- *   #6  /link-riot      — link Riot account
- *   #5  /submit         — submit .rofl replay
- *   #24 /claim-match    — claim unregistered side
- *   #25 /visibility     — control match visibility
- *   #26 /transfer-captain — transfer captaincy
- *   #27 /leave          — leave team
- *   #70 /register-event — register team for event
- *   #141 /stats         — quick stats lookup
- *   #141 /roster        — show team roster
- *   #141 /remove        — captain removes member
+ *   /register-team  — create team (requires RSO verified)
+ *   /submit         — submit .rofl replay (auto-adds teammates)
+ *   /connect        — send RSO verification link (v3.1)
+ *   /claim-match    — claim unregistered side
+ *   /visibility     — control match/profile visibility
+ *   /transfer-captain — transfer captaincy
+ *   /leave          — leave team
+ *   /register-event — register team for event
+ *   /stats          — quick stats lookup
+ *   /roster         — show team roster
+ *   /remove         — captain removes member
+ *
+ * Deleted (v3.1): /add (→ .rofl auto-discovery), /link-riot (→ RSO /connect)
  */
 
 import {
