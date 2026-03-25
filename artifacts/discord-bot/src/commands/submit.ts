@@ -2,7 +2,7 @@
  * /submit
  *
  * Core match recording command. User attaches a .rofl file.
- * Parses it, identifies both teams, records match + ELO in a transaction.
+ * Parses it, identifies both teams, records match + stats in a transaction.
  * Spec: docs/BOT_SPEC.md → /submit
  */
 
@@ -29,15 +29,11 @@ import {
   teamMembersTable,
   playersTable,
   playerBansTable,
-  ladderSettingsTable,
-  eloHistoryTable,
-  playerBadgesTable,
   notificationsTable,
 } from "@workspace/db";
 import { eq, and, inArray, or, isNull, gt, desc } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "../lib/rofl-parser.js";
 import { matchTeams } from "../lib/team-matcher.js";
-import { calculateElo } from "../lib/elo.js";
 import { checkBan } from "../lib/checkBan.js";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
@@ -283,48 +279,23 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   // ── 8. Record match in transaction ──────────────────────────────────────
-  const [settings] = await db.select().from(ladderSettingsTable).limit(1);
-  const kFactor = settings?.kFactor ?? 32;
 
   let matchId: number;
-  let eloDeltas: { teamABefore: number; teamAAfter: number; teamBBefore: number; teamBAfter: number } | null = null;
 
   try {
     await db.transaction(async (tx) => {
       // ELO calculation (only if both teams identified)
-      let teamAEloBefore: number | null = null;
-      let teamAEloAfter: number | null = null;
-      let teamBEloBefore: number | null = null;
-      let teamBEloAfter: number | null = null;
-
-      // Fetch team settings (ELO + peakElo + defaultMatchVisibility) for both sides
+      // Fetch team settings (defaultMatchVisibility) for both sides
       const [teamA] = sideA.teamId
         ? await tx
-            .select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .select({ defaultMatchVisibility: teamsTable.defaultMatchVisibility })
             .from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
         : [undefined];
       const [teamB] = sideB.teamId
         ? await tx
-            .select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility })
+            .select({ defaultMatchVisibility: teamsTable.defaultMatchVisibility })
             .from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
         : [undefined];
-
-      if (sideA.teamId && sideB.teamId) {
-        const eloA = teamA?.teamElo ?? 1000;
-        const eloB = teamB?.teamElo ?? 1000;
-
-        teamAEloBefore = eloA;
-        teamBEloBefore = eloB;
-        teamAEloAfter = calculateElo(eloA, eloB, blueWon, kFactor);
-        teamBEloAfter = calculateElo(eloB, eloA, !blueWon, kFactor);
-
-        eloDeltas = {
-          teamABefore: eloA,
-          teamAAfter: teamAEloAfter,
-          teamBBefore: eloB,
-          teamBAfter: teamBEloAfter,
-        };
-      }
 
       // Create match row
       // Derive visibleAfter from team's defaultMatchVisibility setting.
@@ -352,10 +323,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           resultSource: "rofl_parse",
           roflFilePath: roflFilePath ?? null,
           visibleAfter,
-          teamAEloBefore,
-          teamAEloAfter,
-          teamBEloBefore,
-          teamBEloAfter,
         })
         .returning({ id: matchesTable.id });
 
@@ -399,8 +366,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         }))
       );
 
-      // Update team ELO + wins/losses + lastMatchAt
-      if (sideA.teamId && sideB.teamId && eloDeltas) {
+      // Update wins/losses + lastMatchAt (v3.1: no ELO for scrims)
+      if (sideA.teamId && sideB.teamId) {
         const now = new Date();
 
         // Read current wins/losses for both teams, then update atomically
@@ -410,8 +377,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .from(teamsTable).where(eq(teamsTable.id, sideB.teamId));
 
         await tx.update(teamsTable).set({
-          teamElo: eloDeltas.teamAAfter,
-          peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
+
           wins: blueWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),
           losses: !blueWon ? (teamARow?.losses ?? 0) + 1 : (teamARow?.losses ?? 0),
           lastMatchAt: now,
@@ -419,31 +385,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         }).where(eq(teamsTable.id, sideA.teamId));
 
         await tx.update(teamsTable).set({
-          teamElo: eloDeltas.teamBAfter,
-          peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
+
           wins: !blueWon ? (teamBRow?.wins ?? 0) + 1 : (teamBRow?.wins ?? 0),
           losses: blueWon ? (teamBRow?.losses ?? 0) + 1 : (teamBRow?.losses ?? 0),
           lastMatchAt: now,
           updatedAt: now,
         }).where(eq(teamsTable.id, sideB.teamId));
 
-        // Write elo_history
-        await tx.insert(eloHistoryTable).values([
-          {
-            teamId: sideA.teamId,
-            elo: eloDeltas.teamAAfter,
-            delta: eloDeltas.teamAAfter - eloDeltas.teamABefore,
-            reason: "match",
-            matchId,
-          },
-          {
-            teamId: sideB.teamId,
-            elo: eloDeltas.teamBAfter,
-            delta: eloDeltas.teamBAfter - eloDeltas.teamBBefore,
-            reason: "match",
-            matchId,
-          },
-        ]);
       }
 
       // Create notification rows for all known players
@@ -487,12 +435,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     checkRosterInactivity(identifiedTeamIds, matchId!).catch((err) =>
       console.error("[roster-inactivity] Check failed:", err)
     );
-    // Check climber badge for both teams (fire-and-forget)
-    for (const tid of identifiedTeamIds) {
-      checkClimberBadgeBot(tid).catch((err) =>
-        console.error("[climber-badge] Check failed:", err)
-      );
-    }
+
   }
 
   // ── 10. Build scoreboard data ────────────────────────────────────────────
@@ -544,7 +487,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       kda: `${p.kills}/${p.deaths}/${p.assists}`,
       linked: p.linked,
     })),
-    eloDeltas,
     bothTeamsIdentified: !!(sideA.teamId && sideB.teamId),
   });
 
@@ -560,8 +502,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       gameVersion: match.gameVersion,
       bluePlayers: blueScoreboard,
       redPlayers: redScoreboard,
-      eloDeltas,
-      platformUrl,
+        platformUrl,
     });
 
     const attachment = new AttachmentBuilder(imgBuffer, { name: "scoreboard.png" });
@@ -706,7 +647,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
           if (!existingMember) {
             const [newMembership] = await db.insert(teamMembersTable)
-              .values({ teamId: u.teamId, playerId, role: null, status: "pending" })
+              .values({ teamId: u.teamId, playerId, role: null, status: "active" })
               .returning();
 
             // DM invite buttons if player has discordId
@@ -739,7 +680,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .set({ playerId })
             .where(and(eq(matchPlayersTable.matchId, matchId!), eq(matchPlayersTable.puuid, u.puuid)));
 
-          await btn.update({ components: disableRow(rows, idx, `📨 ${u.riotId} invited`) });
+          await btn.update({ components: disableRow(rows, idx, `✅ ${u.riotId} added`) });
         } catch (err) {
           console.error(`[submit] Add unknown player ${u.riotId}:`, err);
           await btn.update({ components: disableRow(rows, idx, `❌ Failed`) });
@@ -815,12 +756,11 @@ function buildMatchEmbed(opts: {
   gameVersion: string;
   bluePlayers: PlayerDisplay[];
   redPlayers: PlayerDisplay[];
-  eloDeltas: { teamABefore: number; teamAAfter: number; teamBBefore: number; teamBAfter: number } | null;
   bothTeamsIdentified: boolean;
 }) {
   const {
     matchId, sideAName, sideBName, winnerName, blueWon,
-    duration, gameVersion, bluePlayers, redPlayers, eloDeltas, bothTeamsIdentified,
+    duration, gameVersion, bluePlayers, redPlayers, bothTeamsIdentified,
   } = opts;
 
   const embed = new EmbedBuilder()
@@ -841,25 +781,14 @@ function buildMatchEmbed(opts: {
     { name: `🔴 ${sideBName}`, value: formatPlayers(redPlayers), inline: true }
   );
 
-  if (eloDeltas && bothTeamsIdentified) {
-    const aDelta = eloDeltas.teamAAfter - eloDeltas.teamABefore;
-    const bDelta = eloDeltas.teamBAfter - eloDeltas.teamBBefore;
-    embed.addFields({
-      name: "📊 ELO",
-      value:
-        `${sideAName}: ${eloDeltas.teamABefore} → ${eloDeltas.teamAAfter} (${aDelta >= 0 ? "+" : ""}${aDelta})\n` +
-        `${sideBName}: ${eloDeltas.teamBBefore} → ${eloDeltas.teamBAfter} (${bDelta >= 0 ? "+" : ""}${bDelta})`,
-    });
-  }
-
   if (!bothTeamsIdentified) {
     const platformUrl = process.env.PLATFORM_URL ?? "https://vclol.gg";
     embed.addFields({
-      name: "⚠️ No ELO change",
+      name: "⚠️ Opponent not registered",
       value:
-        "One or both teams aren't registered. Stats recorded without ELO update.\n" +
-        `Use \`/claim-match ${matchId}\` after registering to claim ELO.\n` +
-        `Invite them to register: ${platformUrl}/register`,
+        "One or both teams aren't registered on VCLoL. Stats recorded.\n" +
+        `Use \`/claim-match ${matchId}\` after registering to claim this match.\n` +
+        `Invite them: ${platformUrl}`,
     });
   }
 
@@ -870,7 +799,7 @@ function buildMatchEmbed(opts: {
       value:
         `${unlinked.length} player(s) not linked to a VCLoL profile:\n` +
         unlinked.map((p) => `• ${p.riotId}`).join("\n") +
-        "\nThey can use `/link-riot` to claim their stats.",
+        "\nThey can use `/connect` to verify their account.",
     });
   }
 
@@ -952,76 +881,5 @@ async function checkRosterInactivity(teamIds: number[], currentMatchId: number):
         });
       }
     }
-  }
-}
-
-// ─── Climber badge check (PRD §8, Issue #131) ─────────────────────────────────
-
-const CLIMB_THRESHOLD = 3; // positions climbed to earn climber badge
-
-/**
- * Award climber badge when a team climbs 3+ ladder positions since season start.
- * Bot-side version: direct DB access, mirrors badges.ts checkClimberBadge().
- */
-async function checkClimberBadgeBot(teamId: number): Promise<void> {
-  const [resetEntry] = await db
-    .select({ elo: eloHistoryTable.elo })
-    .from(eloHistoryTable)
-    .where(and(eq(eloHistoryTable.teamId, teamId), eq(eloHistoryTable.reason, "season_reset")))
-    .orderBy(desc(eloHistoryTable.createdAt))
-    .limit(1);
-
-  const [baselineEntry] = resetEntry
-    ? [resetEntry]
-    : await db
-        .select({ elo: eloHistoryTable.elo })
-        .from(eloHistoryTable)
-        .where(and(eq(eloHistoryTable.teamId, teamId), eq(eloHistoryTable.reason, "registration")))
-        .limit(1);
-
-  if (!baselineEntry) return;
-  const baselineElo = baselineEntry.elo;
-
-  // Current ladder (active teams ordered by ELO desc)
-  const allActive = await db
-    .select({ id: teamsTable.id, teamElo: teamsTable.teamElo })
-    .from(teamsTable)
-    .where(eq(teamsTable.isActive, true))
-    .orderBy(desc(teamsTable.teamElo));
-
-  const currentRankIdx = allActive.findIndex((t) => t.id === teamId);
-  if (currentRankIdx === -1) return;
-  const currentRank = currentRankIdx + 1;
-
-  const teamsAbove = allActive.filter((t) => t.teamElo >= baselineElo);
-  const baselineRank = teamsAbove.length + (teamsAbove.some((t) => t.id === teamId) ? 0 : 1);
-  const positionsClimbed = baselineRank - currentRank;
-
-  if (positionsClimbed < CLIMB_THRESHOLD) return;
-
-  // Award to all active team members
-  const members = await db
-    .select({ playerId: teamMembersTable.playerId })
-    .from(teamMembersTable)
-    .where(and(eq(teamMembersTable.teamId, teamId), eq(teamMembersTable.status, "active")));
-
-  for (const m of members) {
-    const existing = await db
-      .select({ id: playerBadgesTable.id })
-      .from(playerBadgesTable)
-      .where(and(eq(playerBadgesTable.playerId, m.playerId), eq(playerBadgesTable.badgeType, "climber")))
-      .limit(1);
-    if (existing.length > 0) continue;
-    await db.insert(playerBadgesTable).values({ playerId: m.playerId, badgeType: "climber" });
-    await db.insert(notificationsTable).values({
-      playerId: m.playerId,
-      type: "badge_earned",
-      title: "Badge earned",
-      message: "You earned the 'climber' badge for climbing 3+ ladder positions!",
-      isRead: false,
-      dmSent: false,
-      dmFailed: false,
-    });
-    console.log(`[climber-badge] Awarded to player ${m.playerId} (team ${teamId} climbed ${positionsClimbed} positions)`);
   }
 }

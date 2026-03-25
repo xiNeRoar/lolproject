@@ -18,3 +18,4 @@ export * from "./notifications";
 export * from "./adminActions";
 export * from "./playerBans";
 export * from "./botHeartbeats";
+export * from "./authSessions";

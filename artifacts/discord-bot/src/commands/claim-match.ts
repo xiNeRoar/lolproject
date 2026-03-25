@@ -2,7 +2,7 @@
  * /claim-match <matchId>
  *
  * Captain claims their team for an unregistered side of a match.
- * Calculates ELO retroactively if both sides become known.
+ * Updates W/L when both sides become known.
  * Spec: docs/BOT_SPEC.md → /claim-match
  */
 
@@ -23,11 +23,8 @@ import {
   teamMembersTable,
   playersTable,
   teamsTable,
-  eloHistoryTable,
-  ladderSettingsTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import { calculateElo } from "../lib/elo.js";
 import { checkBan } from "../lib/checkBan.js";
 
 export const data = new SlashCommandBuilder()
@@ -185,68 +182,31 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     updatedAt: new Date(),
   }).where(eq(matchesTable.id, matchId));
 
-  // ── Calculate retroactive ELO if both sides now known ────────────────────
+  // ── Update W/L for both sides if both now known (v3.1: no ELO for scrims) ──
   const updatedTeamAId = hasNullA ? claimTeamId : match.teamAId!;
   const updatedTeamBId = hasNullB ? claimTeamId : match.teamBId!;
 
-  let eloText = "";
-
   if (updatedTeamAId && updatedTeamBId) {
-    const [teamA] = await db.select().from(teamsTable).where(eq(teamsTable.id, updatedTeamAId));
-    const [teamB] = await db.select().from(teamsTable).where(eq(teamsTable.id, updatedTeamBId));
-    const [settings] = await db.select().from(ladderSettingsTable).limit(1);
-    const kFactor = settings?.kFactor ?? 32;
-
-    const eloA = teamA?.teamElo ?? 1000;
-    const eloB = teamB?.teamElo ?? 1000;
-
-    // Determine winner from match data.
-    // sideAName always = blue side name (set at match creation from .rofl).
-    // teamAWon = blueWon regardless of which side was claimed — Side A is always blue.
     const blueWon = match.winnerName === match.sideAName;
     const teamAWon = blueWon;
+    const now = new Date();
 
-    const newEloA = calculateElo(eloA, eloB, teamAWon, kFactor);
-    const newEloB = calculateElo(eloB, eloA, !teamAWon, kFactor);
-    const deltaA = newEloA - eloA;
-    const deltaB = newEloB - eloB;
+    const [teamARow] = await db.select({ wins: teamsTable.wins, losses: teamsTable.losses })
+      .from(teamsTable).where(eq(teamsTable.id, updatedTeamAId));
+    const [teamBRow] = await db.select({ wins: teamsTable.wins, losses: teamsTable.losses })
+      .from(teamsTable).where(eq(teamsTable.id, updatedTeamBId));
 
-    await db.transaction(async (tx) => {
-      await tx.update(matchesTable).set({
-        teamAEloBefore: eloA, teamAEloAfter: newEloA,
-        teamBEloBefore: eloB, teamBEloAfter: newEloB,
-        updatedAt: new Date(),
-      }).where(eq(matchesTable.id, matchId));
+    await db.update(teamsTable).set({
+      wins: teamAWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),
+      losses: !teamAWon ? (teamARow?.losses ?? 0) + 1 : (teamARow?.losses ?? 0),
+      lastMatchAt: now, updatedAt: now,
+    }).where(eq(teamsTable.id, updatedTeamAId));
 
-      const now = new Date();
-      await tx.update(teamsTable).set({
-        teamElo: newEloA,
-        peakElo: Math.max(newEloA, teamA?.peakElo ?? 1000),
-        wins: teamAWon ? (teamA?.wins ?? 0) + 1 : (teamA?.wins ?? 0),
-        losses: !teamAWon ? (teamA?.losses ?? 0) + 1 : (teamA?.losses ?? 0),
-        lastMatchAt: now, updatedAt: now,
-      }).where(eq(teamsTable.id, updatedTeamAId));
-
-      await tx.update(teamsTable).set({
-        teamElo: newEloB,
-        peakElo: Math.max(newEloB, teamB?.peakElo ?? 1000),
-        wins: !teamAWon ? (teamB?.wins ?? 0) + 1 : (teamB?.wins ?? 0),
-        losses: teamAWon ? (teamB?.losses ?? 0) + 1 : (teamB?.losses ?? 0),
-        lastMatchAt: now, updatedAt: now,
-      }).where(eq(teamsTable.id, updatedTeamBId));
-
-      await tx.insert(eloHistoryTable).values([
-        { teamId: updatedTeamAId, elo: newEloA, delta: deltaA, reason: "match", matchId },
-        { teamId: updatedTeamBId, elo: newEloB, delta: deltaB, reason: "match", matchId },
-      ]);
-    });
-
-    const aName = teamA?.name ?? "Team A";
-    const bName = teamB?.name ?? "Team B";
-    eloText =
-      `\n\n📊 **ELO updated:**\n` +
-      `${aName}: ${eloA} → ${newEloA} (${deltaA >= 0 ? "+" : ""}${deltaA})\n` +
-      `${bName}: ${eloB} → ${newEloB} (${deltaB >= 0 ? "+" : ""}${deltaB})`;
+    await db.update(teamsTable).set({
+      wins: !teamAWon ? (teamBRow?.wins ?? 0) + 1 : (teamBRow?.wins ?? 0),
+      losses: teamAWon ? (teamBRow?.losses ?? 0) + 1 : (teamBRow?.losses ?? 0),
+      lastMatchAt: now, updatedAt: now,
+    }).where(eq(teamsTable.id, updatedTeamBId));
   }
 
   const embed = new EmbedBuilder()
@@ -254,7 +214,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setTitle(`✅ Match #${matchId} claimed`)
     .setDescription(
       `**${claimTeamName} [${claimTeamTag}]** claimed the ${unclaimedSide === "A" ? "blue" : "red"} side.` +
-      eloText
+      (updatedTeamAId && updatedTeamBId ? "\n\nW/L records updated for both teams." : "")
     );
 
   await interaction.editReply({ embeds: [embed], components: [] });

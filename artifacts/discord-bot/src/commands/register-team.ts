@@ -16,7 +16,6 @@ import {
   teamsTable,
   teamMembersTable,
   playersTable,
-  eloHistoryTable,
 } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
 import { checkBan } from "../lib/checkBan.js";
@@ -85,22 +84,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  // ── 4. Find or create player record ──────────────────────────────────────
-  let player = (
+  // ── 4. RSO verification check (v3.1) ────────────────────────────────────
+  const player = (
     await db.select().from(playersTable).where(eq(playersTable.discordId, discordId)).limit(1)
   )[0];
 
-  if (!player) {
-    const [created] = await db
-      .insert(playersTable)
-      .values({
-        discordId,
-        discordUsername,
-        riotId: `pending_${discordId}`,
-        registrationStatus: "active",
-      })
-      .returning();
-    player = created!;
+  if (!player || !player.puuid) {
+    await replyError(interaction,
+      "❌ Please verify your Riot Account first. Run `/connect` to get started."
+    );
+    return;
   }
 
   // ── 3. Rate limit: max 1 team created per 24 hours ───────────────────────
@@ -163,29 +156,18 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       status: "active",
     });
 
-    // Write ELO baseline row
-    await db.insert(eloHistoryTable).values({
-      teamId: team!.id,
-      elo: 1000,
-      delta: 0,
-      reason: "registration",
-      matchId: null,
-    });
-
     // ── 5. Reply ──────────────────────────────────────────────────────────────
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
       .setTitle(`✅ Team **${name}** [${rawTag}] created!`)
       .addFields(
         { name: "Captain", value: `<@${discordId}>`, inline: true },
-        { name: "Team ELO", value: "1000", inline: true }
       )
       .addFields({
         name: "Next steps",
         value:
-          `• Add teammates: \`/add @player\` or \`/add RiotName#TAG\`\n` +
-          `• Link your Riot ID: \`/link-riot YourName#TAG\`\n` +
-          `• Submit a match: \`/submit\` with a .rofl file attachment`,
+          `• Submit a match: \`/submit\` with a .rofl file attachment\n` +
+          `• Teammates are auto-added from .rofl data`,
       })
       .setFooter({ text: `Team ID: ${team!.id}` });
 

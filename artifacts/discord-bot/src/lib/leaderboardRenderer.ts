@@ -32,7 +32,7 @@ export async function renderLeaderboard(data: LeaderboardData): Promise<Buffer> 
   y += 26;
 
   ctx.font = '400 11px "Inter", sans-serif'; ctx.fillStyle = C.mut;
-  ctx.fillText("#", 28, y+14); ctx.fillText("TEAM", 56, y+14); ctx.fillText("ELO", 320, y+14); ctx.fillText("W/L", 400, y+14);
+  ctx.fillText("#", 28, y+14); ctx.fillText("TEAM", 56, y+14); ctx.fillText("RECORD", 300, y+14); ctx.fillText("WIN%", 420, y+14);
   y += 22;
 
   for (let i = 0; i < ec; i++) {
@@ -42,8 +42,8 @@ export async function renderLeaderboard(data: LeaderboardData): Promise<Buffer> 
     ctx.font = '600 14px "Inter SemiBold", sans-serif'; ctx.fillStyle = C.fg; ctx.fillText(e.teamName, 56, ry+22);
     const tw = ctx.measureText(e.teamName).width;
     ctx.font = '400 12px "Inter", sans-serif'; ctx.fillStyle = C.mut; ctx.fillText(`[${e.teamTag}]`, 56+tw+6, ry+22);
-    ctx.font = '600 14px "Inter SemiBold", sans-serif'; ctx.fillStyle = C.fg; ctx.fillText(String(e.elo), 320, ry+22);
-    ctx.font = '400 13px "Inter", sans-serif'; ctx.fillStyle = C.mut; ctx.fillText(`${e.wins}W / ${e.losses}L`, 400, ry+22);
+    ctx.font = '600 14px "Inter SemiBold", sans-serif'; ctx.fillStyle = C.fg; ctx.fillText(`${e.wins}W-${e.losses}L`, 300, ry+22);
+    ctx.font = '400 13px "Inter", sans-serif'; ctx.fillStyle = C.mut; const wr = e.wins+e.losses > 0 ? Math.round(e.wins/(e.wins+e.losses)*100) : 0; ctx.fillText(`${wr}%`, 420, ry+22);
   }
 
   ctx.font = '400 11px "Inter", sans-serif'; ctx.fillStyle = C.pri; ctx.fillText(data.platformUrl, 24, H-18);

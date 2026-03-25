@@ -29,7 +29,9 @@ export const matchesTable = pgTable("matches", {
   gameId: text("game_id").unique(),
   gameDuration: integer("game_duration"), // milliseconds
   gameVersion: text("game_version"), // patch string
-  resultSource: text("result_source").notNull().default("rofl_parse"), // rofl_parse | admin_manual
+  matchType: text("match_type").notNull().default("scrim"), // scrim | ranked_tournament | event (v3.1: ELO only for ranked_tournament + event)
+  resultSource: text("result_source").notNull().default("rofl_parse"), // rofl_parse | tournament_api | admin_manual
+  tournamentCode: text("tournament_code"), // Riot Tournament API code, nullable
   roflFilePath: text("rofl_file_path"),
 
   // Visibility: private for 7 days, then auto-public. Captain can override.

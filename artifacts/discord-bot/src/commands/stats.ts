@@ -2,7 +2,7 @@
  * /stats [team|player] [name]
  *
  * Quick stats lookup in Discord.
- * - /stats team TeamName  → team ELO, W/L, recent 5 matches
+ * - /stats team TeamName  → team W/L, recent 5 matches
  * - /stats player RiotId#TAG → KDA avg, champion pool top 3, teams
  * - No arguments → invoker's own stats
  * Spec: docs/BOT_SPEC.md → /stats
@@ -121,8 +121,7 @@ async function showTeamStats(
     .setColor(0x5865f2)
     .setTitle(`📊 ${team.name} [${team.tag}]`)
     .addFields(
-      { name: "ELO", value: String(team.teamElo), inline: true },
-      { name: "W/L", value: `${team.wins}W / ${team.losses}L`, inline: true },
+      { name: "Record", value: `${team.wins}W / ${team.losses}L`, inline: true },
       { name: "Win Rate", value: winRate != null ? `${winRate}%` : "—", inline: true }
     );
 

@@ -32,8 +32,6 @@ import { startSeasonBroadcaster } from "./lib/seasonBroadcaster.js";
 import { handleInviteButton, cleanupExpiredInvites } from "./lib/inviteHandler.js";
 
 import * as registerTeam from "./commands/register-team.js";
-import * as add from "./commands/add.js";
-import * as linkRiot from "./commands/link-riot.js";
 import * as submit from "./commands/submit.js";
 import * as claimMatch from "./commands/claim-match.js";
 import * as visibility from "./commands/visibility.js";
@@ -43,8 +41,9 @@ import * as registerEvent from "./commands/register-event.js";
 import * as stats from "./commands/stats.js";
 import * as roster from "./commands/roster.js";
 import * as remove from "./commands/remove.js";
+import * as connect from "./commands/connect.js";
 
-const commands = [registerTeam, add, linkRiot, submit, claimMatch, visibility, leave, transferCaptain, registerEvent, stats, roster, remove];
+const commands = [registerTeam, submit, claimMatch, visibility, leave, transferCaptain, registerEvent, stats, roster, remove, connect];
 
 // ── Build command collection ───────────────────────────────────────────────
 

@@ -48,7 +48,7 @@ async function getTop5(): Promise<LeaderboardEntry[]> {
     .select({ name: teamsTable.name, tag: teamsTable.tag, teamElo: teamsTable.teamElo, wins: teamsTable.wins, losses: teamsTable.losses })
     .from(teamsTable)
     .where(eq(teamsTable.isActive, true))
-    .orderBy(desc(teamsTable.teamElo))
+    .orderBy(desc(teamsTable.wins))
     .limit(5);
 
   return teams.map((t, i) => ({
@@ -150,7 +150,7 @@ async function checkAndBroadcast(client: Client): Promise<void> {
       sendOpts.files = [att];
     } catch (err) {
       console.error("[season-broadcast] Leaderboard render failed:", err);
-      const textList = entries.map((e: LeaderboardEntry) => `${e.position}. **${e.teamName}** [${e.teamTag}] — ${e.elo} ELO`).join("\n");
+      const textList = entries.map((e: LeaderboardEntry) => `${e.position}. **${e.teamName}** [${e.teamTag}] — ${e.wins}W/${e.losses}L`).join("\n");
       embed.setDescription(`${subtitle}\n\nCurrent top 5:\n${textList}`);
     }
   }

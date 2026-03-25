@@ -85,10 +85,6 @@ export interface ScoreboardData {
   gameVersion: string;
   bluePlayers: ScoreboardPlayer[];
   redPlayers: ScoreboardPlayer[];
-  eloDeltas: {
-    teamABefore: number; teamAAfter: number;
-    teamBBefore: number; teamBAfter: number;
-  } | null;
   platformUrl: string;
 }
 
@@ -153,9 +149,8 @@ export async function renderScoreboard(data: ScoreboardData): Promise<Buffer> {
   // Calculate dynamic height
   const headerSection = 70;  // title + subtitle
   const sideSection = HEADER_HEIGHT + COL_HEADER_HEIGHT + (5 * ROW_HEIGHT);
-  const eloSection = data.eloDeltas ? 40 : 0;
   const footerSection = 36;
-  const totalHeight = PADDING + headerSection + 12 + sideSection + 12 + sideSection + 12 + eloSection + footerSection + PADDING;
+  const totalHeight = PADDING + headerSection + 12 + sideSection + 12 + sideSection + 12 + footerSection + PADDING;
 
   const canvas = createCanvas(WIDTH, totalHeight);
   const ctx = canvas.getContext("2d");
@@ -207,47 +202,6 @@ export async function renderScoreboard(data: ScoreboardData): Promise<Buffer> {
 
   // ── Red Side ────────────────────────────────────────────────────────────
   y = await drawSide(ctx, y, "RED", data.sideBName, data.redPlayers, !data.blueWon);
-
-  // ── ELO Section ─────────────────────────────────────────────────────────
-  if (data.eloDeltas) {
-    y += 12;
-
-    // ELO bar background
-    ctx.fillStyle = COLORS.cardLight;
-    roundRect(ctx, PADDING, y, WIDTH - 2 * PADDING, 32, 4);
-    ctx.fill();
-
-    ctx.font = '600 13px "Inter SemiBold", sans-serif';
-    const aDelta = data.eloDeltas.teamAAfter - data.eloDeltas.teamABefore;
-    const bDelta = data.eloDeltas.teamBAfter - data.eloDeltas.teamBBefore;
-
-    let eloX = PADDING + 12;
-    ctx.fillStyle = COLORS.muted;
-    ctx.fillText("ELO", eloX, y + 21);
-    eloX += 40;
-
-    // Team A ELO
-    ctx.fillStyle = COLORS.foreground;
-    ctx.fillText(`${data.sideAName}: ${data.eloDeltas.teamABefore} → ${data.eloDeltas.teamAAfter}`, eloX, y + 21);
-    eloX += ctx.measureText(`${data.sideAName}: ${data.eloDeltas.teamABefore} → ${data.eloDeltas.teamAAfter}`).width + 6;
-    ctx.fillStyle = aDelta >= 0 ? COLORS.green : COLORS.red;
-    ctx.fillText(`(${aDelta >= 0 ? "+" : ""}${aDelta})`, eloX, y + 21);
-    eloX += ctx.measureText(`(${aDelta >= 0 ? "+" : ""}${aDelta})`).width + 20;
-
-    // Separator
-    ctx.fillStyle = COLORS.border;
-    ctx.fillText("|", eloX, y + 21);
-    eloX += 20;
-
-    // Team B ELO
-    ctx.fillStyle = COLORS.foreground;
-    ctx.fillText(`${data.sideBName}: ${data.eloDeltas.teamBBefore} → ${data.eloDeltas.teamBAfter}`, eloX, y + 21);
-    eloX += ctx.measureText(`${data.sideBName}: ${data.eloDeltas.teamBBefore} → ${data.eloDeltas.teamBAfter}`).width + 6;
-    ctx.fillStyle = bDelta >= 0 ? COLORS.green : COLORS.red;
-    ctx.fillText(`(${bDelta >= 0 ? "+" : ""}${bDelta})`, eloX, y + 21);
-
-    y += 36;
-  }
 
   // ── Footer ──────────────────────────────────────────────────────────────
   y += 8;

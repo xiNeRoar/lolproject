@@ -7,7 +7,7 @@ const fontsDir = join(__dirname, "..", "fonts");
 let fr = false;
 function rf(): void { if (fr) return; try { GlobalFonts.registerFromPath(join(fontsDir, "Inter-Regular.ttf"), "Inter"); GlobalFonts.registerFromPath(join(fontsDir, "Inter-SemiBold.ttf"), "Inter SemiBold"); GlobalFonts.registerFromPath(join(fontsDir, "Outfit-Bold.ttf"), "Outfit Bold"); fr = true; } catch {} }
 function rr(ctx: any, x: number, y: number, w: number, h: number, r: number) { ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath(); }
-function ebc(elo: number): string { if (elo >= 1400) return C.gold; if (elo >= 1200) return C.purp; if (elo >= 1100) return C.blu; return C.mut; }
+function wbc(wins: number): string { if (wins >= 50) return C.gold; if (wins >= 25) return C.purp; if (wins >= 10) return C.blu; return C.mut; }
 
 export interface TeamCardData {
   teamName: string; teamTag: string; elo: number;
@@ -33,11 +33,11 @@ export async function renderTeamCard(data: TeamCardData): Promise<Buffer> {
   ctx.fillText(`[${data.teamTag}]`, 24+nw+8, y+20);
   y += 40;
 
-  const bc = ebc(data.elo);
+  const bc = wbc(data.wins);
   rr(ctx, 24, y, 80, 28, 4); ctx.fillStyle = bc+"20"; ctx.fill();
   ctx.strokeStyle = bc+"40"; ctx.lineWidth = 1; ctx.stroke();
   ctx.font = '600 15px "Inter SemiBold", sans-serif'; ctx.fillStyle = bc;
-  ctx.fillText(`${data.elo} ELO`, 34, y+19);
+  ctx.fillText(`${data.wins}W - ${data.losses}L`, 34, y+19);
 
   const tot = data.wins + data.losses;
   const wr = tot > 0 ? Math.round((data.wins/tot)*100) : 0;
