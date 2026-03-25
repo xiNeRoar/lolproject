@@ -2,7 +2,7 @@
 
 ## Project in One Sentence
 
-5v5 team scrim recording platform. Discord bot produces all data (.rofl parse → match record → ELO). Website displays it.
+5v5 team scrim recording platform. Discord bot submits .rofl → match record. Website displays it. RSO = identity layer (launch requirement). ELO only for tournament/event matches.
 
 **Docs:** `docs/PRD_v3.md` · `docs/BOT_SPEC.md` · `docs/SCHEMA_CONTRACT.md` · `docs/USER_JOURNEYS.md` · `docs/DEPLOYMENT.md`
 
@@ -167,11 +167,13 @@ If Replit left a backend request: open a GitHub Issue for it, do the work, clear
 ## Absolute Principles
 
 1. **Schema → OpenAPI → codegen → route → page.** Never skip. Never write frontend fetch() by hand.
-2. **Every team ELO change writes to `elo_history`.** Reason: `match`, `season_reset`, `manual_admin`, `registration`.
-3. **Teams own ELO. Players do not.**
-4. **Bot is the only match data producer.** All match records from `.rofl` parse via bot `/submit`. Web management actions (roster, visibility, settings, event registration) are available on both web and bot — web is a full management layer, not read-only.
-5. **Read actual source files before answering.** Never guess schema or route signatures.
-6. **No SSH. Portainer only.**
+2. **Scrim (.rofl) does NOT count ELO.** ELO only for Tournament Code + Event matches. Scrim records W/L only.
+3. **Teams own ELO. Players do not.** Player career = resume model (teams + per-team W/L + KDA).
+4. **RSO = launch requirement.** Zero impersonation tolerance. /connect sends RSO link. /link-riot deleted.
+5. **Bot is the match data producer.** `.rofl` parse via bot `/submit`. Website = identity (RSO) + management + display.
+6. **3-layer privacy:** L1 scrim = login+participant. L2 RSO opt-in = public profile. L3 tournament = public by design.
+7. **Read actual source files before answering.** Never guess schema or route signatures.
+8. **No SSH. Portainer only.**
 
 ---
 
@@ -196,10 +198,11 @@ pnpm monorepo
 
 ```
 teams (teamElo, wins, losses, isActive, captainPlayerId nullable, lastMatchAt, defaultMatchVisibility)
-  └── team_members (playerId, role, status: active/inactive, lastActiveAt)
-matches (teamAId, teamBId, visibleAfter, resultSource, roflFilePath)
+  └── team_members (playerId, role, status: active/inactive/pending, lastActiveAt)
+matches (teamAId, teamBId, matchType: scrim/ranked_tournament/event, visibleAfter, resultSource, roflFilePath, tournamentCode)
   └── match_players (10 rows: PUUID, champion, KDA, CS, items, win)
-elo_history · seasons · events · notifications · admin_actions · player_bans · bot_heartbeats
+players (discordId, riotId, puuid, rsoOptIn, profileVisibility: default private)
+elo_history · seasons · events · notifications · admin_actions · player_bans · bot_heartbeats · auth_sessions
 ```
 
 ---
@@ -207,21 +210,31 @@ elo_history · seasons · events · notifications · admin_actions · player_ban
 ## Auth
 
 **Admin:** `req.session.adminId` (iron-session)
-**Player (stub):** localStorage → being replaced in Issue #7
-**Player (target):** Discord OAuth → `req.session.playerId`
+**Player identity:** RSO OAuth → PUUID (verified, launch requirement)
+**Player login (website):** Discord OAuth → `discordId` → then RSO → `puuid` (two-step)
+**Player login (no Discord):** RSO OAuth directly → `puuid`
+**Bot /connect:** generates token → URL → website RSO flow → links discordId + puuid
 
 ---
 
 ## Visibility Rules
 
 ```
-visibleAfter = null        → public 7 days after createdAt
-visibleAfter = new Date(0) → always public
-visibleAfter = 9999-01-01  → permanent private
+Scrim match (resultSource=rofl_parse):
+  Public: Team A vs Team B + score only
+  Login + participant: full 10-player stats
+  Captain /visibility public: spectator VOD + match detail public
+
+Tournament/Event match (matchType=ranked_tournament/event):
+  Default public: full stats + ELO + VOD
+  Captain /visibility private: override to restricted
+
+Player profile:
+  Default: private (profileVisibility="private", rsoOptIn=false)
+  After RSO opt-in: player controls (public/private/participants-only)
 ```
 
-Private match access: check `team_members` (NOT `match_players`).
-Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 403.
+VOD: follows match visibility. POV: requires individual player RSO opt-in consent.
 
 ---
 
@@ -239,15 +252,16 @@ Non-members get `{...match, matchPlayers:[], vods:[], _private:true}` — never 
 
 ```
 Seed: Team Alpha id=8, Beta id=9. Players 39-48. xiNe#NA1=id39.
-ELO history: GET /api/elo-history/team/:teamId
+ELO: only for matchType=ranked_tournament/event. Scrim = W/L record only.
 gameDuration: milliseconds
-MAX_ROSTER_SIZE: 15 (5 starters + 10 subs, enforced in /add)
+MAX_ROSTER_SIZE: 15 (5 starters + 10 subs, enforced in /submit auto-add)
 INACTIVITY_THRESHOLD: 5 (consecutive match absences before auto-inactive)
-CLIMB_THRESHOLD: 3 (ladder positions climbed for climber badge)
+WIN_STREAK_BADGE: 5 (consecutive wins for badge)
 SUBMIT_COOLDOWN_MS: 120000 (2 minutes between submissions per team)
 MAX_ACTIVE_TEAMS: 3 (concurrent active teams per captain, enforced in /register-team)
 TEAM_INACTIVITY_DAYS: 30 (no match in 30 days → isActive=false, daily check in seasonBroadcaster)
-MAX_PENDING_INVITES: 5 (per captain, enforced in /add)
+Bot commands: /register-team, /submit, /stats, /roster, /connect, /visibility, /transfer-captain, /leave, /remove, /register-event, /claim-match
+Deleted commands: /add (→ .rofl auto-discovery), /link-riot (→ RSO /connect)
 ```
 
 ## Docker Deploy

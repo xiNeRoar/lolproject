@@ -1,6 +1,8 @@
-# VCLoL — Product Requirements Document v3.0
+# VCLoL — Product Requirements Document v3.1
 
-**Version:** 3.0 | **Date:** March 2026 | **Status:** Active — .rofl format validated via roflxd.cs source code
+**Version:** 3.1 | **Date:** March 2026 | **Status:** Active — Strategic redesign (ELO, Privacy, Identity)
+
+**Changes from v3.0:** Scrim ELO removed (tournament/event only). 3-layer privacy model for Riot compliance. RSO as launch requirement. /add + /link-riot deleted. /connect added. Player career = resume model.
 
 ---
 
@@ -23,27 +25,27 @@ There is a documented, well-evidenced gap in the NA League of Legends competitiv
 **The gap:** Independent Diamond+ players who want organized 5v5 team experience have no platform that helps them form teams, practice through scrims, and build a verifiable competitive record. They currently rely on fragmented Discord servers for LFG and scrim matching, with results disappearing into chat history.
 
 **Evidence:**
-- 100 Thieves' Poome: "There is actually NA talent, but not a lot of work is being done to scout people. There are promising players that are just Grandmaster or Master, but they can still be developed."
-- Winter (4x Scouting Grounds qualifier): Retired because teams won't invest in developing amateur talent. Over 3 years of Scouting Grounds, only 5 attendees had strong LCS careers.
-- 100 Thieves (one of NA's most scout-focused orgs) has exited competitive LoL entirely as of 2025.
-- NA pro scene is contracting: LCS down to 8 teams, LTA experiment failed after one year, viewership declining 18-39% year-over-year.
-- Meanwhile, 40,000+ players are active across LOL scrim Discord servers (Esport Scrim: 19,728 members; LoL Scrim Finder: 8,732; League of Legends Scrim NA: 6,640).
+- 100 Thieves' Poome: "There is actually NA talent, but not a lot of work is being done to scout people."
+- Winter (4x Scouting Grounds qualifier): Retired because teams won't invest in developing amateur talent.
+- 100 Thieves has exited competitive LoL entirely as of 2025.
+- NA pro scene contracting: LCS down to 8 teams, LTA experiment failed, viewership declining 18-39% YoY.
+- 40,000+ players active across LOL scrim Discord servers (Esport Scrim: 19,728; LoL Scrim Finder: 8,732; LoL Scrim NA: 6,640).
 
 ---
 
 ## 3. Target Users
 
 **Primary — The Serious Independent Player**
-Diamond+ (or aspiring), NA server. Plays ranked but wants structured 5v5 team competition. May or may not have pro aspirations. Wants to play organized scrims with committed teammates, track progress, and have something to show for it.
+Diamond+ (or aspiring), NA server. Wants structured 5v5 team competition, tracked progress, and something to show for it.
 
 **Secondary — The Amateur Team Captain**
-Organizes a team, schedules scrims on Discord, currently tracks results manually (if at all). Wants an easy way to record scrim results and maintain a team record.
+Organizes a team, schedules scrims on Discord, currently tracks results manually (if at all).
 
 **Tertiary — Scouts, Coaches, NACL Team Managers**
-Looking for amateur talent with verifiable team play experience. Currently limited to solo queue rank and word-of-mouth.
+Looking for amateur talent with verifiable team play experience.
 
 **Out of Scope (Now)**
-Casual players, players below Platinum, non-NA servers, other games (architecture will be game-agnostic for future expansion but launch is LoL-only).
+Casual players, players below Platinum, non-NA servers, other games.
 
 ---
 
@@ -51,351 +53,340 @@ Casual players, players below Platinum, non-NA servers, other games (architectur
 
 1. **Verified Scrim Records** — .rofl-parsed match results that cannot be faked. Champion, KDA, duration, winner — extracted from Riot's own replay format, not self-reported.
 
-2. **Persistent Competitive Resume** — Every player accumulates a public profile showing their organized team play history across all teams: roles played, champion pool, aggregate KDA, win rate, ELO trajectory. This is the "team play resume" that OP.GG cannot provide.
+2. **Persistent Competitive Resume** — Every player accumulates a profile showing their organized team play history across all teams: roles played, champion pool, aggregate KDA, win rate. Not a single ELO number — a full career record showing which teams, what roles, what results. The "team play resume" that OP.GG cannot provide.
 
-3. **Spectator VOD Archive** — Every scrim automatically generates a permanent spectator-view video. Players can review macro, teamfights, and objectives. Within the two-week patch window, .rofl download enables free-camera POV review for detailed laning analysis.
+3. **Spectator VOD Archive** — Every scrim automatically generates a permanent spectator-view video. Players can review macro, teamfights, and objectives. Within the two-week patch window, .rofl download enables free-camera POV review.
 
-4. **Zero-Friction Team Management** — Teams form, evolve, and go dormant naturally. Roster changes detected automatically from .rofl data. No one needs to "maintain" anything.
+4. **Zero-Friction Team Management** — Teams form naturally from .rofl data. Captain submits replay → teammates auto-identified and added. Cross-server. No manual roster maintenance needed.
 
 ---
 
 ## 5. Product Architecture
 
-**Discord Bot = Entry Point + .rofl Submission Layer.**
-- New users discover and join via the bot in their existing scrim server — zero context switch
-- `.rofl` submission is bot-only and stays that way: file upload is Discord-native, happens immediately after a scrim while players are still in Discord, and every public `/submit` in a server exposes the bot to other members (organic viral spread)
-- Notifications, match result summaries, and event announcements push via Discord
+### Identity Foundation: RSO (Riot Sign On)
 
-**Website = Management + Display Layer.**
-- Public display: team profiles, player profiles, match history, VODs, leaderboard, event brackets
-- Registered user management: roster add/remove, match visibility, team settings, event registration, captain transfer — all available directly on the web after Discord OAuth login
-- Web management and bot commands co-exist; web is not a replacement for the bot, the bot is not a gate to the web
+**RSO is a launch requirement, not a future phase.** Every player who claims a VCLoL profile must verify their Riot Account through RSO OAuth. This guarantees zero impersonation — PUUID returned by Riot is cryptographically verified and cannot be faked.
 
-**Why `.rofl` submission stays bot-only (not web upload):**
-- Players are already in Discord immediately after a scrim — no context switch required
-- Each public `/submit` in a scrim server is visible to all server members → primary organic growth mechanism
-- If web upload were equally convenient, captains would bypass Discord entirely and the viral loop would break
+The RSO verification flow is a one-time browser redirect:
+1. Player runs `/connect` in Discord (or clicks link on website)
+2. Browser opens → Riot login page → player authenticates
+3. Riot returns PUUID to VCLoL → player record verified
+4. Player returns to Discord → all commands unlocked
 
-**Why web is a full management layer (not read-only):**
-- Registered users should not need to context-switch to Discord for management tasks (roster, visibility, settings) that make more sense on a web UI with persistent state
-- Reduces friction for users who arrive via web (Discord shared match links) and want to act immediately
-- Bot-only management gates platform utility behind Discord fluency — unnecessary after registration
+This is identical to how every app handles "Login with Google" — expected behavior, not friction.
 
-**Why this combination is unique:**
-- Team Up Bot: Discord ELO but no web profiles
-- Curry.gg: web profiles but no verified match data
-- Challonge: tournament brackets but no persistent team record or verified results
-- VCLoL: verified .rofl-parsed results + persistent web profiles + team ELO + VODs — none of the above do all four
+### Discord Bot = Convenience Feature
+
+The bot reduces friction for daily operations. Players discover VCLoL through the bot in their scrim server. `.rofl` submission is bot-only (preserving the viral loop). But the bot is not the identity layer — RSO is.
+
+**Bot responsibilities:** .rofl submission, match result announcements, quick stats lookup, team management commands, visibility settings.
+
+**Bot does NOT do:** Identity verification (RSO), player profile management (website), detailed analytics (website).
+
+### Website = Identity + Management + Display Layer
+
+The website is where identity verification happens (RSO OAuth callback), where players manage their profiles, and where all data is displayed with appropriate privacy gates.
+
+### Why `.rofl` submission stays bot-only
+
+- Players are already in Discord immediately after a scrim — no context switch
+- Each public `/submit` is visible to all server members → organic growth mechanism
+- If web upload were equally convenient, captains would bypass Discord and the viral loop breaks
 
 ---
 
 ## 6. Key Flows
 
-### 6.1 First-Time Team Registration (Discord, ~30 seconds)
+### 6.1 First-Time Setup (~2 minutes, one-time)
 
 ```
-Captain: /register-team VancouverStorm
-Bot: ✅ Team "VancouverStorm" created. Team ID: #T-0042
-     Add players: /add @player1 @player2 ...
+Captain in any Discord server with VCLoL bot:
 
-Captain: /add @alex @bob @charlie @dave
-Bot: ✅ 4 players added to VancouverStorm.
-     Players will receive a DM to link their Riot ID for full stats tracking.
-     You can /submit match results now — Riot ID linking is optional and doesn't block submissions.
+Captain: /connect
+Bot: 🔗 Verify your Riot Account to get started:
+     https://vclol.gg/connect?token=abc123
+     (link expires in 10 minutes)
+
+Captain clicks link → browser opens →
+  → "Login with Discord" (links Discord account)
+  → "Connect Riot Account" → auth.riotgames.com login
+  → ✅ Verified as xiNe#NA1! You can close this tab.
+
+Back in Discord:
+Captain: /register-team VancouverStorm VCS
+Bot: ✅ Team "VancouverStorm" [VCS] created! Ready to /submit.
 ```
 
-Each added player receives a DM with a one-time web link to connect their Riot ID (verified via Riot API). This is non-blocking — match submissions work immediately.
-
-### 6.2 Match Submission (Discord, ~75 seconds)
+### 6.2 Match Submission (~30 seconds, every scrim)
 
 ```
-(After scrim ends)
-Captain: /submit
-Bot: Upload your .rofl file.
-Captain: [drags and drops .rofl]
+Captain: /submit [drags and drops .rofl]
 Bot: ⏳ Parsing...
 
-Bot: ✅ Match recorded: VancouverStorm 1-0 PacificRift
-     📊 Duration: 32:14
-     🏆 MVP: alex (Orianna) — 8/2/11
-
-     Stats parsed for 8/10 players.
-     ⚠️ 2 unknown players:
-       • SummonerX — Add to VancouverStorm? ✅ / ❌
-       • SummonerY — Add to PacificRift? ✅ / ❌
-
-     🎬 Spectator VOD entering render queue (ETA: ~35 min)
-     📥 .rofl available for download: [link]
+Bot: ✅ Match recorded: VancouverStorm vs PacificRift
+     📊 32:14 | MVP: alex (Orianna) — 8/2/11
+     4 new players added to VancouverStorm ✅
+     🎬 VOD entering render queue (ETA: ~35 min)
 ```
+
+Teammates auto-added from .rofl (PUUID + RiotId). No /add needed. Cross-server. Teammates claim their profile later via /connect or website RSO.
 
 ### 6.3 Viewing Data (Website)
 
-- **Team Profile:** Team name, ELO, W/L, roster (current + historical), match history, VOD archive. Visibility controlled by team captain.
-- **Player Profile:** All teams played for, aggregate stats across teams (champion pool, KDA, win rate), ELO trajectory, role(s). Default public (player can set private).
-- **Match Detail:** Per-player stats, champion picks, spectator VOD, .rofl download (2-week window). Visibility controlled by team.
-- **Leaderboard:** All active teams ranked by team ELO. Only shows teams with minimum N matches.
+**Public (anyone, no login):**
+- Team profiles: name, tag, W/L record, roster (opt-in members show RiotId)
+- Team leaderboard (W/L record; tournament ELO when available)
+- Match results: Team A vs Team B, score (no per-player stats for scrims)
+- Tournament/Event match details: full 10-player stats (public by design)
+
+**Logged in + match participant:**
+- Full match detail with all 10 players' stats (same as LoL client behavior)
+- Own aggregate stats (career KDA, champion pool, team history)
+
+**RSO opt-in player (profile set to public):**
+- Profile searchable by other users
+- Aggregate stats publicly visible
+- Visibility settings: public / private / participants-only
 
 ---
 
-## 7. Visibility & Privacy
+## 7. Privacy & Riot Policy Compliance
 
-Design principle: **Team strategy is private. Individual competitive identity is public.**
+### Riot's Core Policy
 
-### Player Profile (player controls)
-- **Default: Public.** Aggregate stats (champion pool, KDA, win rate, ELO trajectory, teams participated in, total organized matches played).
-- Player can set to private if desired.
-- Rationale: Users join this platform to build a visible competitive record. Default-public aligns with the core value proposition.
-- Aggregate stats do not expose specific match strategy — they show "this person mains Orianna and has a 58% win rate across 47 scrims," not "this person picked Orianna against Team X last Tuesday."
+> "Products may not publicly display a player's match history from the custom match queue unless the player opts in."
+> "Leaderboards or rankings based off of a third party platform's community tournaments or challenges that would not reasonably be interpreted as official are allowed."
 
-### Match Details (team controls, per-match)
-- **Default: Private.** Specific champion picks, draft, per-player KDA, VOD for that match visible only to the two participating teams.
-- Team captain can set individual matches to **Public** (e.g., showcase matches, tournament games).
-- **Team-only stats** option: W/L visible publicly, but specifics hidden.
-- ELO changes always count regardless of visibility setting — leaderboard always reflects true competitive standing.
+### 3-Layer Privacy Model
 
-### Riot Policy Compliance
-This design satisfies Riot's requirement: "Third party sites may not publicly display a player's match history from the custom match queue unless the player opts in." Players opt in by registering. Match-level details require additional team-level opt-in to make public.
+#### Layer 1 — Scrim (.rofl Upload)
+
+Custom game data is **private by default**.
+
+**Discord bot (semi-private context):**
+- Scoreboard in Discord channel shows all 10 players ✅ (all players just played together, server-members-only)
+- `/stats` shows invoker's own stats ✅
+- `/stats player OtherPerson#TAG` only shows data if OtherPerson has opted in
+
+**Website:**
+- Match detail: login + participant → all 10 players' full stats ✅ (identical to LoL client)
+- Match detail: non-participant → Team A vs Team B + score only
+- Player profile: visible only to self (until opt-in)
+- Team aggregate (name, W/L, roster) → always public
+
+#### Layer 2 — RSO Opt-in (Player Consent)
+
+Opt-in players choose to make their profile public.
+
+**Unlocks:** Profile searchable. Aggregate stats visible. Their row in match details visible to non-participants. Other non-opted players in same match stay masked.
+
+**Visibility settings (website + Discord `/visibility`):**
+- `public` — anyone can see profile + match history
+- `private` — only the player themselves
+- `participants-only` — only same-match players
+
+#### Layer 3 — Tournament Code (Public by Design)
+
+Players enter tournament code in lobby = implicit consent to organized competition.
+
+**All tournament match data public by default.** Full 10-player stats, ELO changes, VODs. Captain can override to private.
+
+### What This Protects
+
+- ✅ Player A cannot search Player B's scrim history (unless B opted in)
+- ✅ Player A views own match → sees all 10 players (same as LoL client)
+- ✅ Team aggregate (W/L, ELO from tournaments) on leaderboard
+- ✅ Tournament match data fully public
 
 ---
 
-## 8. Team Lifecycle
+## 8. Rating & Ranking System
 
-Design principle: **No explicit lifecycle management. .rofl data is the source of truth for all roster and activity state.**
+### Design Principles
+
+**Scrim ≠ Ranked.** Industry standard (FACEIT, ESEA, PlayVS): practice never counts toward ranking.
+
+**Team ELO, not player ELO.** ELO belongs to the team entity. Players have career stats (resume), not a rating number.
+
+### What Counts
+
+| Match Type | ELO? | Reason |
+|---|---|---|
+| Scrim (.rofl) | ❌ | Opponent may not be in system. Can be gamed. Practice shouldn't penalize experimentation. |
+| Tournament Code | ✅ | Riot auto-callback. Both teams in system. Verified. Cannot be gamed. |
+| VCLoL Event | ✅ | Admin managed. Integrity guaranteed. |
+
+### Scrim W/L Record
+
+Always tracked on .rofl submission. Visible on team profile. Used for launch leaderboard. NOT used for ELO.
+
+### Player Career (Resume Model)
+
+No individual ELO. Player profile shows career history per team: W/L, KDA, champion pool. Changing teams adds a new chapter — doesn't erase history.
+
+### Seasons
+
+Tied to tournament/event series, not calendar. Seasons only exist when VCLoL runs organized competitions. Include: ELO tracking, season champion, ELO soft reset, badges.
+
+### Badges
+
+| Badge | Criteria | Requires ELO? |
+|---|---|---|
+| Win Streak | 5+ consecutive wins | No |
+| Season Champion | #1 ELO at season end | Yes |
+| Veteran | 50+ matches | No |
+| Iron Will | Win after 5+ kill deficit at 15 min | No |
+
+---
+
+## 9. Team Lifecycle
+
+### Roster Building
+
+Primary: .rofl auto-discovery. Captain submits replay → bot identifies teammates via PUUID → captain confirms → `status:'active'`. Works cross-server. Teammates don't need Discord. They claim profile later via /connect or website RSO.
 
 ### Activity
-- Team with a match submitted within the last 30 days = **Active** (appears on leaderboard).
-- Team with no match in 30+ days = **Inactive** (removed from leaderboard, profile still accessible, historical data preserved).
-- Inactive team that submits a new match = automatically **Active** again.
+- Match within 30 days = **Active** (on leaderboard)
+- 30+ days no match = **Inactive** (off leaderboard, data preserved)
+- New match = automatically **Active** again
 
 ### Roster Changes
-- New player appears in .rofl but not in roster → Bot asks captain to confirm addition.
-- Existing roster member absent from N consecutive .rofl submissions → automatically marked **Inactive member**.
-- No `/remove` or `/disband` commands needed. Roster state is derived from actual match participation.
-
-### Player Career History
-- A player's profile shows all teams they've been part of, with stats per team.
-- Changing teams doesn't erase history — it adds a new chapter.
-- One player can be active in multiple teams simultaneously.
-
-### ELO and Roster Changes (Intentional Design Decision)
-Team ELO is a property of the team entity, not the aggregate of its members. When roster changes occur — additions, departures, or complete turnover — team ELO persists unchanged. This is intentional:
-- Teams are long-lived competitive identities. "Team Alpha" means something regardless of who currently plays.
-- Adjusting ELO on roster change creates perverse incentives (e.g., kick low-performers to inflate ELO, or recruit high-performers for an ELO boost that doesn't reflect team cohesion).
-- The alternative (member-average ELO) requires individual player ELO, which conflicts with the "teams own ELO" principle.
-- Over time, a team's ELO naturally adjusts through match results regardless of roster composition.
+- New player in .rofl → bot asks captain to confirm
+- Absent from N consecutive matches → auto-marked inactive member
+- `/remove` for manual removal. `/leave` for voluntary departure.
 
 ---
 
-## 9. VOD Pipeline
+## 10. VOD Pipeline
 
 ### Automatic (every match)
-1. .rofl uploaded → metadata parsed (instant, ~3 seconds)
-2. .rofl file stored on VPS → available for download for ~2 weeks (patch window)
-3. Match enters render queue → render machine (Windows PC) polls queue
-4. Render machine loads .rofl → spectator auto-camera view → records → uploads
-5. Permanent spectator VOD linked on match detail page
+1. .rofl uploaded → parsed → stored on VPS (2-week download window)
+2. Render queue → Windows PC → spectator auto-camera → upload
+3. Permanent VOD linked on match detail page
 
-### On-Demand (player requests)
-- Each player has a "Request My POV" button on match detail page.
-- Capped at 2-3 POV renders per match, first-come-first-served.
-- Enters same render queue, processed by same render machine.
+### On-Demand POV
+- "Request My POV" button on match detail. 2-3 per match, first-come.
+- POV requires player RSO opt-in consent.
 
-### Capacity Planning
-- 1 spectator video per match: ~35 minutes render time
-- 5 scrims/day = ~3 hours render time (overnight batch)
-- 2-3 on-demand POVs/day = ~1.5 hours additional
-- Total: ~4.5 hours/day — one Windows PC handles this comfortably
-
-### .rofl vs. Rendered Video (why both matter)
-- **.rofl (2-week window):** Superior for detailed review — free camera, slow motion, fog of war toggle, zoom. Best for laning phase analysis, individual mechanics review.
-- **Spectator video (permanent):** Captures macro, teamfights, objectives via Riot's AI-directed camera. Permanent reference after .rofl expires.
-- **On-demand POV video (permanent):** For high-demand matches or players who want permanent record of their individual POV.
-
-### Learning & Discovery (Phase 2, volume-dependent)
-- Players can browse other teams/players and watch their public match VODs.
-- High-ELO players' public matches serve as learning material for lower-ELO players.
-- Platform tracks which profiles/matches get most views → selectively render more POVs for high-demand content.
+### VOD Visibility
+- Scrim: login + participant. Captain can set public.
+- Tournament/Event: public by default. Captain can override to private.
+- POV: always requires individual player consent regardless of match visibility.
 
 ---
 
-## 10. Technical Architecture
+## 11. Identity & Authentication
 
-### Stack (existing, reusable)
-- **Frontend:** React + Vite + Wouter (SPA), Shadcn UI + Tailwind CSS v4
-- **Backend:** Express.js REST API + TypeScript
-- **Database:** PostgreSQL + Drizzle ORM
-- **API Contract:** OpenAPI spec → Orval codegen → React Query hooks
-- **Deployment:** Oracle Cloud ARM64 VPS, Portainer UI
-- **Render Machine:** User's Windows PC (separate from VPS)
+### RSO — Launch Requirement
 
-### New Components
-- **Discord Bot:** discord.js, hosted on same VPS or separate lightweight service
-- **.rofl Parser:** Node.js service reading ROFL2 metadata header (JSON, no encrypted payload)
-- **File Storage:** .rofl files stored on VPS `/data/replays/{matchId}/`
+Zero impersonation tolerance. Every profile claim requires RSO.
 
-### Data Flow
-```
-Discord Bot ←→ Express API ←→ PostgreSQL
-                    ↑
-              .rofl upload → Parser → match_players + match result
-                    ↓
-              Render Queue → Windows PC polls → YouTube upload → VOD linked
-```
+**Via bot:** `/connect` → bot sends URL → browser: Discord OAuth + RSO OAuth → verified.
 
-### Development Workflow (unchanged)
-Schema change → OpenAPI spec update → Orval codegen → Express route → React page using generated hooks. Never write frontend API calls by hand.
+**Via website:** vclol.gg → "Login with Discord" → "Connect Riot Account" → RSO → verified.
+
+**Without Discord:** vclol.gg → "Login with Riot Account" → RSO → can view stats, no Discord DM.
+
+### Unverified Players (.rofl Auto-Discovery)
+
+.rofl submission creates player records with PUUID + RiotId. These exist but are unclaimed:
+- Stats recorded. Appear on Discord scoreboard. Appear in match detail for participants.
+- NOT searchable. NOT public profile. Can be claimed later.
+
+### Pre-Launch (Riot Application)
+
+Build complete site + bot. RSO button shows "pending Riot approval." Placeholder data. Submit to Riot. Upon approval → swap credentials → launch.
 
 ---
 
-## 11. Schema Changes from v2
+## 12. Schema Changes from v3.0
 
-### New Tables
-```
-teams: id, name, tag, captainDiscordId, teamElo, wins, losses, createdAt, lastMatchAt, isActive
-team_members: id, teamId, playerId, role, joinedAt, lastActiveAt, isActive
-match_players: id, matchId, playerId, teamId, champion, kills, deaths, assists, cs, role, side
-```
+### New Columns
+- `matches.matchType` — `scrim | ranked_tournament | event` (default: scrim)
+- `matches.tournamentCode` — nullable text
+- `players.rsoOptIn` — boolean default false
+- `players.rsoAccessToken`, `rsoRefreshToken`, `rsoLinkedAt` — RSO session
+- `players.profileVisibility` — default changed from `"public"` to `"private"`
 
-### Modified Tables
-```
-matches: remove playerAId/playerBId, add teamAId/teamBId, keep gameId/resultSource
-players: add primaryRole, secondaryRole, discordId (already planned)
-elo_history: add teamId (nullable — team ELO changes)
-```
+### New Table
+- `auth_sessions` — token, discordId, expiresAt, completedAt, puuid
+
+### Changed
+- `vod_entries.playerEloAtTime` → `teamEloAtTime` or removed
 
 ### Removed Concepts
-- challenges table (1v1 challenge system — removed entirely)
-- Individual ELO as primary ranking (replaced by team ELO; individual stats become aggregate secondary data)
-- matchmaking_queue (not needed)
-
-### Preserved
-- seasons, season_champions, player_badges (reframed for team context)
-- replay_submissions (core of .rofl pipeline)
-- vod_entries (linked to matches)
-- events, registrations (for periodic tournaments)
-- notifications (scrim confirmed, match recorded, etc.)
-- admin tables and tools
+- ELO calculation on scrim submission
+- `eloHistory` entries with reason `registration`
+- `/add` command
+- `/link-riot` command (trust-based verification)
 
 ---
 
-## 12. Technical Risks & Mitigations
+## 13. Technical Risks & Mitigations
 
-### Risk 1: .rofl ROFL2 metadata may not contain needed fields
-- **Impact:** Critical — without champion/KDA data, platform has no verified individual stats.
-- **Mitigation:** Phase 0 validation — download a current-patch .rofl, run parser, confirm fields. Go/no-go decision.
-- **Fallback:** If metadata insufficient, explore Collision Time Bot's approach (Riot Match API auto-detection via linked Riot accounts + Development API key for non-custom data).
-
-### Risk 2: Riot changes .rofl format again
-- **Impact:** High — parser breaks, no new match data until fixed.
-- **Mitigation:** Community parsers (fraxiinus/roflxd.cs) have historically adapted within days of format changes. Monitor ReplayBook GitHub for updates.
-- **Long-term fix:** RSO + Match API (official, format-stable). Requires Production API Key → apply after platform has users and is deployed.
-
-### Risk 3: .rofl metadata parsing legality (grey area)
-- **Impact:** Medium — Riot's policy states "reverse engineering spectator files is against ToS" but this refers to encrypted payload, not plaintext metadata header. Community tools (ReplayBook) have operated for years without action.
-- **Mitigation:** When applying for Production API Key, explicitly ask Riot about metadata header parsing. Migrate to RSO + Match API when approved.
-
-### Risk 4: Cold start — not enough teams
-- **Impact:** High — leaderboard meaningless with <5 teams.
-- **Mitigation:** Discord bot designed to be added to any server. Target existing scrim Discord servers (40,000+ members across NA). Bot provides immediate value (match recording) without requiring critical mass on the platform itself.
+1. **.rofl fields** — VALIDATED via roflxd.cs. Remaining: confirm in real .rofl file.
+2. **.rofl format change** — Community parsers adapt quickly. Long-term: Tournament API.
+3. **.rofl parsing legality** — Grey area. Ask Riot directly when applying.
+4. **Cold start** — Bot in scrim servers provides immediate value without critical mass.
+5. **RSO application rejected** — Riot accepts prototypes/mockups. Apply early.
+6. **Low opt-in rate** — Platform value exists without opt-in (team W/L, captain's match history).
 
 ---
 
-## 13. Competitive Landscape
+## 14. Bot Commands (Final)
 
-| Platform | What it does | What it doesn't do |
-|----------|-------------|-------------------|
-| OP.GG / U.GG | Solo queue stats from Riot API | No custom game / scrim data, no team context |
-| Challonge / Challengermode | Tournament brackets, event management | No persistent team record, no verified results, no VOD |
-| Curry.gg | LFG, team finder, scrim finder | Scrim finder empty ("No scrims to book"), no post-match recording |
-| Team Up Bot | Discord ELO leaderboard (manual entry) | No verification, no web profiles, no individual stats, no VOD |
-| Collision Time Bot | Auto-detect match results, scouting reports | Private, single-team, no persistent storage, resets on restart |
-| Insights.gg | Gameplay recording + VOD review tool | Requires each player to install app, no competitive record / ELO |
-| PlayVS | School-sanctioned esports leagues | School-only, no independent players, no portable record |
-| Discord scrim servers | LFG + scrim matching (40,000+ users) | Results vanish in chat history, no tracking, no verification |
-| **This platform** | Verified scrim recording, persistent team + player profiles, spectator VOD, team ELO leaderboard | Not an LFG tool, not a scrim matcher, not a tournament host (initially) |
-
-**Our unique position:** The only platform that captures what happens AFTER the scrim — verified results, persistent records, VODs — while every existing tool focuses on what happens BEFORE (finding people, matching teams, scheduling).
-
----
-
-## 14. Events (Secondary Feature, Preserved)
-
-The existing Events system (ManageEvents, EventDetail, bracket components) is preserved for periodic tournaments.
-
-**Role:** Events are not the daily activity of the platform. They are community moments — a quarterly or monthly tournament that gives teams a concrete goal to practice toward.
-
-**How it connects:**
-- Tournament seeding based on team ELO from the leaderboard (automated, data-driven).
-- Tournament matches submitted via same .rofl flow → same verified results → same VOD pipeline.
-- Tournament results count toward team ELO and player profiles.
-- Bot pushes tournament announcements to all servers where the bot is installed.
-
-**Future potential:** Sponsored tournaments as monetization channel. A tournament with verified brackets, automated seeding, and spectator VODs is significantly more attractive to sponsors than a Discord-only bracket.
+**Core:** `/register-team`, `/submit`, `/stats`, `/roster`, `/connect`
+**Management:** `/visibility`, `/transfer-captain`, `/leave`, `/remove`
+**Situational:** `/register-event`, `/claim-match`
+**Deleted:** ~~/add~~ (→ .rofl auto-discovery), ~~/link-riot~~ (→ RSO /connect)
 
 ---
 
 ## 15. Execution Roadmap
 
-### Phase 0 — Validate .rofl Parsing (1 week)
-- Download current-patch .rofl from a custom game
-- Test with existing parser libraries (fraxiinus/roflxd or community Python parsers)
-- Confirm ROFL2 metadata contains: winning team, player names, champions, KDA, game duration
-- **Go/no-go decision point**
-
-### Phase 1 — Discord Bot MVP (2-3 weeks)
-- `/register-team`, `/add`, `/submit` (upload .rofl), `/profile`
-- .rofl metadata parsing → match result recording
-- Basic team + player data in PostgreSQL
-- Bot can be added to any Discord server
-
-### Phase 2 — Web Display Layer (2-3 weeks)
-- Team profile page, player profile page, match detail page
-- Team leaderboard
-- .rofl download link (2-week window)
-- Minimal but functional UI (reuse existing component library)
-
-### Phase 3 — VOD Pipeline (2 weeks)
-- Render queue system (reuse existing replay_submissions schema)
-- Windows render machine polling + spectator video generation
-- VOD linked to match detail page
-- On-demand POV request system
-
-### Phase 4 — Community Seeding (ongoing)
-- Join top NA scrim Discord servers, observe, build relationships
-- Pitch bot to server owners: "Your scrim results are disappearing. This bot captures them for free."
-- Target: 10 active teams within first 2 months
-
-### Phase 5 — Riot API Integration (after Phase 4 traction)
-- Apply for Riot Production API Key with functioning deployed app + active user base
-- Upon approval, apply for RSO (Riot Sign-On) integration — separate approval process
-- RSO enables: players OAuth-authorize VCLoL to access their custom game match history via Match API v5. Each player must individually opt in. This is not automatic — VCLoL calls Match API per player using their RSO access token after the player completes the OAuth flow.
-- For RSO-linked players: Match API v5 replaces `.rofl` submission for match record creation (structured JSON, officially supported, no file upload needed)
-- `.rofl` submission remains available for players who have not completed RSO linking, and as a fallback
-- Per Riot policy: custom game data may not be publicly displayed unless the player explicitly opts in — this is already satisfied by the platform's registration model
-
-### Phase 6 — Growth & Events
-- First community tournament (use existing Events system)
-- Bot in 10+ Discord servers, organic spread
-- Learning/discovery features (browse high-ELO player VODs)
-- Evaluate expansion to other games based on demand
+1. **Pre-Launch:** Build complete platform (site + bot + RSO UI placeholder). Deploy to real domain.
+2. **Riot Application:** Submit site for Production Key. Upon approval, get RSO client.
+3. **Launch:** RSO live. Target scrim Discord servers. First teams register.
+4. **Growth:** Tournament API (ELO activates). First VCLoL event. VOD pipeline. Organic bot spread.
 
 ---
 
 ## 16. Success Metrics
 
-- **Phase 1-2:** Bot functional, 3+ teams registered, first .rofl successfully parsed and recorded
-- **Phase 4:** 10+ active teams, 50+ matches recorded, at least 1 scrim Discord server owner approves bot
-- **Phase 5:** Riot Production API Key application submitted with evidence of real usage
-- **6 months:** 25+ active teams, 200+ matches recorded, leaderboard has competitive meaning
-- **12 months:** Platform referenced by at least one amateur player or team as part of their competitive identity
+- **Pre-Launch:** Site + bot deployed. Riot application submitted.
+- **Launch:** RSO live. 3+ teams. First .rofl parsed.
+- **Month 1:** 10+ teams. 50+ matches. 1 scrim server approves bot.
+- **Month 3:** First tournament (ELO live).
+- **Month 6:** 25+ teams. 200+ matches.
+- **Year 1:** Referenced by amateur player/team as competitive identity.
 
 ---
 
 ## 17. What This Platform Is NOT
 
-- **Not a replacement for solo queue or ranked.** We track organized team play, not matchmade games.
-- **Not an LFG platform.** We don't compete with Discord for team finding. Discovery happens through browsing team/player profiles on the website.
-- **Not a scrim matchmaker.** We don't compete with Discord for scrim scheduling. Teams continue using Discord servers to find opponents.
-- **Not a tournament platform.** We don't compete with Challonge for bracket management (though we preserve Events for periodic community tournaments).
-- **Not an official ranking system.** Our team ELO is a community leaderboard, not a substitute for Riot's ranked ladder.
-- **Not a guaranteed path to pro play.** We enable visibility and verifiable records, but scouting is never promised.
+- Not a replacement for solo queue or ranked
+- Not an LFG platform (Discord handles team finding)
+- Not a scrim matchmaker (Discord handles scheduling)
+- Not primarily a tournament platform (Events are periodic, not daily)
+- Not an official ranking system (community leaderboard, not Riot substitute)
+- Not a guaranteed path to pro play
+
+---
+
+## 18. UX/UI Recommendations for Replit
+
+### New Pages
+1. **RSO Connect page** — Discord + Riot avatar side-by-side after link. Disclaimer about data visibility.
+2. **Pre-RSO landing** — Explain VCLoL, show example profiles, CTA to connect.
+
+### Redesigned Pages
+3. **Player profile** — Career resume layout. Teams as timeline. Per-team stats. Opt-in gate with CTA.
+4. **Match detail** — Auth gate for scrims (Team A vs B public, stats gated). Tournament: fully public.
+5. **Leaderboard** — W/L record board. Filter tabs for tournament-ranked when available.
+6. **Team profile** — W/L prominent. ELO only if tournament data exists. Linked vs unlinked members.
+
+### Design Principles
+- Empty states matter — design for W/L as primary data, not ELO
+- Privacy gates should feel natural ("Login to see details"), not blocking
+- RSO connect = reward unlock ("See your stats, appear in search"), not a chore
+- Bot `/submit` embed: no ELO. Focus on result + MVP + auto-add
