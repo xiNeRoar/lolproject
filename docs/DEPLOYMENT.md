@@ -20,13 +20,43 @@ Both services connect to the shared PostgreSQL database via `DATABASE_URL`.
 
 ## Stack 2: `vclol-bot`
 
-Contains the Discord bot process.
+All-in-one stack: PostgreSQL + Discord Bot. No Docker build required.
 
-| Service | Image | Port | Notes |
-|---------|-------|------|-------|
-| `discord-bot` | `vclol-bot:latest` | — | discord.js v14, no HTTP port |
+| Service | Image | Notes |
+|---------|-------|-------|
+| `db` | `postgres:16-alpine` | Auto-creates `vclol` database, healthcheck enabled |
+| `bot` | `node:22-slim` | Clones repo, installs deps, runs migration, starts bot |
 
-The bot connects to the same PostgreSQL database and uses `DISCORD_BOT_TOKEN` for authentication.
+**Deploy via Portainer:**
+
+1. Stacks → **Add stack** → Name: `vclol-bot`
+2. Select **Web editor** (not Repository — BuildKit not available on ARM64)
+3. Paste contents of `docker-compose.bot.yml` from repo root
+4. Environment variables → add **one** variable:
+   - `DISCORD_BOT_TOKEN` = your bot token
+5. Deploy the stack
+
+First start takes 3-5 minutes (pull images + clone + install). Subsequent restarts ~30s (repo cached in volume).
+
+**To update bot code:** Portainer → Containers → `vclol-bot` → Restart. The entrypoint does `git fetch + reset` on every start.
+
+**Env vars bundled in compose (no manual setup needed):**
+- `DATABASE_URL` — auto-configured to internal PostgreSQL
+- `DISCORD_CLIENT_ID` — hardcoded in compose
+- `PLATFORM_URL` — defaults to `https://vclol.gg`
+
+**Logs:** Containers → `vclol-bot` → Logs icon. Expected output:
+```
+[setup] Cloning repo...
+[setup] Installing dependencies...
+[setup] Running DB migration...
+[setup] Starting bot...
+[bot] Logged in as VCLoL#xxxx
+[bot] Registering 12 slash commands...
+[bot] Slash commands registered.
+[poller] Notification poller started.
+[season-broadcast] Broadcaster started.
+```
 
 ---
 
@@ -109,7 +139,7 @@ All containers across both stacks and the backup container use `restart: unless-
 
 1. Build images locally or in CI and push to your container registry.
 2. In Portainer, create or update the `vclol-web` stack with the api-server and frontend services.
-3. In Portainer, create or update the `vclol-bot` stack with the discord-bot service.
+3. In Portainer, create `vclol-bot` stack via **Web editor** — paste `docker-compose.bot.yml` contents, add `DISCORD_BOT_TOKEN` env var, deploy.
 4. Deploy the backup container as a standalone container or its own stack.
 5. Verify health: `GET /healthz` should return `{"status":"ok"}`.
 6. Verify bot: `GET /bot-status` should return `{"online":true,"lastSeen":"..."}` once the bot starts sending heartbeats.
@@ -176,7 +206,7 @@ Complete every item before going live. Each checkbox must be ticked.
 ### Portainer Stacks
 
 - [ ] `vclol-web` stack deployed with all required env vars (see Environment Variables table)
-- [ ] `vclol-bot` stack deployed with `DISCORD_BOT_TOKEN` + `DATABASE_URL`
+- [ ] `vclol-bot` stack deployed via Web editor with `DISCORD_BOT_TOKEN` only (PostgreSQL bundled)
 - [ ] All containers showing healthy in Portainer
 - [ ] DB backup container running
 

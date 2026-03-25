@@ -426,7 +426,10 @@ Batch size: 10 notifications per cycle. 1 second delay between batches (Discord 
 
 ## Deployment
 
-- Runs as a separate Portainer stack (`vclol-bot`)
-- Needs: `DATABASE_URL`, `DISCORD_BOT_TOKEN`, `ROFL_UPLOAD_DIR`
+- All-in-one Portainer stack (`vclol-bot`) via **Web editor** — paste `docker-compose.bot.yml`
+- Includes: PostgreSQL 16 + Node.js bot (no Docker build, stock images)
+- Only env var required: `DISCORD_BOT_TOKEN` (PostgreSQL auto-configured in compose)
+- On every start: pulls latest code from `variant` branch, runs `drizzle-kit push` (auto-migration), starts bot
 - Persistent connection to Discord gateway — should NOT restart frequently
-- Health check: bot responds to `/ping` or logs heartbeat interval
+- Health check: bot logs heartbeat to `bot_heartbeats` table every 5 minutes
+- To update: Portainer → Containers → `vclol-bot` → Restart

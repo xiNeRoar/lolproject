@@ -249,3 +249,14 @@ MAX_ACTIVE_TEAMS: 3 (concurrent active teams per captain, enforced in /register-
 TEAM_INACTIVITY_DAYS: 30 (no match in 30 days → isActive=false, daily check in seasonBroadcaster)
 MAX_PENDING_INVITES: 5 (per captain, enforced in /add)
 ```
+
+## Docker Deploy
+
+```
+docker-compose.bot.yml — all-in-one stack (PostgreSQL 16 + Bot)
+  Portainer: Web editor paste, NOT Repository (ARM64 BuildKit broken)
+  Only env var: DISCORD_BOT_TOKEN
+  Bot auto-clones variant branch, pnpm install, drizzle-kit push, tsx start
+  To update: Restart container (auto git fetch + reset on every start)
+DISCORD_CLIENT_ID: 1486274314482356225
+```
