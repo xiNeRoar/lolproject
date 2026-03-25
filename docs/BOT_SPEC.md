@@ -438,3 +438,15 @@ Batch size: 10 notifications per cycle. 1 second delay between batches (Discord 
 - Persistent connection to Discord gateway — should NOT restart frequently
 - Health check: bot logs heartbeat to `bot_heartbeats` table every 5 minutes
 - To update: Portainer → Containers → `vclol-bot` → Restart
+
+### Discord.js Client Config (index.ts)
+
+```
+Intents: Guilds, GuildMessages, DirectMessages, MessageContent
+Partials: Channel, Message
+```
+
+- `Partials.Channel` — **required** for DM button interactions (invite accept/decline). Without it, `interaction.channel` is null in DMs.
+- `Partials.Message` — required for DM message component collection.
+- `GatewayIntentBits.MessageContent` — required for reading `.rofl` attachment metadata.
+- Privileged Intents (must enable in Developer Portal): MESSAGE CONTENT INTENT, SERVER MEMBERS INTENT.

@@ -183,9 +183,13 @@ Complete every item before going live. Each checkbox must be ticked.
 - [ ] Create application at https://discord.com/developers/applications
 - [ ] Copy **Application ID** → set as `DISCORD_CLIENT_ID` env var
 - [ ] Bot section → **Reset Token** → copy → set as `DISCORD_BOT_TOKEN`
+- [ ] Bot section → **Privileged Gateway Intents** → enable:
+  - **MESSAGE CONTENT INTENT** (required — bot reads attachment metadata)
+  - **SERVER MEMBERS INTENT** (required — bot fetches user info for /add)
+  - PRESENCE INTENT — not needed
 - [ ] OAuth2 → Redirects → add `https://yourdomain/auth/discord/callback`
 - [ ] Copy **Client Secret** → set as `DISCORD_CLIENT_SECRET`
-- [ ] OAuth2 URL Generator → Scopes: `bot`, `applications.commands` → Permissions: `Send Messages`, `Embed Links`, `Read Message History`, `Use Slash Commands`
+- [ ] OAuth2 URL Generator → Scopes: `bot`, `applications.commands` → Permissions: `Send Messages`, `Embed Links`, `Attach Files`, `Read Message History`, `Use Slash Commands`
 - [ ] Copy generated invite URL → update `/register` page button (remove `disabled`)
 - [ ] Set `DISCORD_REDIRECT_URI` to your production callback URL
 
