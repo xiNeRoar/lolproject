@@ -1,0 +1,29 @@
+# VCLoL Discord Bot — Docker Compose
+#
+# Usage:
+#   1. Copy this file to your VPS
+#   2. Fill in the env vars below
+#   3. Run: docker compose -f docker-compose.bot.yml up -d --build
+#
+# Or in Portainer: New Stack → paste this → fill env vars → Deploy
+
+services:
+  vclol-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: vclol-bot
+    restart: unless-stopped
+    network_mode: host  # connects to postgres on localhost
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - DISCORD_CLIENT_ID=1486274314482356225
+      - DATABASE_URL=${DATABASE_URL}
+      - PLATFORM_URL=${PLATFORM_URL:-https://vclol.gg}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:3000}
+      - ROFL_UPLOAD_DIR=/data/rofl
+    volumes:
+      - rofl-uploads:/data/rofl
+
+volumes:
+  rofl-uploads:
