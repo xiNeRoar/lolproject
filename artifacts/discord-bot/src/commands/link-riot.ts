@@ -41,6 +41,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
   const [, gameName, tagLine] = match;
+  if (gameName!.length > 16) {
+    await replyError(interaction, "❌ Game name too long (max 16 characters).");
+    return;
+  }
   const riotId = `${gameName}#${tagLine}`;
 
   // ── Find invoker's player record ──────────────────────────────────────────

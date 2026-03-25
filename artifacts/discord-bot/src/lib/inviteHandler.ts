@@ -75,7 +75,7 @@ export async function handleInviteButton(interaction: ButtonInteraction): Promis
 
   // Get team info
   const [team] = await db
-    .select({ name: teamsTable.name, tag: teamsTable.tag, captainPlayerId: teamsTable.captainPlayerId })
+    .select({ name: teamsTable.name, tag: teamsTable.tag, captainPlayerId: teamsTable.captainPlayerId, isActive: teamsTable.isActive })
     .from(teamsTable)
     .where(eq(teamsTable.id, membership.teamId))
     .limit(1);
@@ -83,6 +83,15 @@ export async function handleInviteButton(interaction: ButtonInteraction): Promis
   const teamLabel = team ? `${team.name} [${team.tag}]` : "Unknown Team";
 
   if (action === "accept") {
+    if (team && !team.isActive) {
+      await db.delete(teamMembersTable).where(eq(teamMembersTable.id, memberId));
+      await interaction.update({
+        embeds: [new EmbedBuilder().setColor(0xed4245).setDescription("This team is no longer active. The invite has been cancelled.")],
+        components: [],
+      });
+      return;
+    }
+
     await db
       .update(teamMembersTable)
       .set({ status: "active" })

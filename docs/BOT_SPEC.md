@@ -64,7 +64,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 **What:** Sends a team invite to a player. Player must accept before joining the roster. (Industry standard — no force-add.)
 **Options:**
 - `discord-user` (UserOption, optional) — Discord's native user picker. Gives proper User object with `.id`.
-- `riot-id` (StringOption, optional) — For cross-server players: `RiotName#TAG` format.
+- `riot-id` (StringOption, optional) — For cross-server players: `RiotName#TAG` format. Game name max 16 chars.
 - `role` (StringOption, optional) — top/jungle/mid/adc/support/fill.
 - At least one of `discord-user` or `riot-id` required (validated in code).
 **Flow:**

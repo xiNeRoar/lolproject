@@ -197,6 +197,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await replyError(interaction, "❌ Invalid Riot ID format. Use `RiotName#TAG` (e.g. `xiNe#NA1`).");
       return;
     }
+    if (riotIdMatch[1]!.length > 16) {
+      await replyError(interaction, "❌ Game name too long (max 16 characters).");
+      return;
+    }
     const riotId = `${riotIdMatch[1]}#${riotIdMatch[2]}`;
     targetPlayer = (
       await db.select().from(playersTable).where(eq(playersTable.riotId, riotId)).limit(1)

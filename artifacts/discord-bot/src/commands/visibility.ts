@@ -144,8 +144,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       settingLabel = "🔒 Private — team only, permanently";
       break;
     case "default":
-      visibleAfter = null; // null = 7-day auto-public
-      settingLabel = "⏳ Default — public 7 days after match";
+      visibleAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day auto-public (consistent with /submit)
+      settingLabel = "⏳ Default — public 7 days from now";
       break;
   }
 
