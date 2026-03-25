@@ -83,7 +83,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
    "**{captain}** has invited you to join **{team}** [{tag}]. Click Accept to join the roster, or Decline to dismiss."
    Buttons use persistent customId format: `invite_accept_{membershipId}` / `invite_decline_{membershipId}`
 8. Reply to captain: "📨 Invite sent — {team} [{tag}]. Waiting for response."
-9. **Accept flow (inviteHandler.ts):** Player clicks ✅ → verify clicking user owns invite → update status to 'active' → notify captain via notification row → update DM embed to "Joined {team}"
+9. **Accept flow (inviteHandler.ts):** Player clicks ✅ → verify clicking user owns invite → check team still `isActive` (reject if deactivated by 30-day inactivity) → update status to 'active' → notify captain via notification row → update DM embed to "Joined {team}"
 10. **Decline flow:** Player clicks ❌ → delete pending team_members row → notify captain → update DM embed to "Invite declined"
 11. **Expiry:** Pending invites expire after 24 hours. cleanupExpiredInvites() runs on bot startup, deletes rows where status='pending' AND joinedAt > 24h ago.
 12. **Persistence:** Button handler registered in index.ts interactionCreate (not ephemeral collector) — survives bot restarts.
@@ -133,7 +133,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 **Who:** Any Discord user with a player record
 **What:** Link Riot ID to player account. Enables identity resolution and retroactive stat claiming.
 **Flow:**
-1. Parse → gameName + tagLine
+1. Parse → gameName + tagLine. Validate: gameName max 16 chars, tagLine 1-5 alphanumeric.
 2. Find invoker's player record by `discordId`
    - Not found → "You don't have a player record yet. Ask a team captain to `/add` you."
 3. Check `riotId` uniqueness: is this riotId linked to a DIFFERENT player?
@@ -171,7 +171,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 3. Apply visibility:
    - `public` → set `matches.visibleAfter = new Date(0)` (epoch = always visible)
    - `private` → set `matches.visibleAfter = new Date("9999-01-01")` (far-future = never visible)
-   - `default` → set `matches.visibleAfter = null` (7-day auto-public rule applies)
+   - `default` → set `matches.visibleAfter = new Date(now + 7 days)` (consistent with /submit default)
 4. Reply: "Match #{id} visibility set to **{value}**."
 **Edge cases:**
 - Two captains set different values → last write wins. Each change logged via admin_actions.
@@ -318,6 +318,7 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | Already has pending invite | "{player} already has a pending invite to {team}." |
 | Too many pending invites | "You have {count} pending invites. Wait for responses or cancel them before inviting more." |
 | Invite expired | "This invite has expired." |
+| Team deactivated (invite accept) | "This team is no longer active. The invite has been cancelled." |
 | Invite not for you | "This invite is not for you." |
 | Rate limit (register-team) | "You already created a team in the last 24 hours. Try again later." |
 | Max active teams (register-team) | "You already captain {count} active teams (max 3). Transfer captaincy or wait for inactive teams to be archived." |
@@ -325,6 +326,7 @@ Match result embed uses a **server-rendered scoreboard image** (via `@napi-rs/ca
 | No player record (link-riot) | "You don't have a player record yet. Ask a team captain to `/add` you." |
 | Riot ID already linked | "This Riot ID is already linked to another player." |
 | Riot ID not found | "This Riot ID does not exist." |
+| Game name too long | "Game name too long (max 16 characters)." |
 | Match already claimed | "This match already has both teams assigned." |
 | Team doesn't match claim | "Your team does not match enough players in this match." |
 | Participant banned | "A participant in this match is currently banned: {reason}" |
