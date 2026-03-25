@@ -1,12 +1,9 @@
-# VCLoL Bot — All-in-one (PostgreSQL + Bot)
+# VCLoL Bot — All-in-one (no Docker build required)
 #
-# Portainer: Stacks → Add → Repository
-#   URL: https://github.com/xiNeRoar/lolproject
-#   Ref: refs/heads/variant
-#   Compose path: docker-compose.bot.yml
-#   Environment variables: fill DISCORD_BOT_TOKEN only
+# Portainer: Stacks → Add → Web editor → paste this
+# Environment variables: DISCORD_BOT_TOKEN only
 #
-# Bot auto-waits for PostgreSQL, auto-runs DB migration, then starts.
+# Uses stock node:22 image. Clones repo + installs + migrates + runs.
 
 services:
   db:
@@ -26,9 +23,7 @@ services:
       retries: 10
 
   bot:
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
+    image: node:22-slim
     container_name: vclol-bot
     restart: unless-stopped
     depends_on:
@@ -43,7 +38,35 @@ services:
       ROFL_UPLOAD_DIR: /data/rofl
     volumes:
       - rofl-uploads:/data/rofl
+      - bot-app:/app
+    command: >
+      sh -c '
+        set -e
+        apt-get update && apt-get install -y git build-essential python3 > /dev/null 2>&1
+        npm install -g pnpm@10 > /dev/null 2>&1
+
+        if [ ! -d /app/.git ]; then
+          echo "[setup] Cloning repo..."
+          git clone -b variant https://github.com/xiNeRoar/lolproject.git /app
+        else
+          echo "[setup] Updating repo..."
+          cd /app && git fetch origin variant && git reset --hard origin/variant
+        fi
+
+        cd /app
+        echo "[setup] Installing dependencies..."
+        pnpm install --no-frozen-lockfile > /dev/null 2>&1
+
+        echo "[setup] Running DB migration..."
+        cd /app/lib/db
+        yes | npx drizzle-kit push 2>&1 || echo "[setup] Migration done or already applied."
+
+        echo "[setup] Starting bot..."
+        cd /app/artifacts/discord-bot
+        exec npx tsx src/index.ts
+      '
 
 volumes:
   pgdata:
   rofl-uploads:
+  bot-app:
