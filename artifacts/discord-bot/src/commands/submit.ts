@@ -697,15 +697,40 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             playerId = created!.id;
           }
 
-          // Add to team if not already a member
+          // Add to team as PENDING — consistent with invite+accept flow (#179)
           const [existingMember] = await db
             .select({ id: teamMembersTable.id })
             .from(teamMembersTable)
-            .where(and(eq(teamMembersTable.teamId, u.teamId), eq(teamMembersTable.playerId, playerId), eq(teamMembersTable.status, "active")))
+            .where(and(eq(teamMembersTable.teamId, u.teamId), eq(teamMembersTable.playerId, playerId)))
             .limit(1);
 
           if (!existingMember) {
-            await db.insert(teamMembersTable).values({ teamId: u.teamId, playerId, role: null, status: "active" });
+            const [newMembership] = await db.insert(teamMembersTable)
+              .values({ teamId: u.teamId, playerId, role: null, status: "pending" })
+              .returning();
+
+            // DM invite buttons if player has discordId
+            if (targetPlayer?.discordId && newMembership) {
+              try {
+                const dmUser = await btn.client.users.fetch(targetPlayer.discordId);
+                const [teamInfo] = await db.select({ name: teamsTable.name, tag: teamsTable.tag })
+                  .from(teamsTable).where(eq(teamsTable.id, u.teamId)).limit(1);
+                const tLabel = teamInfo ? `${teamInfo.name} [${teamInfo.tag}]` : u.teamName;
+                const dmEmbed = new EmbedBuilder()
+                  .setColor(0x5865f2)
+                  .setTitle(`Team Invite — ${tLabel}`)
+                  .setDescription(
+                    `You played in a recorded match and the captain wants to add you to **${tLabel}**.\n\n` +
+                    `Click **Accept** to join the roster, or **Decline** to dismiss.`
+                  )
+                  .setFooter({ text: `${process.env.PLATFORM_URL ?? "https://vclol.gg"} · Expires in 24 hours` });
+                const inviteRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder().setCustomId(`invite_accept_${newMembership.id}`).setLabel("Accept").setStyle(ButtonStyle.Success),
+                  new ButtonBuilder().setCustomId(`invite_decline_${newMembership.id}`).setLabel("Decline").setStyle(ButtonStyle.Secondary),
+                );
+                await dmUser.send({ embeds: [dmEmbed], components: [inviteRow] });
+              } catch { /* DM failed — player can accept via website */ }
+            }
           }
 
           // Link match_players row
@@ -714,7 +739,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .set({ playerId })
             .where(and(eq(matchPlayersTable.matchId, matchId!), eq(matchPlayersTable.puuid, u.puuid)));
 
-          await btn.update({ components: disableRow(rows, idx, `✅ ${u.riotId} added`) });
+          await btn.update({ components: disableRow(rows, idx, `📨 ${u.riotId} invited`) });
         } catch (err) {
           console.error(`[submit] Add unknown player ${u.riotId}:`, err);
           await btn.update({ components: disableRow(rows, idx, `❌ Failed`) });

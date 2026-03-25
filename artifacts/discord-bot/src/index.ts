@@ -150,9 +150,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     console.error(`[bot] Error in /${interaction.commandName}:`, err);
     const reply = { content: "❌ An unexpected error occurred.", ephemeral: true };
     if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(reply);
+      await interaction.followUp(reply).catch(() => {});
     } else {
-      await interaction.reply(reply);
+      await interaction.reply(reply).catch(() => {});
     }
   }
 });

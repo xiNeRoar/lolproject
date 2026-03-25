@@ -170,7 +170,7 @@ async function showPlayerStats(
   const [player] = await db
     .select()
     .from(playersTable)
-    .where(eq(playersTable.riotId, riotId))
+    .where(sql`lower(${playersTable.riotId}) = lower(${riotId})`)
     .limit(1);
 
   if (!player) {

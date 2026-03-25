@@ -122,11 +122,12 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
     e. Reply: "✅ Match recorded (stats only — no ELO change). {Side} not identified as a registered team. Invite them: {platform URL}/register"
     f. Embed includes: "Use `/claim-match {matchId}` after opponent registers to claim ELO."
 11. **Unknown player roster confirmation (PRD §6.2):**
-    a. After reply, for each match_player with `playerId = null` on an identified team side: show ✅ "Add {riotId}" / ❌ "Skip" buttons via followUp message
-    b. Only the captain of the relevant team can click ✅
-    c. ✅ → create player record (if not exists) + insert team_members + link match_players row
-    d. ❌ → dismiss, no action
+    a. After reply, for each match_player with `playerId = null` on an identified team side: show 📨 "Add {riotId}" / "Skip" buttons via followUp message
+    b. Only the captain of the relevant team can click 📨
+    c. 📨 → create player record (if not exists) + insert `team_members` with **`status = 'pending'`** (consistent with invite+accept flow from /add) + link match_players row + DM player with Accept/Decline buttons if discordId known
+    d. "Skip" → dismiss, no action
     e. Buttons auto-expire after 5 minutes (collector timeout)
+    f. Player must Accept the DM invite before becoming an active roster member (same inviteHandler.ts flow as /add)
 
 ### `/link-riot <RiotName#TAG>`
 **Who:** Any Discord user with a player record
