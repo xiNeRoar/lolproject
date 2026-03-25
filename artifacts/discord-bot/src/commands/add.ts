@@ -32,12 +32,18 @@ const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
 
 export const data = new SlashCommandBuilder()
   .setName("add")
-  .setDescription("Add a player to your team.")
+  .setDescription("Invite a player to your team.")
+  .addUserOption((o) =>
+    o
+      .setName("discord-user")
+      .setDescription("Pick a Discord user from this server")
+      .setRequired(false)
+  )
   .addStringOption((o) =>
     o
-      .setName("player")
-      .setDescription("@DiscordMention or RiotName#TAG")
-      .setRequired(true)
+      .setName("riot-id")
+      .setDescription("Or enter a RiotName#TAG (for cross-server players)")
+      .setRequired(false)
   )
   .addStringOption((o) =>
     o
@@ -64,8 +70,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 
   const discordId = interaction.user.id;
-  const playerInput = interaction.options.getString("player", true).trim();
+  const targetUser = interaction.options.getUser("discord-user");
+  const riotIdInput = interaction.options.getString("riot-id")?.trim() ?? null;
   const roleInput = interaction.options.getString("role")?.toLowerCase().trim() ?? null;
+
+  if (!targetUser && !riotIdInput) {
+    await replyError(interaction, "❌ Provide either a Discord user or a RiotName#TAG.");
+    return;
+  }
 
   // ── Validate role ────────────────────────────────────────────────────────
   const role = roleInput && VALID_ROLES.includes(roleInput) ? roleInput : null;
@@ -148,18 +160,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   // ── Resolve target player from input ─────────────────────────────────────
-  const mentionMatch = playerInput.match(/^<@!?(\d+)>$/);
-  const riotIdMatch = playerInput.match(/^(.+)#([A-Za-z0-9]{1,5})$/);
-
   let targetPlayer: typeof playersTable.$inferSelect | undefined;
   let targetDiscordId: string | null = null;
   let targetUsername: string | null = null;
 
-  if (mentionMatch) {
-    // Discord @mention
-    targetDiscordId = mentionMatch[1]!;
-    const member = await interaction.guild?.members.fetch(targetDiscordId).catch(() => null);
-    targetUsername = member?.user.username ?? targetDiscordId;
+  if (targetUser) {
+    // Discord user picker — proper User object with .id
+    targetDiscordId = targetUser.id;
+    targetUsername = targetUser.username;
 
     targetPlayer = (
       await db
@@ -182,8 +190,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         .returning();
       targetPlayer = created!;
     }
-  } else if (riotIdMatch) {
+  } else if (riotIdInput) {
     // RiotName#TAG
+    const riotIdMatch = riotIdInput.match(/^(.+)#([A-Za-z0-9]{1,5})$/);
+    if (!riotIdMatch) {
+      await replyError(interaction, "❌ Invalid Riot ID format. Use `RiotName#TAG` (e.g. `xiNe#NA1`).");
+      return;
+    }
     const riotId = `${riotIdMatch[1]}#${riotIdMatch[2]}`;
     targetPlayer = (
       await db.select().from(playersTable).where(eq(playersTable.riotId, riotId)).limit(1)
@@ -201,10 +214,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         .returning();
       targetPlayer = created!;
     }
-  } else {
-    await replyError(interaction, 
-      "❌ Invalid format. Use `@DiscordMention` or `RiotName#TAG` (e.g. `xiNe#NA1`)."
-    );
+  }
+
+  if (!targetPlayer) {
+    await replyError(interaction, "❌ Could not resolve player. Try again.");
     return;
   }
 
