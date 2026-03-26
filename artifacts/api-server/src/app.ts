@@ -28,13 +28,43 @@ const hasStaticFiles = existsSync(join(STATIC_DIR, "index.html"));
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
-app.use(cors({ origin: true, credentials: true }));
+const PLATFORM_URL = (process.env.PLATFORM_URL || "http://localhost:5173").replace(/\/+$/, "");
+
+const allowedOrigins = [
+  PLATFORM_URL,
+  ...(!isProduction ? ["http://localhost:5173", "http://localhost:3000"] : []),
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, Postman)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      if (!isProduction) console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const DEFAULT_SECRET = "vclol-admin-secret-2024";
+const sessionSecret = process.env.SESSION_SECRET || DEFAULT_SECRET;
+
+if (isProduction && sessionSecret === DEFAULT_SECRET) {
+  console.error(
+    "[FATAL] SESSION_SECRET is using the default dev value in production. " +
+    "Set SESSION_SECRET to a cryptographically random string. " +
+    "Generate one: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+  );
+  process.exit(1);
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "vclol-admin-secret-2024",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
