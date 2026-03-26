@@ -1,17 +1,28 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam } from "@workspace/api-client-react";
+import { useGetTeam, useGetTeamEloHistory } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Users, ChevronLeft, Swords, UserMinus, Settings } from "lucide-react";
+import { TrendingUp, Trophy, Users, ChevronLeft, Swords, UserMinus, Settings } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { eloBadgeColor, rankLabel } from "@/lib/lol-utils";
 import { useAuth } from "@/hooks/use-auth";
+
+function EloDelta({ before, after }: { before: number | null | undefined; after: number | null | undefined }) {
+  if (before == null || after == null) return null;
+  const delta = after - before;
+  if (delta > 0) return <span className="text-green-400 text-xs font-medium">+{delta}</span>;
+  if (delta < 0) return <span className="text-red-400 text-xs font-medium">{delta}</span>;
+  return <span className="text-muted-foreground text-xs">±0</span>;
+}
 
 export default function TeamProfile() {
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
   const { playerIdNum } = useAuth();
   const { data: team, isLoading, isError } = useGetTeam(teamId);
+  const { data: eloHistory } = useGetTeamEloHistory(teamId, { query: { enabled: !!team } });
   const isCaptain = team?.captainPlayerId === playerIdNum;
 
   if (isLoading) {
@@ -42,6 +53,11 @@ export default function TeamProfile() {
     ? Math.round((team.wins / (team.wins + team.losses)) * 100)
     : 0;
 
+  const eloChartData = [...(eloHistory ?? [])].reverse().map((h) => ({
+    date: new Date(h.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+    elo: h.elo,
+  }));
+
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
@@ -63,6 +79,9 @@ export default function TeamProfile() {
                 <div className="flex items-center gap-3 flex-wrap mb-1">
                   <h1 className="text-3xl font-display font-bold">{team.name}</h1>
                   <span className="text-lg text-muted-foreground">[{team.tag}]</span>
+                  <span className={`text-sm px-3 py-1 rounded-full border font-medium ${eloBadgeColor(team.teamElo)}`}>
+                    {rankLabel(team.teamElo)}
+                  </span>
                   {!team.isActive && (
                     <Badge variant="secondary" className="text-xs">Inactive</Badge>
                   )}
@@ -79,20 +98,16 @@ export default function TeamProfile() {
               <div className="flex gap-6 flex-shrink-0">
                 <div className="text-center">
                   <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                    <Trophy className="w-3 h-3" /> Record
+                    <TrendingUp className="w-3 h-3" /> ELO
                   </div>
-                  <div className="text-3xl font-display font-bold">
-                    <span className="text-green-400">{team.wins}</span>
-                    <span className="text-muted-foreground mx-1">-</span>
-                    <span className="text-red-400">{team.losses}</span>
-                  </div>
+                  <div className="text-3xl font-display font-bold text-primary">{team.teamElo}</div>
                 </div>
-                {team.wins + team.losses > 0 && (
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground">Win Rate</div>
-                    <div className="text-3xl font-display font-bold text-primary">{winRate}%</div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
+                    <Trophy className="w-3 h-3" /> Peak
                   </div>
-                )}
+                  <div className="text-3xl font-display font-bold text-yellow-400">{team.peakElo}</div>
+                </div>
               </div>
             </div>
 
@@ -125,6 +140,42 @@ export default function TeamProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {eloChartData.length > 1 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-display flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> ELO History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={eloChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="eloGradTeam" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#888" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#888" }} domain={["auto", "auto"]} />
+                  <Tooltip
+                    contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: 8, fontSize: 12 }}
+                    labelFormatter={(label) => label}
+                    formatter={(value: number) => [value, "ELO"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="elo"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#eloGradTeam)"
+                    dot={{ r: 3, fill: "#3b82f6" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {(() => {
           const currentMembers = team.members?.filter(m => m.status === "active") ?? [];
@@ -205,6 +256,8 @@ export default function TeamProfile() {
                 {team.recentMatches.map((match) => {
                   const isA = match.teamAId === teamId;
                   const won = match.winnerName === (isA ? match.sideAName : match.sideBName);
+                  const eloBefore = isA ? match.teamAEloBefore : match.teamBEloBefore;
+                  const eloAfter = isA ? match.teamAEloAfter : match.teamBEloAfter;
                   const oppName = isA ? match.sideBName : match.sideAName;
                   return (
                     <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
@@ -224,6 +277,7 @@ export default function TeamProfile() {
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-sm font-display font-bold">{match.score || "-"}</div>
+                        <div><EloDelta before={eloBefore} after={eloAfter} /></div>
                       </div>
                     </Link>
                   );

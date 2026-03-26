@@ -1,20 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam, getGetTeamQueryKey, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
+import { useGetTeam, getGetTeamQueryKey, useAddTeamMember, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  ChevronLeft, Eye, EyeOff, Users, Settings, ShieldCheck, Trash2,
-  Crown, AlertTriangle, Check, X, Loader2, UserCheck
+  ChevronLeft, Eye, EyeOff, Users, Settings, ShieldCheck, UserPlus, Trash2,
+  Crown, AlertTriangle, Check, X, Loader2
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const ROLES = ["Top", "Jungle", "Mid", "Bot", "Support", null] as const;
-const VIS_OPTIONS = ["public", "private"] as const;
+const VIS_OPTIONS = ["public", "default", "private"] as const;
 
 function visLabel(visibleAfter: string | null | undefined): string {
   if (visibleAfter == null) return "default";
@@ -85,11 +85,37 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
 
 function RosterSection({ team, teamId }: { team: any; teamId: number }) {
   const queryClient = useQueryClient();
+  const addMember = useAddTeamMember();
   const updateMember = useUpdateTeamMember();
   const removeMember = useRemoveTeamMember();
+  const [riotId, setRiotId] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
 
   const members = (team.members ?? []).filter((m: any) => m.status === "active");
+
+  const handleAdd = async () => {
+    const trimmed = riotId.trim();
+    if (!trimmed) return;
+    setAddLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/players?search=${encodeURIComponent(trimmed)}`);
+      const players = await res.json();
+      const player = players.find((p: any) => p.riotId?.toLowerCase() === trimmed.toLowerCase());
+      if (!player) {
+        toast.error("Player not found. They must be registered first.");
+        setAddLoading(false);
+        return;
+      }
+      await addMember.mutateAsync({ id: teamId, data: { playerId: player.id } });
+      queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(teamId) });
+      setRiotId("");
+      toast.success(`Added ${player.riotId} to the team`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to add member");
+    }
+    setAddLoading(false);
+  };
 
   const handleRemove = async (memberId: number) => {
     try {
@@ -120,9 +146,24 @@ function RosterSection({ team, teamId }: { team: any; teamId: number }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="px-6 py-3 border-b border-border/30 flex items-center gap-2 text-xs text-muted-foreground">
-          <UserCheck className="w-3.5 h-3.5 shrink-0" />
-          Members are automatically added from match replays.
+        <div className="px-6 py-3 border-b border-border/30">
+          <div className="flex gap-2">
+            <input
+              value={riotId}
+              onChange={e => setRiotId(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+              placeholder="Add by Riot ID (e.g. Player#NA1)"
+              className="flex-1 px-3 py-2 rounded-md bg-muted/30 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={addLoading || !riotId.trim()}
+              className="px-4 py-2 rounded-md bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors border border-primary/20 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {addLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+              Add
+            </button>
+          </div>
         </div>
 
         {members.length === 0 ? (
@@ -251,6 +292,7 @@ function TeamSettingsSection({ team, teamId }: { team: any; teamId: number }) {
             className="w-full px-3 py-2 rounded-md bg-muted/30 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="public">Public</option>
+            <option value="default">Default (7-day delay)</option>
             <option value="private">Private</option>
           </select>
         </div>
