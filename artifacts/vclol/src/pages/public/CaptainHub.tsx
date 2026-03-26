@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetTeam, getGetTeamQueryKey, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
@@ -17,11 +17,10 @@ const ROLES = ["Top", "Jungle", "Mid", "Bot", "Support", null] as const;
 const VIS_OPTIONS = ["public", "private"] as const;
 
 function visLabel(visibleAfter: string | null | undefined): string {
-  if (visibleAfter == null) return "default";
+  if (visibleAfter == null) return "private";
   const d = new Date(visibleAfter);
   if (d.getFullYear() <= 1970) return "public";
-  if (d.getFullYear() >= 9000) return "private";
-  return "default";
+  return "private";
 }
 
 function visBadge(v: string) {
@@ -252,7 +251,6 @@ function TeamSettingsSection({ team, teamId }: { team: any; teamId: number }) {
             className="w-full px-3 py-2 rounded-md bg-muted/30 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="public">Public</option>
-            <option value="default">Default (7-day delay)</option>
             <option value="private">Private</option>
           </select>
         </div>

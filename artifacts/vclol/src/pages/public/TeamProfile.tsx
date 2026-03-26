@@ -9,14 +9,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { eloBadgeColor, rankLabel } from "@/lib/lol-utils";
 import { useAuth } from "@/hooks/use-auth";
 
-function EloDelta({ before, after }: { before: number | null | undefined; after: number | null | undefined }) {
-  if (before == null || after == null) return null;
-  const delta = after - before;
-  if (delta > 0) return <span className="text-green-400 text-xs font-medium">+{delta}</span>;
-  if (delta < 0) return <span className="text-red-400 text-xs font-medium">{delta}</span>;
-  return <span className="text-muted-foreground text-xs">±0</span>;
-}
-
 export default function TeamProfile() {
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
@@ -58,6 +50,8 @@ export default function TeamProfile() {
     elo: h.elo,
   }));
 
+  const hasEloData = eloChartData.length > 0;
+
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-16 pb-16 sm:px-6 lg:px-8">
@@ -79,9 +73,11 @@ export default function TeamProfile() {
                 <div className="flex items-center gap-3 flex-wrap mb-1">
                   <h1 className="text-3xl font-display font-bold">{team.name}</h1>
                   <span className="text-lg text-muted-foreground">[{team.tag}]</span>
-                  <span className={`text-sm px-3 py-1 rounded-full border font-medium ${eloBadgeColor(team.teamElo)}`}>
-                    {rankLabel(team.teamElo)}
-                  </span>
+                  {hasEloData && (
+                    <span className={`text-sm px-3 py-1 rounded-full border font-medium ${eloBadgeColor(team.teamElo)}`}>
+                      {rankLabel(team.teamElo)}
+                    </span>
+                  )}
                   {!team.isActive && (
                     <Badge variant="secondary" className="text-xs">Inactive</Badge>
                   )}
@@ -98,15 +94,13 @@ export default function TeamProfile() {
               <div className="flex gap-6 flex-shrink-0">
                 <div className="text-center">
                   <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                    <TrendingUp className="w-3 h-3" /> ELO
+                    <Trophy className="w-3 h-3" /> Record
                   </div>
-                  <div className="text-3xl font-display font-bold text-primary">{team.teamElo}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
-                    <Trophy className="w-3 h-3" /> Peak
+                  <div className="text-2xl font-display font-bold">
+                    <span className="text-green-400">{team.wins}W</span>
+                    <span className="text-muted-foreground mx-1">/</span>
+                    <span className="text-red-400">{team.losses}L</span>
                   </div>
-                  <div className="text-3xl font-display font-bold text-yellow-400">{team.peakElo}</div>
                 </div>
               </div>
             </div>
@@ -125,6 +119,18 @@ export default function TeamProfile() {
                   <div className="text-xl font-display font-bold">{winRate}%</div>
                   <div className="text-xs text-muted-foreground mt-1">Win Rate</div>
                 </div>
+                {hasEloData && (
+                  <>
+                    <div className="flex-1 text-center px-4 py-1">
+                      <div className="text-xl font-display font-bold text-primary">{team.teamElo}</div>
+                      <div className="text-xs text-muted-foreground mt-1">ELO</div>
+                    </div>
+                    <div className="flex-1 text-center px-4 py-1">
+                      <div className="text-xl font-display font-bold text-yellow-400">{team.peakElo}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Peak</div>
+                    </div>
+                  </>
+                )}
               </div>
               {team.wins + team.losses > 0 && (
                 <div className="mt-4 space-y-1.5">
@@ -181,30 +187,35 @@ export default function TeamProfile() {
           const currentMembers = team.members?.filter(m => m.status === "active") ?? [];
           const pastMembers = team.members?.filter(m => m.status !== "active") ?? [];
 
-          const renderMemberRow = (m: NonNullable<typeof team.members>[number]) => (
-            <div key={m.id} className="px-6 py-3 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                {m.playerRiotId ? (
-                  <Link href={`/players/${encodeURIComponent(m.playerRiotId)}`} className="text-sm font-medium hover:text-primary transition-colors">
-                    {m.playerRiotId}
-                  </Link>
-                ) : (
-                  <span className="text-sm font-medium">Player #{m.playerId}</span>
-                )}
-                {m.playerDiscordUsername && (
-                  <div className="text-xs text-muted-foreground">{m.playerDiscordUsername}</div>
-                )}
+          const renderMemberRow = (m: NonNullable<typeof team.members>[number]) => {
+            const verified = !!m.playerRiotId && !m.playerRiotId.startsWith("pending");
+            return (
+              <div key={m.id} className="px-6 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {verified ? (
+                      <Link href={`/players/${encodeURIComponent(m.playerRiotId!)}`} className="text-sm font-medium hover:text-primary transition-colors">
+                        {m.playerRiotId}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">Player #{m.playerId} <span className="text-yellow-400 text-xs">(unlinked)</span></span>
+                    )}
+                  </div>
+                  {m.playerDiscordUsername && (
+                    <div className="text-xs text-muted-foreground">{m.playerDiscordUsername}</div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {m.playerId === team.captainPlayerId && (
+                    <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs">Captain</Badge>
+                  )}
+                  {m.role && (
+                    <Badge variant="outline" className="text-xs">{m.role}</Badge>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {m.playerId === team.captainPlayerId && (
-                  <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs">Captain</Badge>
-                )}
-                {m.role && (
-                  <Badge variant="outline" className="text-xs">{m.role}</Badge>
-                )}
-              </div>
-            </div>
-          );
+            );
+          };
 
           return (
             <>
@@ -256,8 +267,6 @@ export default function TeamProfile() {
                 {team.recentMatches.map((match) => {
                   const isA = match.teamAId === teamId;
                   const won = match.winnerName === (isA ? match.sideAName : match.sideBName);
-                  const eloBefore = isA ? match.teamAEloBefore : match.teamBEloBefore;
-                  const eloAfter = isA ? match.teamAEloAfter : match.teamBEloAfter;
                   const oppName = isA ? match.sideBName : match.sideAName;
                   return (
                     <Link key={match.id} href={`/matches/${match.id}`} className="block px-6 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors cursor-pointer">
@@ -277,7 +286,6 @@ export default function TeamProfile() {
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-sm font-display font-bold">{match.score || "-"}</div>
-                        <div><EloDelta before={eloBefore} after={eloAfter} /></div>
                       </div>
                     </Link>
                   );

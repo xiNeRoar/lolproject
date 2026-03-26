@@ -73,7 +73,10 @@ function DashboardContent({ pid }: { pid: number }) {
     if (!notifPref) return;
     updatePlayer.mutate(
       { id: pid, data: { notificationPreference: notifPref } },
-      { onSuccess: () => toast.success("Notification preference saved") }
+      {
+        onSuccess: () => toast.success("Notification preference saved"),
+        onError: () => toast.error("Failed to save notification preference"),
+      }
     );
   };
 
@@ -194,7 +197,7 @@ function DashboardContent({ pid }: { pid: number }) {
         const team = captainTeams[0];
         const hasRoster = (team.memberCount ?? 0) >= 5;
         const hasMatches = (player.recentMatches?.length ?? 0) > 0;
-        const hasLinkedRiot = player.riotId !== "pending" && !!player.puuid;
+        const hasLinkedRiot = !player.riotId.startsWith("pending") && !!player.puuid;
 
         const steps = [
           { done: hasLinkedRiot, label: "Verify your Riot identity", cmd: "/connect" },
