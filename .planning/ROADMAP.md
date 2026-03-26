@@ -12,7 +12,7 @@ VCLoL's backend is functional but has security gaps, missing schema columns, and
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Schema Sync & Auth Hardening** - Fix missing columns and close security vulnerabilities before any production RSO traffic
+- [x] **Phase 1: Schema Sync & Auth Hardening** - Fix missing columns and close security vulnerabilities before any production RSO traffic
 - [ ] **Phase 2: Privacy Gates** - Enforce 3-layer visibility model across all match, player, and VOD endpoints
 - [ ] **Phase 3: API Contract & Performance** - Eliminate N+1 queries and align OpenAPI spec with actual routes
 

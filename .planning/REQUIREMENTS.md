@@ -12,9 +12,9 @@
 
 ### Auth & Security
 
-- [ ] **AUTH-01**: RSO OAuth state parameter on both Discord and RSO flows (prevent account hijack)
+- [x] **AUTH-01**: RSO OAuth state parameter on both Discord and RSO flows (prevent account hijack)
 - [x] **AUTH-02**: CORS restricted to production domain (not wildcard with credentials)
-- [ ] **AUTH-03**: RSO token storage resolved — keep schema columns but don't populate tokens in auth flow (only persist PUUID). Add code comment linking to Tournament API future requirement.
+- [x] **AUTH-03**: RSO token storage resolved — keep schema columns but don't populate tokens in auth flow (only persist PUUID). Add code comment linking to Tournament API future requirement.
 - [x] **AUTH-04**: Session secret enforced as non-default in production
 - [x] **AUTH-05**: Match visibility endpoint rejects spoofed playerId in request body
 
@@ -69,9 +69,9 @@
 |-------------|-------|--------|
 | SCHM-01 | Phase 1 | Complete |
 | SCHM-02 | Phase 1 | Complete |
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
 | PRIV-01 | Phase 2 | Pending |
