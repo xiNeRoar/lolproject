@@ -83,6 +83,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 | RSO as launch requirement | Zero impersonation tolerance per Riot policy | — Pending (awaiting Riot approval) |
 | 3-layer privacy model | Riot compliance + user trust | — Pending (frontend gates not complete) |
 | Default visibility = private | Conservative default per PRD v3.1 | ✓ Good |
+| RSO tokens: keep columns, don't populate now | VCLoL only needs PUUID today. Columns stay for Tournament API (confirmed future requirement). When Tournament API milestone starts → add AES-256-GCM encryption + refresh logic. | — Pending (trigger: Tournament API milestone) |
 
 ## Evolution
 
