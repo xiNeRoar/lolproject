@@ -78,15 +78,15 @@ export async function checkMatchBadges(matchId: number): Promise<void> {
       await awardBadge(playerId, "first_blood");
     }
 
-    // veteran: 20+ total games across all teams
-    if (totalGames >= 20) {
+    // veteran: 50+ total games across all teams (PRD §8)
+    if (totalGames >= 50) {
       await awardBadge(playerId, "veteran");
     }
 
-    // win_streak: last 3 matches are all wins
-    if (totalGames >= 3) {
-      const lastThree = allEntries.slice(0, 3);
-      if (lastThree.every((e) => e.win)) {
+    // win_streak: last 5 consecutive matches are all wins (PRD §8)
+    if (totalGames >= 5) {
+      const lastFive = allEntries.slice(0, 5);
+      if (lastFive.every((e) => e.win)) {
         await awardBadge(playerId, "win_streak");
       }
     }

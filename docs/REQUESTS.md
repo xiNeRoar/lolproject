@@ -8,15 +8,6 @@ Format: one section per request.
 
 
 
-## Request: Badge thresholds don't match PRD
-
-**Needed for:** PRD §8 Badges table
-**Endpoint:** Internal — `badges.ts`
-**Why:** PRD §8 says Win Streak badge = 5+ consecutive wins, Veteran badge = 50+ matches. Current code: win_streak threshold = 3 (line 87), veteran threshold = 20 (line 82).
-**Fix:** Change `win_streak` check from `totalGames >= 3` + `lastThree` to `totalGames >= 5` + `lastFive.every(e => e.win)`. Change `veteran` check from `totalGames >= 20` to `totalGames >= 50`.
-**File:** `artifacts/api-server/src/lib/badges.ts` lines 82-92
-
----
 
 
 
