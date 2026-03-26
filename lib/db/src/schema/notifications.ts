@@ -11,6 +11,8 @@ export const notificationsTable = pgTable("notifications", {
   isRead: boolean("is_read").notNull().default(false),
   dmSent: boolean("dm_sent").notNull().default(false),
   dmFailed: boolean("dm_failed").notNull().default(false),
+  dmRetryCount: integer("dm_retry_count").notNull().default(0),
+  lastDmAttemptAt: timestamp("last_dm_attempt_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type Notification = typeof notificationsTable.$inferSelect;

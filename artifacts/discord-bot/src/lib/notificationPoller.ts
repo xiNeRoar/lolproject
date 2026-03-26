@@ -1,40 +1,43 @@
 /**
- * Notification Poller — BOT_SPEC §Notification Poller (lines 357-373)
+ * Notification Poller — BOT_SPEC §Notification Poller
  *
  * Polls the notifications table every 60 seconds and sends Discord DMs
  * for players whose notificationPreference is "discord" or "both".
  *
- * Runs on startup and then on a 60-second interval.
- * Processes in batches of 10 with a 1-second delay between batches
- * to respect Discord's rate limit of 5 DMs/second.
- *
- * Inner loop: drains the entire pending queue per cycle, not just one batch.
+ * Retry logic (v3.1): transient DM failures are retried up to MAX_RETRIES
+ * times with exponential backoff. After MAX_RETRIES, permanently marked dmFailed.
  */
 
 import { type Client, EmbedBuilder } from "discord.js";
 import { db, notificationsTable, playersTable } from "./db.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, lt, isNull, sql } from "drizzle-orm";
 
-const POLL_INTERVAL_MS = 60 * 1000; // 60 seconds
+const POLL_INTERVAL_MS = 60 * 1000;
 const BATCH_SIZE = 10;
-const BATCH_DELAY_MS = 1000; // 1 second between DM sends
+const BATCH_DELAY_MS = 1000;
+const MAX_RETRIES = 3;
 const PLATFORM_URL = process.env.PLATFORM_URL ?? "https://vclol.gg";
 
-/** Embed color by notification type — matches web theme. */
 const NOTIF_COLORS: Record<string, number> = {
-  match_result: 0x5865f2,    // primary blue
-  roster_change: 0xfee75c,   // yellow
-  badge_earned: 0x57f287,    // green
-  no_show_flagged: 0xed4245, // red
+  match_result: 0x5865f2,
+  roster_change: 0xfee75c,
+  badge_earned: 0x57f287,
+  no_show_flagged: 0xed4245,
   season_completed: 0x5865f2,
   event_registration_confirmed: 0x57f287,
 };
 
 let isShuttingDown = false;
 
-/** Call on SIGTERM/SIGINT to stop the poller from starting new batches. */
 export function stopNotificationPoller(): void {
   isShuttingDown = true;
+}
+
+/** Calculate backoff: skip if last attempt was less than 2^retryCount minutes ago. */
+function isBackoffElapsed(retryCount: number, lastAttempt: Date | null): boolean {
+  if (!lastAttempt || retryCount === 0) return true;
+  const backoffMs = Math.pow(2, retryCount) * 60 * 1000; // 2min, 4min, 8min
+  return Date.now() >= lastAttempt.getTime() + backoffMs;
 }
 
 export function startNotificationPoller(client: Client): void {
@@ -44,8 +47,8 @@ export function startNotificationPoller(client: Client): void {
     try {
       let totalProcessed = 0;
 
-      // Inner loop: keep fetching batches until queue is drained or shutdown requested
       while (!isShuttingDown) {
+        // Fetch pending: not sent, not permanently failed (retryCount < MAX_RETRIES)
         const pending = await db
           .select({
             id: notificationsTable.id,
@@ -53,23 +56,28 @@ export function startNotificationPoller(client: Client): void {
             title: notificationsTable.title,
             message: notificationsTable.message,
             type: notificationsTable.type,
+            dmRetryCount: notificationsTable.dmRetryCount,
+            lastDmAttemptAt: notificationsTable.lastDmAttemptAt,
           })
           .from(notificationsTable)
           .where(
             and(
               eq(notificationsTable.isRead, false),
               eq(notificationsTable.dmSent, false),
-              eq(notificationsTable.dmFailed, false)
+              eq(notificationsTable.dmFailed, false),
+              lt(notificationsTable.dmRetryCount, MAX_RETRIES)
             )
           )
           .limit(BATCH_SIZE);
 
-        if (pending.length === 0) break; // Queue drained
+        if (pending.length === 0) break;
 
         for (const notif of pending) {
           if (isShuttingDown) break;
 
-          // Look up player discordId and preference
+          // Exponential backoff check
+          if (!isBackoffElapsed(notif.dmRetryCount, notif.lastDmAttemptAt)) continue;
+
           const [player] = await db
             .select({
               discordId: playersTable.discordId,
@@ -80,18 +88,14 @@ export function startNotificationPoller(client: Client): void {
             .limit(1);
 
           if (!player) {
-            await db
-              .update(notificationsTable)
+            await db.update(notificationsTable)
               .set({ dmFailed: true })
               .where(eq(notificationsTable.id, notif.id));
             continue;
           }
 
-          // Skip DM if player has no discordId or prefers web-only.
-          // Mark dmSent=true so the notification exits the pending queue.
           if (!player.discordId) {
-            await db
-              .update(notificationsTable)
+            await db.update(notificationsTable)
               .set({ dmSent: true })
               .where(eq(notificationsTable.id, notif.id));
             continue;
@@ -99,14 +103,12 @@ export function startNotificationPoller(client: Client): void {
 
           const pref = player.notificationPreference ?? "web";
           if (pref !== "discord" && pref !== "both") {
-            await db
-              .update(notificationsTable)
+            await db.update(notificationsTable)
               .set({ dmSent: true })
               .where(eq(notificationsTable.id, notif.id));
             continue;
           }
 
-          // Rate limit: 1-second delay between DM sends
           await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
 
           try {
@@ -118,22 +120,29 @@ export function startNotificationPoller(client: Client): void {
               .setFooter({ text: PLATFORM_URL })
               .setTimestamp();
             await user.send({ embeds: [dmEmbed] });
-            await db
-              .update(notificationsTable)
+            await db.update(notificationsTable)
               .set({ dmSent: true })
               .where(eq(notificationsTable.id, notif.id));
           } catch (err) {
-            console.error(`[poller] DM failed for notification #${notif.id}:`, err);
-            await db
-              .update(notificationsTable)
-              .set({ dmFailed: true })
+            const newRetryCount = notif.dmRetryCount + 1;
+            const isPermanentFailure = newRetryCount >= MAX_RETRIES;
+
+            console.error(
+              `[poller] DM failed for #${notif.id} (attempt ${newRetryCount}/${MAX_RETRIES}):`,
+              err
+            );
+
+            await db.update(notificationsTable)
+              .set({
+                dmRetryCount: newRetryCount,
+                lastDmAttemptAt: new Date(),
+                dmFailed: isPermanentFailure,
+              })
               .where(eq(notificationsTable.id, notif.id));
           }
         }
 
         totalProcessed += pending.length;
-
-        // If batch was smaller than BATCH_SIZE, queue is fully drained
         if (pending.length < BATCH_SIZE) break;
       }
 
@@ -145,7 +154,6 @@ export function startNotificationPoller(client: Client): void {
     }
   }
 
-  // Run immediately on startup, then every 60 seconds
   poll();
   setInterval(poll, POLL_INTERVAL_MS);
   console.log("[poller] Notification poller started.");
