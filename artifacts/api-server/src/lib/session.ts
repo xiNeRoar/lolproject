@@ -9,6 +9,8 @@ declare module "express-session" {
     playerRiotId?: string;
     discordId?: string;
     discordUsername?: string;
+    connectToken?: string;       // bot /connect flow: authSession token
+    connectDiscordId?: string;   // bot /connect flow: who initiated
   }
 }
 

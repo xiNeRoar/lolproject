@@ -19,20 +19,6 @@ Format: one section per request.
 ---
 
 
-## Request: RSO OAuth routes (launch requirement)
-
-**Needed for:** PRD §5, §11 — RSO is a launch requirement
-**Endpoint:** New routes needed
-**Why:** `auth.ts` only implements Discord OAuth. RSO OAuth flow is completely missing. PRD says every profile claim requires RSO verification. The `authSessions` table exists but has no corresponding routes. `/connect` bot command generates a token but there's no website endpoint to handle the RSO redirect.
-**What's needed:**
-1. GET /auth/rso — initiate RSO OAuth (redirect to auth.riotgames.com)
-2. GET /auth/rso/callback — exchange code, verify PUUID, update player record (set puuid, rsoOptIn=true, rsoLinkedAt, rsoAccessToken, rsoRefreshToken)
-3. GET /auth/connect/:token — handle bot `/connect` flow (validate authSession token, then redirect to RSO)
-4. POST /auth/rso/refresh — refresh RSO tokens
-**Note:** Pre-launch, these can return placeholder responses until Riot approves the application (PRD §11: "RSO button shows pending Riot approval").
-**File:** `artifacts/api-server/src/routes/auth.ts` (expand existing)
-
----
 
 ## Request: Tournament/event matches should be public by default
 
