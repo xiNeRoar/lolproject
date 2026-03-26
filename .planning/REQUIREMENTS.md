@@ -7,16 +7,16 @@
 
 ### Schema & Data Integrity
 
-- [ ] **SCHM-01**: Database schema synced with Drizzle ORM — all columns exist in production (match_type, tournament_code, etc.)
-- [ ] **SCHM-02**: eloHistory.playerId decision resolved — either restore column or update SCHEMA_CONTRACT.md
+- [x] **SCHM-01**: Database schema synced with Drizzle ORM — all columns exist in production (match_type, tournament_code, etc.)
+- [x] **SCHM-02**: eloHistory.playerId decision resolved — either restore column or update SCHEMA_CONTRACT.md
 
 ### Auth & Security
 
 - [ ] **AUTH-01**: RSO OAuth state parameter on both Discord and RSO flows (prevent account hijack)
-- [ ] **AUTH-02**: CORS restricted to production domain (not wildcard with credentials)
+- [x] **AUTH-02**: CORS restricted to production domain (not wildcard with credentials)
 - [ ] **AUTH-03**: RSO token storage resolved — keep schema columns but don't populate tokens in auth flow (only persist PUUID). Add code comment linking to Tournament API future requirement.
-- [ ] **AUTH-04**: Session secret enforced as non-default in production
-- [ ] **AUTH-05**: Match visibility endpoint rejects spoofed playerId in request body
+- [x] **AUTH-04**: Session secret enforced as non-default in production
+- [x] **AUTH-05**: Match visibility endpoint rejects spoofed playerId in request body
 
 ### Privacy Gates (PRD §7 — 3-Layer Model)
 
@@ -67,13 +67,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHM-01 | Phase 1 | Pending |
-| SCHM-02 | Phase 1 | Pending |
+| SCHM-01 | Phase 1 | Complete |
+| SCHM-02 | Phase 1 | Complete |
 | AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
 | PRIV-01 | Phase 2 | Pending |
 | PRIV-02 | Phase 2 | Pending |
 | PRIV-03 | Phase 2 | Pending |

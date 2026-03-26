@@ -31,9 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Schema sync (drizzle-kit push) and eloHistory doc fix
-- [ ] 01-02-PLAN.md -- CORS restriction, session secret validation, visibility endpoint fix
-- [ ] 01-03-PLAN.md -- OAuth state parameters on all flows, RSO token write removal
+- [x] 01-01-PLAN.md -- Schema sync (drizzle-kit push) and eloHistory doc fix
+- [x] 01-02-PLAN.md -- CORS restriction, session secret validation, visibility endpoint fix
+- [x] 01-03-PLAN.md -- OAuth state parameters on all flows, RSO token write removal
 
 ### Phase 2: Privacy Gates
 **Goal**: Every API response respects the 3-layer visibility model -- scrims restricted, tournaments public, player profiles gated by opt-in
@@ -64,6 +64,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema Sync & Auth Hardening | 0/3 | Not started | - |
+| 1. Schema Sync & Auth Hardening | 3/3 | Complete | 2026-03-26 |
 | 2. Privacy Gates | 0/0 | Not started | - |
 | 3. API Contract & Performance | 0/0 | Not started | - |
