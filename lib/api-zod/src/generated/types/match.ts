@@ -5,6 +5,8 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
+import type { MatchMatchType } from "./matchMatchType";
+import type { MatchResultSource } from "./matchResultSource";
 
 export interface Match {
   id: number;
@@ -29,7 +31,11 @@ export interface Match {
   gameId?: string | null;
   gameDuration?: number | null;
   gameVersion?: string | null;
-  resultSource: string;
+  resultSource: MatchResultSource;
+  /** v3.1: scrim = no ELO. ranked_tournament/event = ELO counted. */
+  matchType: MatchMatchType;
+  /** Riot Tournament API code. Set for ranked_tournament matches. */
+  tournamentCode?: string | null;
   visibleAfter?: string | null;
   seasonId?: number | null;
   eventId?: number | null;

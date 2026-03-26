@@ -8,7 +8,7 @@
  * Algorithm:
  *   1. Primary match: PUUID in players.puuid → join team_members
  *   2. Fallback: riotId in players.riotId → join team_members
- *      (used when player exists but hasn't run /link-riot yet)
+ *      (used when player exists but hasn't run /connect yet)
  *   3. Team with 3+ player matches = identified; fewer = null (unregistered)
  *   4. On match, update players.puuid from .rofl if not yet set (side-effect)
  */
@@ -201,7 +201,7 @@ async function matchSide(players: RoflPlayer[]): Promise<SideMatch> {
   });
 
   // Step 5: Back-fill PUUID for players matched by riotId only
-  // (They exist in DB but haven't run /link-riot yet)
+  // (They exist in DB but haven't run /connect yet)
   const puuidBackfills: Promise<void>[] = [];
   for (const p of players) {
     const byRiot = riotIdToPlayerId.get(p.riotId);

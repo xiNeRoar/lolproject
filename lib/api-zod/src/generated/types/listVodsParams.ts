@@ -5,20 +5,20 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { ListVodsType } from './listVodsType';
+import type { ListVodsType } from "./listVodsType";
 
 export type ListVodsParams = {
-eventId?: number;
-format?: string;
-roleTag?: string;
-search?: string;
-champion?: string;
-position?: string;
-patch?: string;
-teamId?: number;
-playerId?: number;
-/**
- * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
- */
-type?: ListVodsType;
+  eventId?: number;
+  format?: string;
+  roleTag?: string;
+  search?: string;
+  champion?: string;
+  position?: string;
+  patch?: string;
+  teamId?: number;
+  playerId?: number;
+  /**
+   * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
+   */
+  type?: ListVodsType;
 };

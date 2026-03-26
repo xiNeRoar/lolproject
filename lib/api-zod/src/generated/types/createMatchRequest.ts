@@ -18,6 +18,9 @@ export interface CreateMatchRequest {
   vodCount?: number;
   format?: string | null;
   resultSource?: string | null;
+  /** scrim | ranked_tournament | event */
+  matchType?: string | null;
+  tournamentCode?: string | null;
   eventId?: number | null;
   seasonId?: number | null;
   isPlayoff?: boolean | null;

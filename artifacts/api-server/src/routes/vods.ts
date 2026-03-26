@@ -52,7 +52,7 @@ function formatVodEntry(
     opponentChampion: v.opponentChampion ?? null,
     position: v.position ?? null,
     patch: v.patch ?? null,
-    playerEloAtTime: v.playerEloAtTime ?? null,
+    teamEloAtTime: v.teamEloAtTime ?? null,
     gameNumber: v.gameNumber ?? null,
     vodType: v.vodType ?? null,
     teamId: v.teamId ?? null,
@@ -265,7 +265,7 @@ router.post("/", requireAdmin, async (req, res) => {
       opponentChampion,
       position,
       patch,
-      playerEloAtTime,
+      teamEloAtTime,
       gameNumber,
       vodType,
       teamId,
@@ -283,7 +283,7 @@ router.post("/", requireAdmin, async (req, res) => {
       opponentChampion?: string | null;
       position?: string | null;
       patch?: string | null;
-      playerEloAtTime?: number | null;
+      teamEloAtTime?: number | null;
       gameNumber?: number | null;
       vodType?: string | null;
       teamId?: number | null;
@@ -310,7 +310,7 @@ router.post("/", requireAdmin, async (req, res) => {
         opponentChampion: opponentChampion || null,
         position: position || null,
         patch: patch || null,
-        playerEloAtTime: playerEloAtTime ? Number(playerEloAtTime) : null,
+        teamEloAtTime: teamEloAtTime ? Number(teamEloAtTime) : null,
         gameNumber: gameNumber ? Number(gameNumber) : null,
         vodType: vodType || null,
         teamId: teamId ? Number(teamId) : null,
@@ -360,7 +360,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       opponentChampion,
       position,
       patch,
-      playerEloAtTime,
+      teamEloAtTime,
       gameNumber,
       vodType,
       teamId,
@@ -378,7 +378,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
       opponentChampion?: string | null;
       position?: string | null;
       patch?: string | null;
-      playerEloAtTime?: number | null;
+      teamEloAtTime?: number | null;
     };
 
     const updates: Partial<typeof vodEntriesTable.$inferInsert> = { updatedAt: new Date() };
@@ -395,8 +395,8 @@ router.put("/:id", requireAdmin, async (req, res) => {
     if (opponentChampion !== undefined) updates.opponentChampion = opponentChampion || null;
     if (position !== undefined) updates.position = position || null;
     if (patch !== undefined) updates.patch = patch || null;
-    if (playerEloAtTime !== undefined)
-      updates.playerEloAtTime = playerEloAtTime ? Number(playerEloAtTime) : null;
+    if (teamEloAtTime !== undefined)
+      updates.teamEloAtTime = teamEloAtTime ? Number(teamEloAtTime) : null;
     if (gameNumber !== undefined) updates.gameNumber = gameNumber ? Number(gameNumber) : null;
     if (vodType !== undefined) updates.vodType = vodType || null;
     if (teamId !== undefined) updates.teamId = teamId ? Number(teamId) : null;

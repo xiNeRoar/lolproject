@@ -33,15 +33,15 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 
 | Command | File | Status | Context | Notes |
 |---|---|---|---|---|
-| `/register-team` | `register-team.ts` | ⚠️ Needs update | Guild only | **v3.1: add RSO check** |
-| `/submit` | `submit.ts` | ⚠️ Needs update | Guild only | **v3.1: remove ELO, revert unknown player to active** |
+| `/register-team` | `register-team.ts` | ✅ Updated (v3.1) | Guild only | RSO check added (#191) |
+| `/submit` | `submit.ts` | ✅ Updated (v3.1) | Guild only | ELO removed, unknown player auto-active (#191) |
 | `/connect` | `connect.ts` | ❌ New | Guild + DM | **v3.1: RSO verification link** |
-| `/claim-match` | `claim-match.ts` | ⚠️ Needs update | Guild + DM | **v3.1: remove retroactive ELO** |
+| `/claim-match` | `claim-match.ts` | ✅ Updated (v3.1) | Guild + DM | Retroactive ELO removed (#191) |
 | `/visibility` | `visibility.ts` | ✅ Implemented | Guild + DM | |
 | `/leave` | `leave.ts` | ✅ Implemented | Guild + DM | Blocks captain |
 | `/transfer-captain` | `transfer-captain.ts` | ✅ Implemented | Guild + DM | |
 | `/register-event` | `register-event.ts` | ✅ Implemented | Guild + DM | |
-| `/stats` | `stats.ts` | ⚠️ Needs update | Guild + DM | **v3.1: ELO conditional** |
+| `/stats` | `stats.ts` | ✅ Updated (v3.1) | Guild + DM | ELO → W/L record (#191) |
 | `/roster` | `roster.ts` | ✅ Implemented | Guild + DM | |
 | `/remove` | `remove.ts` | ✅ Implemented | Guild + DM | |
 
@@ -88,7 +88,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
    c. No match: `playerId = null`, store `puuid` + `riotIdGameName` + `riotIdTagLine` on `match_players` row
 8. **Team matching:** For each side, count how many `match_players` have a `playerId` that appears in a team's `team_members`. Team with 3+ matches = identified.
 9. **Both teams identified:**
-   a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter` derived from team's `defaultMatchVisibility`: `public` → `new Date(0)`, `private` → `new Date('9999-01-01')`, `default`/unset → `createdAt + 7 days`)
+   a. Create `matches` row (`teamAId`, `teamBId` set, `visibleAfter` derived from team's `defaultMatchVisibility`: `public` → `new Date(0)` (always visible), `private` → `new Date('9999-01-01')` (never visible to non-participants). Default for new teams is `private`.)
    b. Create 10 `match_players` rows
    c. Update wins/losses + lastMatchAt for both teams
    e. Store .rofl file on disk
@@ -120,7 +120,7 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
 4. If BOTH sides now have teamIds: update wins/losses for both teams. No ELO (scrim).
 5. Reply: "✅ Match #{matchId} claimed for **{team}**. W/L updated."
 
-### `/visibility [match-id] <public|private|default>`
+### `/visibility [match-id] <public|private>`
 **Who:** Captain of either participating team
 **What:** Change match visibility. Controls whether match details (per-player stats, VOD, .rofl) are publicly accessible.
 **Flow:**
@@ -130,9 +130,8 @@ The bot shares the same PostgreSQL database with the API server. It uses `@works
    - Not captain of either → "Only team captains can change match visibility."
    - Match has null `teamAId`/`teamBId` (unregistered opponent) → only the registered side's captain can change.
 3. Apply visibility:
-   - `public` → set `matches.visibleAfter = new Date(0)` (epoch = always visible)
-   - `private` → set `matches.visibleAfter = new Date("9999-01-01")` (far-future = never visible)
-   - `default` → set `matches.visibleAfter = new Date(now + 7 days)` (consistent with /submit default)
+   - `public` → set `matches.visibleAfter = new Date(0)` (always visible to everyone)
+   - `private` → set `matches.visibleAfter = new Date("9999-01-01")` (visible only to logged-in participants)
 4. Reply: "Match #{id} visibility set to **{value}**."
 **Edge cases:**
 - Two captains set different values → last write wins. Each change logged via admin_actions.

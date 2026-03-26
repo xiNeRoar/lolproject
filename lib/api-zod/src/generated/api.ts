@@ -5,2124 +5,2487 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import * as zod from 'zod';
-
+import * as zod from "zod";
 
 /**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
-})
-
+  status: zod.string(),
+});
 
 /**
  * @summary Admin login
  */
 export const AdminLoginBody = zod.object({
-  "email": zod.string(),
-  "password": zod.string()
-})
+  email: zod.string(),
+  password: zod.string(),
+});
 
 export const AdminLoginResponse = zod.object({
-  "success": zod.boolean(),
-  "message": zod.string()
-})
-
+  success: zod.boolean(),
+  message: zod.string(),
+});
 
 /**
  * @summary Admin logout
  */
 export const AdminLogoutResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Get current admin session
  */
 export const AdminMeResponse = zod.object({
-  "authenticated": zod.boolean(),
-  "email": zod.string().optional()
-})
-
+  authenticated: zod.boolean(),
+  email: zod.string().optional(),
+});
 
 /**
  * @summary Get last 10 admin actions
  */
 export const ListAdminActionsResponseItem = zod.object({
-  "id": zod.number(),
-  "adminId": zod.number(),
-  "actionType": zod.string(),
-  "entityType": zod.string(),
-  "entityId": zod.number().nullish(),
-  "detail": zod.string().nullish(),
-  "createdAt": zod.string()
-})
-export const ListAdminActionsResponse = zod.array(ListAdminActionsResponseItem)
-
+  id: zod.number(),
+  adminId: zod.number(),
+  actionType: zod.string(),
+  entityType: zod.string(),
+  entityId: zod.number().nullish(),
+  detail: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const ListAdminActionsResponse = zod.array(ListAdminActionsResponseItem);
 
 /**
  * @summary Admin dashboard stats
  */
 export const GetAdminStatsResponse = zod.object({
-  "teams": zod.number(),
-  "players": zod.number(),
-  "events": zod.number(),
-  "registrations": zod.number(),
-  "matches": zod.number(),
-  "vods": zod.number(),
-  "seasons": zod.number()
-})
-
+  teams: zod.number(),
+  players: zod.number(),
+  events: zod.number(),
+  registrations: zod.number(),
+  matches: zod.number(),
+  vods: zod.number(),
+  seasons: zod.number(),
+});
 
 /**
  * @summary Get current player session
  */
 export const GetAuthMeResponse = zod.object({
-  "authenticated": zod.boolean(),
-  "playerId": zod.number().nullish(),
-  "riotId": zod.string().nullish(),
-  "discordUsername": zod.string().nullish()
-})
+  authenticated: zod.boolean(),
+  playerId: zod.number().nullish(),
+  riotId: zod.string().nullish(),
+  discordUsername: zod.string().nullish(),
+});
 
+/**
+ * Initiates RSO OAuth flow. If token query param is present (from bot /connect), links discordId. Otherwise requires existing Discord OAuth session.
+ * @summary v3.1: Redirect to Riot RSO OAuth login
+ */
+export const GetRsoAuthorizeQueryParams = zod.object({
+  token: zod.coerce
+    .string()
+    .optional()
+    .describe("One-time token from bot \/connect command (optional)"),
+});
+
+/**
+ * Riot redirects here after player authenticates. Exchanges code for PUUID, links to player record.
+ * @summary v3.1: RSO OAuth callback
+ */
+export const GetRsoCallbackQueryParams = zod.object({
+  code: zod.coerce.string(),
+  state: zod.coerce.string().optional(),
+});
+
+/**
+ * Bot generates token via /connect command. Website calls this to validate token and begin RSO flow.
+ * @summary v3.1: Exchange bot /connect token for auth session
+ */
+export const PostAuthConnectBody = zod.object({
+  token: zod.string(),
+});
+
+export const PostAuthConnectResponse = zod.object({
+  discordId: zod.string().optional(),
+  expiresAt: zod.string().optional(),
+});
 
 /**
  * @summary List all teams
  */
 export const ListTeamsQueryParams = zod.object({
-  "active": zod.coerce.boolean().optional()
-})
+  active: zod.coerce.boolean().optional(),
+});
 
 export const ListTeamsResponseItem = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "discordServerId": zod.string().nullish(),
-  "teamElo": zod.number(),
-  "peakElo": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "isActive": zod.boolean(),
-  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
-  "lastMatchAt": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListTeamsResponse = zod.array(ListTeamsResponseItem)
-
+  id: zod.number(),
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  discordServerId: zod.string().nullish(),
+  teamElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  defaultMatchVisibility: zod
+    .string()
+    .optional()
+    .describe("private | participants | public"),
+  lastMatchAt: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListTeamsResponse = zod.array(ListTeamsResponseItem);
 
 /**
  * @summary Create a team
  */
 export const CreateTeamBody = zod.object({
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "discordServerId": zod.string().nullish(),
-  "teamElo": zod.number().nullish(),
-  "isActive": zod.boolean().nullish()
-})
-
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  discordServerId: zod.string().nullish(),
+  teamElo: zod.number().nullish(),
+  isActive: zod.boolean().nullish(),
+});
 
 /**
  * @summary Get team profile with members and matches
  */
 export const GetTeamParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetTeamResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "teamElo": zod.number(),
-  "peakElo": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "isActive": zod.boolean(),
-  "members": zod.array(zod.object({
-  "id": zod.number(),
-  "teamId": zod.number(),
-  "playerId": zod.number(),
-  "playerRiotId": zod.string().nullish(),
-  "playerDiscordUsername": zod.string().nullish(),
-  "role": zod.string().nullish(),
-  "status": zod.string(),
-  "joinedAt": zod.string()
-})),
-  "recentMatches": zod.array(zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-}).and(zod.object({
-  "playerChampion": zod.string().nullish().describe('Champion played by this player in the match')
-}))),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  teamElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  members: zod.array(
+    zod.object({
+      id: zod.number(),
+      teamId: zod.number(),
+      playerId: zod.number(),
+      playerRiotId: zod.string().nullish(),
+      playerDiscordUsername: zod.string().nullish(),
+      role: zod.string().nullish(),
+      status: zod.string(),
+      joinedAt: zod.string(),
+    }),
+  ),
+  recentMatches: zod.array(
+    zod
+      .object({
+        id: zod.number(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        teamAName: zod.string().nullish(),
+        teamBName: zod.string().nullish(),
+        teamATag: zod.string().nullish(),
+        teamBTag: zod.string().nullish(),
+        sideAName: zod.string(),
+        sideBName: zod.string(),
+        matchTitle: zod.string(),
+        winnerName: zod.string(),
+        score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
+        format: zod.string().nullish(),
+        teamAEloBefore: zod.number().nullish(),
+        teamAEloAfter: zod.number().nullish(),
+        teamBEloBefore: zod.number().nullish(),
+        teamBEloAfter: zod.number().nullish(),
+        gameId: zod.string().nullish(),
+        gameDuration: zod.number().nullish(),
+        gameVersion: zod.string().nullish(),
+        resultSource: zod.enum([
+          "rofl_parse",
+          "tournament_api",
+          "admin_manual",
+        ]),
+        matchType: zod
+          .enum(["scrim", "ranked_tournament", "event"])
+          .describe(
+            "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+          ),
+        tournamentCode: zod
+          .string()
+          .nullish()
+          .describe(
+            "Riot Tournament API code. Set for ranked_tournament matches.",
+          ),
+        visibleAfter: zod.string().nullish(),
+        seasonId: zod.number().nullish(),
+        eventId: zod.number().nullish(),
+        eventTitle: zod.string().nullish(),
+        isPlayoff: zod.boolean(),
+        round: zod.number().nullish(),
+        bestOf: zod
+          .number()
+          .nullish()
+          .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+        bracketSize: zod
+          .number()
+          .nullish()
+          .describe(
+            "Bracket size (4,8,16) derived from event registration count",
+          ),
+        bracketSlot: zod.number().nullish(),
+        nextMatchId: zod.number().nullish(),
+        isLosersBracket: zod.boolean().nullish(),
+        groupId: zod.number().nullish(),
+        createdAt: zod.string(),
+        updatedAt: zod.string(),
+      })
+      .and(
+        zod.object({
+          playerChampion: zod
+            .string()
+            .nullish()
+            .describe("Champion played by this player in the match"),
+        }),
+      ),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Update a team (admin)
  */
 export const UpdateTeamParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateTeamBody = zod.object({
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "discordServerId": zod.string().nullish(),
-  "teamElo": zod.number().nullish(),
-  "isActive": zod.boolean().nullish()
-})
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  discordServerId: zod.string().nullish(),
+  teamElo: zod.number().nullish(),
+  isActive: zod.boolean().nullish(),
+});
 
 export const UpdateTeamResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "discordServerId": zod.string().nullish(),
-  "teamElo": zod.number(),
-  "peakElo": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "isActive": zod.boolean(),
-  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
-  "lastMatchAt": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  discordServerId: zod.string().nullish(),
+  teamElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  defaultMatchVisibility: zod
+    .string()
+    .optional()
+    .describe("private | participants | public"),
+  lastMatchAt: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Delete a team (admin)
  */
 export const DeleteTeamParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteTeamResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Get team roster
  */
 export const ListTeamMembersParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const ListTeamMembersResponseItem = zod.object({
-  "id": zod.number(),
-  "teamId": zod.number(),
-  "playerId": zod.number(),
-  "playerRiotId": zod.string().nullish(),
-  "playerDiscordUsername": zod.string().nullish(),
-  "role": zod.string().nullish(),
-  "status": zod.string(),
-  "joinedAt": zod.string()
-})
-export const ListTeamMembersResponse = zod.array(ListTeamMembersResponseItem)
-
+  id: zod.number(),
+  teamId: zod.number(),
+  playerId: zod.number(),
+  playerRiotId: zod.string().nullish(),
+  playerDiscordUsername: zod.string().nullish(),
+  role: zod.string().nullish(),
+  status: zod.string(),
+  joinedAt: zod.string(),
+});
+export const ListTeamMembersResponse = zod.array(ListTeamMembersResponseItem);
 
 /**
  * @summary Add member to team (admin)
  */
 export const AddTeamMemberParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const AddTeamMemberBody = zod.object({
-  "playerId": zod.number(),
-  "role": zod.string().nullish()
-})
-
+  playerId: zod.number(),
+  role: zod.string().nullish(),
+});
 
 /**
  * @summary Update member role or status (admin)
  */
 export const UpdateTeamMemberParams = zod.object({
-  "id": zod.coerce.number(),
-  "memberId": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+  memberId: zod.coerce.number(),
+});
 
 export const UpdateTeamMemberBody = zod.object({
-  "role": zod.string().nullish(),
-  "status": zod.string().optional()
-})
+  role: zod.string().nullish(),
+  status: zod.string().optional(),
+});
 
 export const UpdateTeamMemberResponse = zod.object({
-  "id": zod.number(),
-  "teamId": zod.number(),
-  "playerId": zod.number(),
-  "playerRiotId": zod.string().nullish(),
-  "playerDiscordUsername": zod.string().nullish(),
-  "role": zod.string().nullish(),
-  "status": zod.string(),
-  "joinedAt": zod.string()
-})
-
+  id: zod.number(),
+  teamId: zod.number(),
+  playerId: zod.number(),
+  playerRiotId: zod.string().nullish(),
+  playerDiscordUsername: zod.string().nullish(),
+  role: zod.string().nullish(),
+  status: zod.string(),
+  joinedAt: zod.string(),
+});
 
 /**
  * @summary Remove member from team (admin) — sets status inactive
  */
 export const RemoveTeamMemberParams = zod.object({
-  "id": zod.coerce.number(),
-  "memberId": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+  memberId: zod.coerce.number(),
+});
 
 export const RemoveTeamMemberResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Transfer captaincy to another active member (captain or admin)
  */
 export const TransferCaptainParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const TransferCaptainBody = zod.object({
-  "newCaptainPlayerId": zod.number()
-})
+  newCaptainPlayerId: zod.number(),
+});
 
 export const TransferCaptainResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Update team name, tag, or defaultMatchVisibility (captain or admin)
  */
 export const UpdateTeamSettingsParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateTeamSettingsBody = zod.object({
-  "name": zod.string().optional(),
-  "tag": zod.string().optional(),
-  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public')
-})
+  name: zod.string().optional(),
+  tag: zod.string().optional(),
+  defaultMatchVisibility: zod
+    .string()
+    .optional()
+    .describe("private | participants | public"),
+});
 
 export const UpdateTeamSettingsResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "tag": zod.string(),
-  "captainPlayerId": zod.number(),
-  "discordServerId": zod.string().nullish(),
-  "teamElo": zod.number(),
-  "peakElo": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "isActive": zod.boolean(),
-  "defaultMatchVisibility": zod.string().optional().describe('private | participants | public'),
-  "lastMatchAt": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  name: zod.string(),
+  tag: zod.string(),
+  captainPlayerId: zod.number(),
+  discordServerId: zod.string().nullish(),
+  teamElo: zod.number(),
+  peakElo: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+  isActive: zod.boolean(),
+  defaultMatchVisibility: zod
+    .string()
+    .optional()
+    .describe("private | participants | public"),
+  lastMatchAt: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Bulk set visibility for team's matches (captain or admin)
  */
 export const BulkSetMatchVisibilityParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const BulkSetMatchVisibilityBody = zod.object({
-  "visibility": zod.string().describe('public | private | default'),
-  "matchIds": zod.array(zod.number()).nullish().describe('Optional subset of match IDs. Omit to update all team matches.')
-})
+  visibility: zod.string().describe("public | private | default"),
+  matchIds: zod
+    .array(zod.number())
+    .nullish()
+    .describe("Optional subset of match IDs. Omit to update all team matches."),
+});
 
 export const BulkSetMatchVisibilityResponse = zod.object({
-  "success": zod.boolean().optional(),
-  "updatedCount": zod.number().optional()
-})
-
+  success: zod.boolean().optional(),
+  updatedCount: zod.number().optional(),
+});
 
 /**
  * @summary Get paginated match list for a team (captain only)
  */
 export const GetTeamMatchesParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetTeamMatchesQueryParams = zod.object({
-  "page": zod.coerce.number().optional().describe('Page number (default 1)'),
-  "limit": zod.coerce.number().optional().describe('Results per page (default 20, max 100)'),
-  "search": zod.coerce.string().optional().describe('Search by opponent or match title')
-})
+  page: zod.coerce.number().optional().describe("Page number (default 1)"),
+  limit: zod.coerce
+    .number()
+    .optional()
+    .describe("Results per page (default 20, max 100)"),
+  search: zod.coerce
+    .string()
+    .optional()
+    .describe("Search by opponent or match title"),
+});
 
 export const GetTeamMatchesResponse = zod.object({
-  "matches": zod.array(zod.object({
-  "id": zod.number().optional(),
-  "matchTitle": zod.string().optional(),
-  "sideAName": zod.string().optional(),
-  "sideBName": zod.string().optional(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "winnerName": zod.string().nullish(),
-  "visibleAfter": zod.string().nullish(),
-  "createdAt": zod.string().optional()
-})).optional(),
-  "total": zod.number().optional(),
-  "page": zod.number().optional(),
-  "totalPages": zod.number().optional()
-})
-
+  matches: zod
+    .array(
+      zod.object({
+        id: zod.number().optional(),
+        matchTitle: zod.string().optional(),
+        sideAName: zod.string().optional(),
+        sideBName: zod.string().optional(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        winnerName: zod.string().nullish(),
+        visibleAfter: zod.string().nullish(),
+        createdAt: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  total: zod.number().optional(),
+  page: zod.number().optional(),
+  totalPages: zod.number().optional(),
+});
 
 /**
  * @summary List all players (admin)
  */
 export const ListPlayersResponseItem = zod.object({
-  "id": zod.number(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "primaryTeam": zod.object({
-  "teamId": zod.number().optional(),
-  "teamName": zod.string().optional(),
-  "teamTag": zod.string().optional()
-}).nullish(),
-  "totalGames": zod.number().optional(),
-  "winRate": zod.number().nullish(),
-  "discordId": zod.string().nullish(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "profileVisibility": zod.string().optional().describe('public | private'),
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "registrationStatus": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListPlayersResponse = zod.array(ListPlayersResponseItem)
-
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  primaryTeam: zod
+    .object({
+      teamId: zod.number().optional(),
+      teamName: zod.string().optional(),
+      teamTag: zod.string().optional(),
+    })
+    .nullish(),
+  totalGames: zod.number().optional(),
+  winRate: zod.number().nullish(),
+  discordId: zod.string().nullish(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean(),
+  profileVisibility: zod
+    .string()
+    .optional()
+    .describe("private | public | participants-only (v3.1: default PRIVATE)"),
+  rsoOptIn: zod
+    .boolean()
+    .optional()
+    .describe(
+      "v3.1: true after RSO verified + player consents to public display",
+    ),
+  rsoLinkedAt: zod.string().nullish().describe("When RSO was linked"),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
 
 /**
  * @summary Create a player (admin)
  */
 export const CreatePlayerBody = zod.object({
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "discordId": zod.string().nullish(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean().nullish(),
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "registrationStatus": zod.string().nullish()
-})
-
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  discordId: zod.string().nullish(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean().nullish(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+});
 
 /**
  * @summary Register player via Discord OAuth session (session.discordId required)
  */
 export const RegisterPlayerBody = zod.object({
-  "riotId": zod.string(),
-  "puuid": zod.string().nullish(),
-  "email": zod.string().nullish()
-})
-
+  riotId: zod.string(),
+  puuid: zod.string().nullish(),
+  email: zod.string().nullish(),
+});
 
 /**
  * @summary Get player by numeric ID
  */
 export const GetPlayerByIdParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetPlayerByIdResponse = zod.object({
-  "id": zod.number(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "teams": zod.array(zod.object({
-  "teamId": zod.number(),
-  "teamName": zod.string(),
-  "teamTag": zod.string(),
-  "role": zod.string().nullish(),
-  "status": zod.string(),
-  "isCaptain": zod.boolean(),
-  "memberCount": zod.number().describe('Number of active members on this team')
-})),
-  "aggregateStats": zod.object({
-  "totalGames": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "avgKills": zod.number(),
-  "avgDeaths": zod.number(),
-  "avgAssists": zod.number(),
-  "avgCs": zod.number(),
-  "topChampions": zod.array(zod.object({
-  "champion": zod.string(),
-  "games": zod.number(),
-  "wins": zod.number().optional(),
-  "avgKda": zod.number().optional()
-}))
-}),
-  "recentMatches": zod.array(zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-}).and(zod.object({
-  "playerChampion": zod.string().nullish().describe('Champion played by this player in the match')
-}))),
-  "vods": zod.array(zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean(),
+  teams: zod.array(
+    zod.object({
+      teamId: zod.number(),
+      teamName: zod.string(),
+      teamTag: zod.string(),
+      role: zod.string().nullish(),
+      status: zod.string(),
+      isCaptain: zod.boolean(),
+      memberCount: zod
+        .number()
+        .describe("Number of active members on this team"),
+    }),
+  ),
+  aggregateStats: zod.object({
+    totalGames: zod.number(),
+    wins: zod.number(),
+    losses: zod.number(),
+    avgKills: zod.number(),
+    avgDeaths: zod.number(),
+    avgAssists: zod.number(),
+    avgCs: zod.number(),
+    topChampions: zod.array(
+      zod.object({
+        champion: zod.string(),
+        games: zod.number(),
+        wins: zod.number().optional(),
+        avgKda: zod.number().optional(),
+      }),
+    ),
+  }),
+  recentMatches: zod.array(
+    zod
+      .object({
+        id: zod.number(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        teamAName: zod.string().nullish(),
+        teamBName: zod.string().nullish(),
+        teamATag: zod.string().nullish(),
+        teamBTag: zod.string().nullish(),
+        sideAName: zod.string(),
+        sideBName: zod.string(),
+        matchTitle: zod.string(),
+        winnerName: zod.string(),
+        score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
+        format: zod.string().nullish(),
+        teamAEloBefore: zod.number().nullish(),
+        teamAEloAfter: zod.number().nullish(),
+        teamBEloBefore: zod.number().nullish(),
+        teamBEloAfter: zod.number().nullish(),
+        gameId: zod.string().nullish(),
+        gameDuration: zod.number().nullish(),
+        gameVersion: zod.string().nullish(),
+        resultSource: zod.enum([
+          "rofl_parse",
+          "tournament_api",
+          "admin_manual",
+        ]),
+        matchType: zod
+          .enum(["scrim", "ranked_tournament", "event"])
+          .describe(
+            "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+          ),
+        tournamentCode: zod
+          .string()
+          .nullish()
+          .describe(
+            "Riot Tournament API code. Set for ranked_tournament matches.",
+          ),
+        visibleAfter: zod.string().nullish(),
+        seasonId: zod.number().nullish(),
+        eventId: zod.number().nullish(),
+        eventTitle: zod.string().nullish(),
+        isPlayoff: zod.boolean(),
+        round: zod.number().nullish(),
+        bestOf: zod
+          .number()
+          .nullish()
+          .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+        bracketSize: zod
+          .number()
+          .nullish()
+          .describe(
+            "Bracket size (4,8,16) derived from event registration count",
+          ),
+        bracketSlot: zod.number().nullish(),
+        nextMatchId: zod.number().nullish(),
+        isLosersBracket: zod.boolean().nullish(),
+        groupId: zod.number().nullish(),
+        createdAt: zod.string(),
+        updatedAt: zod.string(),
+      })
+      .and(
+        zod.object({
+          playerChampion: zod
+            .string()
+            .nullish()
+            .describe("Champion played by this player in the match"),
+        }),
+      ),
+  ),
+  vods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      gameNumber: zod
+        .number()
+        .nullish()
+        .describe("Game number in BO series (1,2,3); null for BO1"),
+      vodType: zod
+        .string()
+        .nullish()
+        .describe("spectator | team-pov | player-pov"),
+      teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+      teamEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
+ * v3.1 visibility gate: only returns full profile if player has rsoOptIn=true.
+Non-opted players return limited data (id only) or 404 for public access.
+The player themselves (authenticated) always see their own full profile.
+
  * @summary Get player by Riot ID
  */
 export const GetPlayerParams = zod.object({
-  "riotId": zod.coerce.string()
-})
+  riotId: zod.coerce.string(),
+});
 
 export const GetPlayerResponse = zod.object({
-  "id": zod.number(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "teams": zod.array(zod.object({
-  "teamId": zod.number(),
-  "teamName": zod.string(),
-  "teamTag": zod.string(),
-  "role": zod.string().nullish(),
-  "status": zod.string(),
-  "isCaptain": zod.boolean(),
-  "memberCount": zod.number().describe('Number of active members on this team')
-})),
-  "aggregateStats": zod.object({
-  "totalGames": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "avgKills": zod.number(),
-  "avgDeaths": zod.number(),
-  "avgAssists": zod.number(),
-  "avgCs": zod.number(),
-  "topChampions": zod.array(zod.object({
-  "champion": zod.string(),
-  "games": zod.number(),
-  "wins": zod.number().optional(),
-  "avgKda": zod.number().optional()
-}))
-}),
-  "recentMatches": zod.array(zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-}).and(zod.object({
-  "playerChampion": zod.string().nullish().describe('Champion played by this player in the match')
-}))),
-  "vods": zod.array(zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean(),
+  teams: zod.array(
+    zod.object({
+      teamId: zod.number(),
+      teamName: zod.string(),
+      teamTag: zod.string(),
+      role: zod.string().nullish(),
+      status: zod.string(),
+      isCaptain: zod.boolean(),
+      memberCount: zod
+        .number()
+        .describe("Number of active members on this team"),
+    }),
+  ),
+  aggregateStats: zod.object({
+    totalGames: zod.number(),
+    wins: zod.number(),
+    losses: zod.number(),
+    avgKills: zod.number(),
+    avgDeaths: zod.number(),
+    avgAssists: zod.number(),
+    avgCs: zod.number(),
+    topChampions: zod.array(
+      zod.object({
+        champion: zod.string(),
+        games: zod.number(),
+        wins: zod.number().optional(),
+        avgKda: zod.number().optional(),
+      }),
+    ),
+  }),
+  recentMatches: zod.array(
+    zod
+      .object({
+        id: zod.number(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        teamAName: zod.string().nullish(),
+        teamBName: zod.string().nullish(),
+        teamATag: zod.string().nullish(),
+        teamBTag: zod.string().nullish(),
+        sideAName: zod.string(),
+        sideBName: zod.string(),
+        matchTitle: zod.string(),
+        winnerName: zod.string(),
+        score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
+        format: zod.string().nullish(),
+        teamAEloBefore: zod.number().nullish(),
+        teamAEloAfter: zod.number().nullish(),
+        teamBEloBefore: zod.number().nullish(),
+        teamBEloAfter: zod.number().nullish(),
+        gameId: zod.string().nullish(),
+        gameDuration: zod.number().nullish(),
+        gameVersion: zod.string().nullish(),
+        resultSource: zod.enum([
+          "rofl_parse",
+          "tournament_api",
+          "admin_manual",
+        ]),
+        matchType: zod
+          .enum(["scrim", "ranked_tournament", "event"])
+          .describe(
+            "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+          ),
+        tournamentCode: zod
+          .string()
+          .nullish()
+          .describe(
+            "Riot Tournament API code. Set for ranked_tournament matches.",
+          ),
+        visibleAfter: zod.string().nullish(),
+        seasonId: zod.number().nullish(),
+        eventId: zod.number().nullish(),
+        eventTitle: zod.string().nullish(),
+        isPlayoff: zod.boolean(),
+        round: zod.number().nullish(),
+        bestOf: zod
+          .number()
+          .nullish()
+          .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+        bracketSize: zod
+          .number()
+          .nullish()
+          .describe(
+            "Bracket size (4,8,16) derived from event registration count",
+          ),
+        bracketSlot: zod.number().nullish(),
+        nextMatchId: zod.number().nullish(),
+        isLosersBracket: zod.boolean().nullish(),
+        groupId: zod.number().nullish(),
+        createdAt: zod.string(),
+        updatedAt: zod.string(),
+      })
+      .and(
+        zod.object({
+          playerChampion: zod
+            .string()
+            .nullish()
+            .describe("Champion played by this player in the match"),
+        }),
+      ),
+  ),
+  vods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      gameNumber: zod
+        .number()
+        .nullish()
+        .describe("Game number in BO series (1,2,3); null for BO1"),
+      vodType: zod
+        .string()
+        .nullish()
+        .describe("spectator | team-pov | player-pov"),
+      teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+      teamEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Update player (admin)
  */
 export const UpdatePlayerParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdatePlayerBody = zod.object({
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "discordId": zod.string().nullish(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean().nullish(),
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "registrationStatus": zod.string().nullish()
-})
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  discordId: zod.string().nullish(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean().nullish(),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+});
 
 export const UpdatePlayerResponse = zod.object({
-  "id": zod.number(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "primaryTeam": zod.object({
-  "teamId": zod.number().optional(),
-  "teamName": zod.string().optional(),
-  "teamTag": zod.string().optional()
-}).nullish(),
-  "totalGames": zod.number().optional(),
-  "winRate": zod.number().nullish(),
-  "discordId": zod.string().nullish(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "profileVisibility": zod.string().optional().describe('public | private'),
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "registrationStatus": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  primaryTeam: zod
+    .object({
+      teamId: zod.number().optional(),
+      teamName: zod.string().optional(),
+      teamTag: zod.string().optional(),
+    })
+    .nullish(),
+  totalGames: zod.number().optional(),
+  winRate: zod.number().nullish(),
+  discordId: zod.string().nullish(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean(),
+  profileVisibility: zod
+    .string()
+    .optional()
+    .describe("private | public | participants-only (v3.1: default PRIVATE)"),
+  rsoOptIn: zod
+    .boolean()
+    .optional()
+    .describe(
+      "v3.1: true after RSO verified + player consents to public display",
+    ),
+  rsoLinkedAt: zod.string().nullish().describe("When RSO was linked"),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Delete player (admin)
  */
 export const DeletePlayerParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeletePlayerResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Player self-update
  */
 export const UpdatePlayerProfileParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdatePlayerProfileBody = zod.object({
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "profileVisibility": zod.string().nullish().describe('public | private')
-})
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  profileVisibility: zod
+    .string()
+    .nullish()
+    .describe("private | public | participants-only (v3.1: default PRIVATE)"),
+});
 
 export const UpdatePlayerProfileResponse = zod.object({
-  "id": zod.number(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "primaryTeam": zod.object({
-  "teamId": zod.number().optional(),
-  "teamName": zod.string().optional(),
-  "teamTag": zod.string().optional()
-}).nullish(),
-  "totalGames": zod.number().optional(),
-  "winRate": zod.number().nullish(),
-  "discordId": zod.string().nullish(),
-  "puuid": zod.string().nullish(),
-  "primaryRole": zod.string().nullish(),
-  "secondaryRole": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "profileVisibility": zod.string().optional().describe('public | private'),
-  "email": zod.string().nullish(),
-  "notificationPreference": zod.string().nullish(),
-  "registrationStatus": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  primaryTeam: zod
+    .object({
+      teamId: zod.number().optional(),
+      teamName: zod.string().optional(),
+      teamTag: zod.string().optional(),
+    })
+    .nullish(),
+  totalGames: zod.number().optional(),
+  winRate: zod.number().nullish(),
+  discordId: zod.string().nullish(),
+  puuid: zod.string().nullish(),
+  primaryRole: zod.string().nullish(),
+  secondaryRole: zod.string().nullish(),
+  isActive: zod.boolean(),
+  profileVisibility: zod
+    .string()
+    .optional()
+    .describe("private | public | participants-only (v3.1: default PRIVATE)"),
+  rsoOptIn: zod
+    .boolean()
+    .optional()
+    .describe(
+      "v3.1: true after RSO verified + player consents to public display",
+    ),
+  rsoLinkedAt: zod.string().nullish().describe("When RSO was linked"),
+  email: zod.string().nullish(),
+  notificationPreference: zod.string().nullish(),
+  registrationStatus: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Events a player participated in
  */
 export const GetPlayerEventsParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetPlayerEventsResponseItem = zod.object({
-  "eventId": zod.number(),
-  "eventTitle": zod.string().nullish(),
-  "eventSlug": zod.string().nullish(),
-  "eventDate": zod.string().nullish(),
-  "eventFormat": zod.string().nullish(),
-  "matchesPlayed": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number()
-})
-export const GetPlayerEventsResponse = zod.array(GetPlayerEventsResponseItem)
-
+  eventId: zod.number(),
+  eventTitle: zod.string().nullish(),
+  eventSlug: zod.string().nullish(),
+  eventDate: zod.string().nullish(),
+  eventFormat: zod.string().nullish(),
+  matchesPlayed: zod.number(),
+  wins: zod.number(),
+  losses: zod.number(),
+});
+export const GetPlayerEventsResponse = zod.array(GetPlayerEventsResponseItem);
 
 /**
  * @summary Player champion pool from match_players
  */
 export const GetPlayerChampionsParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetPlayerChampionsResponseItem = zod.object({
-  "champion": zod.string(),
-  "games": zod.number(),
-  "wins": zod.number().optional(),
-  "avgKda": zod.number().optional()
-})
-export const GetPlayerChampionsResponse = zod.array(GetPlayerChampionsResponseItem)
-
+  champion: zod.string(),
+  games: zod.number(),
+  wins: zod.number().optional(),
+  avgKda: zod.number().optional(),
+});
+export const GetPlayerChampionsResponse = zod.array(
+  GetPlayerChampionsResponseItem,
+);
 
 /**
- * Accepts raw application/octet-stream binary. Runs the same parse + team-match + ELO pipeline as the Discord bot /submit command. Use when the .rofl file exceeds Discord's 8MB default attachment limit.
+ * Accepts raw application/octet-stream binary. Runs the same parse + team-match pipeline as the Discord bot /submit command. v3.1: scrim matches record W/L only (no ELO). ELO only for tournament/event matches. Use when the .rofl file exceeds Discord's 8MB default attachment limit.
 
  * @summary Upload a .rofl file directly (fallback for >8MB files)
  */
 export const PostMatchesSubmitRoflHeader = zod.object({
-  "X-Discord-Id": zod.string().describe('Submitter\'s Discord user ID (must be an active team member)')
-})
-
+  "X-Discord-Id": zod
+    .string()
+    .describe("Submitter's Discord user ID (must be an active team member)"),
+});
 
 /**
  * @summary List matches
  */
 export const ListMatchesQueryParams = zod.object({
-  "eventId": zod.coerce.number().optional(),
-  "seasonId": zod.coerce.number().optional(),
-  "teamId": zod.coerce.number().optional(),
-  "playerId": zod.coerce.number().optional().describe('Filter to matches where player participated'),
-  "search": zod.coerce.string().optional()
-})
+  eventId: zod.coerce.number().optional(),
+  seasonId: zod.coerce.number().optional(),
+  teamId: zod.coerce.number().optional(),
+  playerId: zod.coerce
+    .number()
+    .optional()
+    .describe("Filter to matches where player participated"),
+  search: zod.coerce.string().optional(),
+});
 
 export const ListMatchesResponseItem = zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
-
+  id: zod.number(),
+  teamAId: zod.number().nullish(),
+  teamBId: zod.number().nullish(),
+  teamAName: zod.string().nullish(),
+  teamBName: zod.string().nullish(),
+  teamATag: zod.string().nullish(),
+  teamBTag: zod.string().nullish(),
+  sideAName: zod.string(),
+  sideBName: zod.string(),
+  matchTitle: zod.string(),
+  winnerName: zod.string(),
+  score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
+  format: zod.string().nullish(),
+  teamAEloBefore: zod.number().nullish(),
+  teamAEloAfter: zod.number().nullish(),
+  teamBEloBefore: zod.number().nullish(),
+  teamBEloAfter: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  gameDuration: zod.number().nullish(),
+  gameVersion: zod.string().nullish(),
+  resultSource: zod.enum(["rofl_parse", "tournament_api", "admin_manual"]),
+  matchType: zod
+    .enum(["scrim", "ranked_tournament", "event"])
+    .describe("v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted."),
+  tournamentCode: zod
+    .string()
+    .nullish()
+    .describe("Riot Tournament API code. Set for ranked_tournament matches."),
+  visibleAfter: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  eventId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  isPlayoff: zod.boolean(),
+  round: zod.number().nullish(),
+  bestOf: zod
+    .number()
+    .nullish()
+    .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+  bracketSize: zod
+    .number()
+    .nullish()
+    .describe("Bracket size (4,8,16) derived from event registration count"),
+  bracketSlot: zod.number().nullish(),
+  nextMatchId: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+  groupId: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListMatchesResponse = zod.array(ListMatchesResponseItem);
 
 /**
  * @summary Create match manually (admin)
  */
 export const CreateMatchBody = zod.object({
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "matchTitle": zod.string(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "resultSource": zod.string().nullish(),
-  "eventId": zod.number().nullish(),
-  "seasonId": zod.number().nullish(),
-  "isPlayoff": zod.boolean().nullish(),
-  "round": zod.number().nullish(),
-  "bracketSlot": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish()
-})
-
+  teamAId: zod.number().nullish(),
+  teamBId: zod.number().nullish(),
+  matchTitle: zod.string(),
+  sideAName: zod.string(),
+  sideBName: zod.string(),
+  winnerName: zod.string(),
+  score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
+  format: zod.string().nullish(),
+  resultSource: zod.string().nullish(),
+  matchType: zod
+    .string()
+    .nullish()
+    .describe("scrim | ranked_tournament | event"),
+  tournamentCode: zod.string().nullish(),
+  eventId: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean().nullish(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+});
 
 /**
+ * v3.1 visibility gates:
+- matchType=scrim: non-participants see Team A vs B + score only (no matchPlayers). Login + participant sees full 10-player stats.
+- matchType=ranked_tournament/event: public by default (full stats to all). Captain can override to private.
+
  * @summary Get match with per-player stats
  */
 export const GetMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
-export const GetMatchResponse = zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-}).and(zod.object({
-  "eventSlug": zod.string().nullish(),
-  "bracketSize": zod.number().nullish().describe('Bracket size derived from event registration count'),
-  "matchPlayers": zod.array(zod.object({
-  "id": zod.number(),
-  "matchId": zod.number(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "teamSide": zod.string(),
-  "champion": zod.string().nullish(),
-  "teamPosition": zod.string().nullish(),
-  "kills": zod.number(),
-  "deaths": zod.number(),
-  "assists": zod.number(),
-  "cs": zod.number(),
-  "neutralCs": zod.number(),
-  "gold": zod.number(),
-  "damageToChampions": zod.number(),
-  "visionScore": zod.number(),
-  "level": zod.number().nullish(),
-  "win": zod.boolean(),
-  "item0": zod.number().nullish(),
-  "item1": zod.number().nullish(),
-  "item2": zod.number().nullish(),
-  "item3": zod.number().nullish(),
-  "item4": zod.number().nullish(),
-  "item5": zod.number().nullish(),
-  "item6": zod.number().nullish(),
-  "summonerSpell1": zod.number().nullish(),
-  "summonerSpell2": zod.number().nullish(),
-  "createdAt": zod.string()
-})).optional(),
-  "vods": zod.array(zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})).optional()
-}))
-
+export const GetMatchResponse = zod
+  .object({
+    id: zod.number(),
+    teamAId: zod.number().nullish(),
+    teamBId: zod.number().nullish(),
+    teamAName: zod.string().nullish(),
+    teamBName: zod.string().nullish(),
+    teamATag: zod.string().nullish(),
+    teamBTag: zod.string().nullish(),
+    sideAName: zod.string(),
+    sideBName: zod.string(),
+    matchTitle: zod.string(),
+    winnerName: zod.string(),
+    score: zod.string().nullish(),
+    vodCount: zod
+      .number()
+      .optional()
+      .describe("Number of VODs attached to this match (0 if none)"),
+    format: zod.string().nullish(),
+    teamAEloBefore: zod.number().nullish(),
+    teamAEloAfter: zod.number().nullish(),
+    teamBEloBefore: zod.number().nullish(),
+    teamBEloAfter: zod.number().nullish(),
+    gameId: zod.string().nullish(),
+    gameDuration: zod.number().nullish(),
+    gameVersion: zod.string().nullish(),
+    resultSource: zod.enum(["rofl_parse", "tournament_api", "admin_manual"]),
+    matchType: zod
+      .enum(["scrim", "ranked_tournament", "event"])
+      .describe(
+        "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+      ),
+    tournamentCode: zod
+      .string()
+      .nullish()
+      .describe("Riot Tournament API code. Set for ranked_tournament matches."),
+    visibleAfter: zod.string().nullish(),
+    seasonId: zod.number().nullish(),
+    eventId: zod.number().nullish(),
+    eventTitle: zod.string().nullish(),
+    isPlayoff: zod.boolean(),
+    round: zod.number().nullish(),
+    bestOf: zod
+      .number()
+      .nullish()
+      .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+    bracketSize: zod
+      .number()
+      .nullish()
+      .describe("Bracket size (4,8,16) derived from event registration count"),
+    bracketSlot: zod.number().nullish(),
+    nextMatchId: zod.number().nullish(),
+    isLosersBracket: zod.boolean().nullish(),
+    groupId: zod.number().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      eventSlug: zod.string().nullish(),
+      bracketSize: zod
+        .number()
+        .nullish()
+        .describe("Bracket size derived from event registration count"),
+      matchPlayers: zod
+        .array(
+          zod.object({
+            id: zod.number(),
+            matchId: zod.number(),
+            playerId: zod.number().nullish(),
+            playerRiotId: zod.string().nullish(),
+            teamSide: zod.string(),
+            champion: zod.string().nullish(),
+            teamPosition: zod.string().nullish(),
+            kills: zod.number(),
+            deaths: zod.number(),
+            assists: zod.number(),
+            cs: zod.number(),
+            neutralCs: zod.number(),
+            gold: zod.number(),
+            damageToChampions: zod.number(),
+            visionScore: zod.number(),
+            level: zod.number().nullish(),
+            win: zod.boolean(),
+            item0: zod.number().nullish(),
+            item1: zod.number().nullish(),
+            item2: zod.number().nullish(),
+            item3: zod.number().nullish(),
+            item4: zod.number().nullish(),
+            item5: zod.number().nullish(),
+            item6: zod.number().nullish(),
+            summonerSpell1: zod.number().nullish(),
+            summonerSpell2: zod.number().nullish(),
+            createdAt: zod.string(),
+          }),
+        )
+        .optional(),
+      vods: zod
+        .array(
+          zod.object({
+            id: zod.number(),
+            eventId: zod.number().nullish(),
+            matchId: zod.number().nullish(),
+            eventTitle: zod.string().nullish(),
+            title: zod.string(),
+            format: zod.string().nullish(),
+            playerNames: zod.string().nullish(),
+            roleTag: zod.string().nullish(),
+            notes: zod.string().nullish(),
+            videoUrl: zod.string(),
+            playerId: zod.number().nullish(),
+            playerRiotId: zod.string().nullish(),
+            champion: zod.string().nullish(),
+            opponentChampion: zod.string().nullish(),
+            position: zod.string().nullish(),
+            patch: zod.string().nullish(),
+            gameNumber: zod
+              .number()
+              .nullish()
+              .describe("Game number in BO series (1,2,3); null for BO1"),
+            vodType: zod
+              .string()
+              .nullish()
+              .describe("spectator | team-pov | player-pov"),
+            teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+            teamEloAtTime: zod.number().nullish(),
+            createdAt: zod.string(),
+            updatedAt: zod.string(),
+          }),
+        )
+        .optional(),
+    }),
+  );
 
 /**
  * @summary Update match (admin)
  */
 export const UpdateMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateMatchBody = zod.object({
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "matchTitle": zod.string(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "resultSource": zod.string().nullish(),
-  "eventId": zod.number().nullish(),
-  "seasonId": zod.number().nullish(),
-  "isPlayoff": zod.boolean().nullish(),
-  "round": zod.number().nullish(),
-  "bracketSlot": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish()
-})
+  teamAId: zod.number().nullish(),
+  teamBId: zod.number().nullish(),
+  matchTitle: zod.string(),
+  sideAName: zod.string(),
+  sideBName: zod.string(),
+  winnerName: zod.string(),
+  score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
+  format: zod.string().nullish(),
+  resultSource: zod.string().nullish(),
+  matchType: zod
+    .string()
+    .nullish()
+    .describe("scrim | ranked_tournament | event"),
+  tournamentCode: zod.string().nullish(),
+  eventId: zod.number().nullish(),
+  seasonId: zod.number().nullish(),
+  isPlayoff: zod.boolean().nullish(),
+  round: zod.number().nullish(),
+  bracketSlot: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+});
 
 export const UpdateMatchResponse = zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  teamAId: zod.number().nullish(),
+  teamBId: zod.number().nullish(),
+  teamAName: zod.string().nullish(),
+  teamBName: zod.string().nullish(),
+  teamATag: zod.string().nullish(),
+  teamBTag: zod.string().nullish(),
+  sideAName: zod.string(),
+  sideBName: zod.string(),
+  matchTitle: zod.string(),
+  winnerName: zod.string(),
+  score: zod.string().nullish(),
+  vodCount: zod
+    .number()
+    .optional()
+    .describe("Number of VODs attached to this match (0 if none)"),
+  format: zod.string().nullish(),
+  teamAEloBefore: zod.number().nullish(),
+  teamAEloAfter: zod.number().nullish(),
+  teamBEloBefore: zod.number().nullish(),
+  teamBEloAfter: zod.number().nullish(),
+  gameId: zod.string().nullish(),
+  gameDuration: zod.number().nullish(),
+  gameVersion: zod.string().nullish(),
+  resultSource: zod.enum(["rofl_parse", "tournament_api", "admin_manual"]),
+  matchType: zod
+    .enum(["scrim", "ranked_tournament", "event"])
+    .describe("v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted."),
+  tournamentCode: zod
+    .string()
+    .nullish()
+    .describe("Riot Tournament API code. Set for ranked_tournament matches."),
+  visibleAfter: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
+  eventId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  isPlayoff: zod.boolean(),
+  round: zod.number().nullish(),
+  bestOf: zod
+    .number()
+    .nullish()
+    .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+  bracketSize: zod
+    .number()
+    .nullish()
+    .describe("Bracket size (4,8,16) derived from event registration count"),
+  bracketSlot: zod.number().nullish(),
+  nextMatchId: zod.number().nullish(),
+  isLosersBracket: zod.boolean().nullish(),
+  groupId: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Delete match (admin)
  */
 export const DeleteMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteMatchResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
- * Returns 10 player entries for a match. Subject to the same visibility gate as GET /matches/{id}: public matches return full data to all; private matches return full data to team members and admins only; non-members receive an empty array.
+ * Returns 10 player entries for a match. v3.1 visibility gates:
+- matchType=scrim: login + participant sees all 10. Non-participant gets empty array.
+- matchType=ranked_tournament/event: public by default, returns all 10 to everyone. Captain can override to private.
+Non-opted players (rsoOptIn=false) are masked in public views: riotId/puuid omitted, stats included anonymously.
 
  * @summary Per-player stats for a match
  */
 export const GetMatchPlayersParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetMatchPlayersResponseItem = zod.object({
-  "id": zod.number(),
-  "matchId": zod.number(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "teamSide": zod.string(),
-  "champion": zod.string().nullish(),
-  "teamPosition": zod.string().nullish(),
-  "kills": zod.number(),
-  "deaths": zod.number(),
-  "assists": zod.number(),
-  "cs": zod.number(),
-  "neutralCs": zod.number(),
-  "gold": zod.number(),
-  "damageToChampions": zod.number(),
-  "visionScore": zod.number(),
-  "level": zod.number().nullish(),
-  "win": zod.boolean(),
-  "item0": zod.number().nullish(),
-  "item1": zod.number().nullish(),
-  "item2": zod.number().nullish(),
-  "item3": zod.number().nullish(),
-  "item4": zod.number().nullish(),
-  "item5": zod.number().nullish(),
-  "item6": zod.number().nullish(),
-  "summonerSpell1": zod.number().nullish(),
-  "summonerSpell2": zod.number().nullish(),
-  "createdAt": zod.string()
-})
-export const GetMatchPlayersResponse = zod.array(GetMatchPlayersResponseItem)
-
+  id: zod.number(),
+  matchId: zod.number(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  teamSide: zod.string(),
+  champion: zod.string().nullish(),
+  teamPosition: zod.string().nullish(),
+  kills: zod.number(),
+  deaths: zod.number(),
+  assists: zod.number(),
+  cs: zod.number(),
+  neutralCs: zod.number(),
+  gold: zod.number(),
+  damageToChampions: zod.number(),
+  visionScore: zod.number(),
+  level: zod.number().nullish(),
+  win: zod.boolean(),
+  item0: zod.number().nullish(),
+  item1: zod.number().nullish(),
+  item2: zod.number().nullish(),
+  item3: zod.number().nullish(),
+  item4: zod.number().nullish(),
+  item5: zod.number().nullish(),
+  item6: zod.number().nullish(),
+  summonerSpell1: zod.number().nullish(),
+  summonerSpell2: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+export const GetMatchPlayersResponse = zod.array(GetMatchPlayersResponseItem);
 
 /**
  * @summary Set match visibility (captain or admin)
  */
 export const UpdateMatchVisibilityParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateMatchVisibilityBody = zod.object({
-  "visibility": zod.enum(['public', 'private', 'default'])
-})
+  visibility: zod.enum(["public", "private", "default"]),
+});
 
 export const UpdateMatchVisibilityResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Download .rofl replay file (2-week window)
  */
 export const DownloadMatchReplayParams = zod.object({
-  "id": zod.coerce.number()
-})
-
+  id: zod.coerce.number(),
+});
 
 /**
  * @summary Check POV request status for a match+player
  */
 export const GetReplayStatusQueryParams = zod.object({
-  "matchId": zod.coerce.number(),
-  "playerId": zod.coerce.number()
-})
+  matchId: zod.coerce.number(),
+  playerId: zod.coerce.number(),
+});
 
 export const GetReplayStatusResponse = zod.object({
-  "exists": zod.boolean(),
-  "status": zod.string().nullish(),
-  "submittedAt": zod.string().nullish(),
-  "processedAt": zod.string().nullish()
-})
-
+  exists: zod.boolean(),
+  status: zod.string().nullish(),
+  submittedAt: zod.string().nullish(),
+  processedAt: zod.string().nullish(),
+});
 
 /**
  * @summary List all events
  */
 export const ListEventsResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "slug": zod.string(),
-  "format": zod.string(),
-  "eventDate": zod.string(),
-  "registrationStatus": zod.string(),
-  "shortDescription": zod.string(),
-  "fullDescription": zod.string().nullish(),
-  "rulesSummary": zod.string().nullish(),
-  "discordUrl": zod.string().nullish().describe('Optional Discord invite URL for the event'),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListEventsResponse = zod.array(ListEventsResponseItem)
-
+  id: zod.number(),
+  title: zod.string(),
+  slug: zod.string(),
+  format: zod.string(),
+  eventDate: zod.string(),
+  registrationStatus: zod.string(),
+  shortDescription: zod.string(),
+  fullDescription: zod.string().nullish(),
+  rulesSummary: zod.string().nullish(),
+  discordUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional Discord invite URL for the event"),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListEventsResponse = zod.array(ListEventsResponseItem);
 
 /**
  * @summary Create event (admin)
  */
 export const CreateEventBody = zod.object({
-  "title": zod.string(),
-  "slug": zod.string(),
-  "format": zod.string(),
-  "eventDate": zod.string(),
-  "registrationStatus": zod.string(),
-  "shortDescription": zod.string(),
-  "fullDescription": zod.string().nullish(),
-  "rulesSummary": zod.string().nullish(),
-  "discordUrl": zod.string().nullish()
-})
-
+  title: zod.string(),
+  slug: zod.string(),
+  format: zod.string(),
+  eventDate: zod.string(),
+  registrationStatus: zod.string(),
+  shortDescription: zod.string(),
+  fullDescription: zod.string().nullish(),
+  rulesSummary: zod.string().nullish(),
+  discordUrl: zod.string().nullish(),
+});
 
 /**
  * @summary Get event by slug
  */
 export const GetEventParams = zod.object({
-  "slug": zod.coerce.string()
-})
+  slug: zod.coerce.string(),
+});
 
 export const GetEventResponse = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "slug": zod.string(),
-  "format": zod.string(),
-  "eventDate": zod.string(),
-  "registrationStatus": zod.string(),
-  "shortDescription": zod.string(),
-  "fullDescription": zod.string().nullish(),
-  "rulesSummary": zod.string().nullish(),
-  "matches": zod.array(zod.object({
-  "id": zod.number(),
-  "teamAId": zod.number().nullish(),
-  "teamBId": zod.number().nullish(),
-  "teamAName": zod.string().nullish(),
-  "teamBName": zod.string().nullish(),
-  "teamATag": zod.string().nullish(),
-  "teamBTag": zod.string().nullish(),
-  "sideAName": zod.string(),
-  "sideBName": zod.string(),
-  "matchTitle": zod.string(),
-  "winnerName": zod.string(),
-  "score": zod.string().nullish(),
-  "vodCount": zod.number().optional().describe('Number of VODs attached to this match (0 if none)'),
-  "format": zod.string().nullish(),
-  "teamAEloBefore": zod.number().nullish(),
-  "teamAEloAfter": zod.number().nullish(),
-  "teamBEloBefore": zod.number().nullish(),
-  "teamBEloAfter": zod.number().nullish(),
-  "gameId": zod.string().nullish(),
-  "gameDuration": zod.number().nullish(),
-  "gameVersion": zod.string().nullish(),
-  "resultSource": zod.string(),
-  "visibleAfter": zod.string().nullish(),
-  "seasonId": zod.number().nullish(),
-  "eventId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "isPlayoff": zod.boolean(),
-  "round": zod.number().nullish(),
-  "bestOf": zod.number().nullish().describe('Series format (1=BO1, 3=BO3, 5=BO5)'),
-  "bracketSize": zod.number().nullish().describe('Bracket size (4,8,16) derived from event registration count'),
-  "bracketSlot": zod.number().nullish(),
-  "nextMatchId": zod.number().nullish(),
-  "isLosersBracket": zod.boolean().nullish(),
-  "groupId": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})),
-  "vods": zod.array(zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  title: zod.string(),
+  slug: zod.string(),
+  format: zod.string(),
+  eventDate: zod.string(),
+  registrationStatus: zod.string(),
+  shortDescription: zod.string(),
+  fullDescription: zod.string().nullish(),
+  rulesSummary: zod.string().nullish(),
+  matches: zod.array(
+    zod.object({
+      id: zod.number(),
+      teamAId: zod.number().nullish(),
+      teamBId: zod.number().nullish(),
+      teamAName: zod.string().nullish(),
+      teamBName: zod.string().nullish(),
+      teamATag: zod.string().nullish(),
+      teamBTag: zod.string().nullish(),
+      sideAName: zod.string(),
+      sideBName: zod.string(),
+      matchTitle: zod.string(),
+      winnerName: zod.string(),
+      score: zod.string().nullish(),
+      vodCount: zod
+        .number()
+        .optional()
+        .describe("Number of VODs attached to this match (0 if none)"),
+      format: zod.string().nullish(),
+      teamAEloBefore: zod.number().nullish(),
+      teamAEloAfter: zod.number().nullish(),
+      teamBEloBefore: zod.number().nullish(),
+      teamBEloAfter: zod.number().nullish(),
+      gameId: zod.string().nullish(),
+      gameDuration: zod.number().nullish(),
+      gameVersion: zod.string().nullish(),
+      resultSource: zod.enum(["rofl_parse", "tournament_api", "admin_manual"]),
+      matchType: zod
+        .enum(["scrim", "ranked_tournament", "event"])
+        .describe(
+          "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+        ),
+      tournamentCode: zod
+        .string()
+        .nullish()
+        .describe(
+          "Riot Tournament API code. Set for ranked_tournament matches.",
+        ),
+      visibleAfter: zod.string().nullish(),
+      seasonId: zod.number().nullish(),
+      eventId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      isPlayoff: zod.boolean(),
+      round: zod.number().nullish(),
+      bestOf: zod
+        .number()
+        .nullish()
+        .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+      bracketSize: zod
+        .number()
+        .nullish()
+        .describe(
+          "Bracket size (4,8,16) derived from event registration count",
+        ),
+      bracketSlot: zod.number().nullish(),
+      nextMatchId: zod.number().nullish(),
+      isLosersBracket: zod.boolean().nullish(),
+      groupId: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  vods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      gameNumber: zod
+        .number()
+        .nullish()
+        .describe("Game number in BO series (1,2,3); null for BO1"),
+      vodType: zod
+        .string()
+        .nullish()
+        .describe("spectator | team-pov | player-pov"),
+      teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+      teamEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Update event (admin)
  */
 export const UpdateEventParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateEventBody = zod.object({
-  "title": zod.string(),
-  "slug": zod.string(),
-  "format": zod.string(),
-  "eventDate": zod.string(),
-  "registrationStatus": zod.string(),
-  "shortDescription": zod.string(),
-  "fullDescription": zod.string().nullish(),
-  "rulesSummary": zod.string().nullish(),
-  "discordUrl": zod.string().nullish()
-})
+  title: zod.string(),
+  slug: zod.string(),
+  format: zod.string(),
+  eventDate: zod.string(),
+  registrationStatus: zod.string(),
+  shortDescription: zod.string(),
+  fullDescription: zod.string().nullish(),
+  rulesSummary: zod.string().nullish(),
+  discordUrl: zod.string().nullish(),
+});
 
 export const UpdateEventResponse = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "slug": zod.string(),
-  "format": zod.string(),
-  "eventDate": zod.string(),
-  "registrationStatus": zod.string(),
-  "shortDescription": zod.string(),
-  "fullDescription": zod.string().nullish(),
-  "rulesSummary": zod.string().nullish(),
-  "discordUrl": zod.string().nullish().describe('Optional Discord invite URL for the event'),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  title: zod.string(),
+  slug: zod.string(),
+  format: zod.string(),
+  eventDate: zod.string(),
+  registrationStatus: zod.string(),
+  shortDescription: zod.string(),
+  fullDescription: zod.string().nullish(),
+  rulesSummary: zod.string().nullish(),
+  discordUrl: zod
+    .string()
+    .nullish()
+    .describe("Optional Discord invite URL for the event"),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * Called by the /register-event Discord bot command. Validates event is open, team exists, requestor is captain, and team is not already registered.
  * @summary Register a team for an event (bot-facing)
  */
 export const RegisterTeamForEventParams = zod.object({
-  "idOrSlug": zod.coerce.string().describe('Event numeric ID or URL slug')
-})
+  idOrSlug: zod.coerce.string().describe("Event numeric ID or URL slug"),
+});
 
 export const RegisterTeamForEventBody = zod.object({
-  "teamId": zod.number(),
-  "captainPlayerId": zod.number()
-})
-
+  teamId: zod.number(),
+  captainPlayerId: zod.number(),
+});
 
 /**
  * @summary Delete event (admin)
  */
 export const DeleteEventParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteEventResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary List registrations (admin)
  */
 export const ListRegistrationsQueryParams = zod.object({
-  "eventId": zod.coerce.number().optional()
-})
+  eventId: zod.coerce.number().optional(),
+});
 
 export const ListRegistrationsResponseItem = zod.object({
-  "id": zod.number(),
-  "eventId": zod.number(),
-  "teamId": zod.number().nullish(),
-  "teamName": zod.string().nullish().describe('Team name when registration is team-based'),
-  "teamTag": zod.string().nullish().describe('Team tag when registration is team-based'),
-  "eventTitle": zod.string().nullish(),
-  "riotId": zod.string(),
-  "discordUsername": zod.string(),
-  "currentRank": zod.string(),
-  "city": zod.string(),
-  "availabilityConfirmation": zod.string(),
-  "notes": zod.string().nullish(),
-  "status": zod.string(),
-  "playerId": zod.number().nullish(),
-  "createdAt": zod.string()
-})
-export const ListRegistrationsResponse = zod.array(ListRegistrationsResponseItem)
-
+  id: zod.number(),
+  eventId: zod.number(),
+  teamId: zod.number().nullish(),
+  teamName: zod
+    .string()
+    .nullish()
+    .describe("Team name when registration is team-based"),
+  teamTag: zod
+    .string()
+    .nullish()
+    .describe("Team tag when registration is team-based"),
+  eventTitle: zod.string().nullish(),
+  riotId: zod.string(),
+  discordUsername: zod.string(),
+  currentRank: zod.string(),
+  city: zod.string(),
+  availabilityConfirmation: zod.string(),
+  notes: zod.string().nullish(),
+  status: zod.string(),
+  playerId: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+export const ListRegistrationsResponse = zod.array(
+  ListRegistrationsResponseItem,
+);
 
 /**
  * @summary Delete registration (admin)
  */
 export const DeleteRegistrationParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteRegistrationResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Confirm registration (admin)
  */
 export const ConfirmRegistrationParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const ConfirmRegistrationResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Withdraw registration (admin)
  */
 export const WithdrawRegistrationParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const WithdrawRegistrationResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary List VODs (respects match visibility)
  */
 export const ListVodsQueryParams = zod.object({
-  "eventId": zod.coerce.number().optional(),
-  "format": zod.coerce.string().optional(),
-  "roleTag": zod.coerce.string().optional(),
-  "search": zod.coerce.string().optional(),
-  "champion": zod.coerce.string().optional(),
-  "position": zod.coerce.string().optional(),
-  "patch": zod.coerce.string().optional(),
-  "teamId": zod.coerce.number().optional(),
-  "playerId": zod.coerce.number().optional(),
-  "type": zod.enum(['spectator', 'pov', 'all']).optional().describe('Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set')
-})
+  eventId: zod.coerce.number().optional(),
+  format: zod.coerce.string().optional(),
+  roleTag: zod.coerce.string().optional(),
+  search: zod.coerce.string().optional(),
+  champion: zod.coerce.string().optional(),
+  position: zod.coerce.string().optional(),
+  patch: zod.coerce.string().optional(),
+  teamId: zod.coerce.number().optional(),
+  playerId: zod.coerce.number().optional(),
+  type: zod
+    .enum(["spectator", "pov", "all"])
+    .optional()
+    .describe(
+      "Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set",
+    ),
+});
 
 export const ListVodsResponseItem = zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListVodsResponse = zod.array(ListVodsResponseItem)
-
+  id: zod.number(),
+  eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  gameNumber: zod
+    .number()
+    .nullish()
+    .describe("Game number in BO series (1,2,3); null for BO1"),
+  vodType: zod.string().nullish().describe("spectator | team-pov | player-pov"),
+  teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+  teamEloAtTime: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListVodsResponse = zod.array(ListVodsResponseItem);
 
 /**
  * @summary Create VOD (admin)
  */
 export const CreateVodBody = zod.object({
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish()
-})
-
+  eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  gameNumber: zod
+    .number()
+    .nullish()
+    .describe("Game number in BO series (1,2,3); null for BO1"),
+  vodType: zod.string().nullish().describe("spectator | team-pov | player-pov"),
+  teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+  teamEloAtTime: zod.number().nullish(),
+});
 
 /**
  * @summary Get VOD with timestamps
  */
 export const GetVodParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const GetVodResponse = zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "timestamps": zod.array(zod.object({
-  "id": zod.number(),
-  "vodId": zod.number(),
-  "label": zod.string(),
-  "seconds": zod.number(),
-  "type": zod.string(),
-  "createdAt": zod.string()
-})),
-  "relatedVods": zod.array(zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  gameNumber: zod
+    .number()
+    .nullish()
+    .describe("Game number in BO series (1,2,3); null for BO1"),
+  vodType: zod.string().nullish().describe("spectator | team-pov | player-pov"),
+  teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+  teamEloAtTime: zod.number().nullish(),
+  timestamps: zod.array(
+    zod.object({
+      id: zod.number(),
+      vodId: zod.number(),
+      label: zod.string(),
+      seconds: zod.number(),
+      type: zod.string(),
+      createdAt: zod.string(),
+    }),
+  ),
+  relatedVods: zod.array(
+    zod.object({
+      id: zod.number(),
+      eventId: zod.number().nullish(),
+      matchId: zod.number().nullish(),
+      eventTitle: zod.string().nullish(),
+      title: zod.string(),
+      format: zod.string().nullish(),
+      playerNames: zod.string().nullish(),
+      roleTag: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      videoUrl: zod.string(),
+      playerId: zod.number().nullish(),
+      playerRiotId: zod.string().nullish(),
+      champion: zod.string().nullish(),
+      opponentChampion: zod.string().nullish(),
+      position: zod.string().nullish(),
+      patch: zod.string().nullish(),
+      gameNumber: zod
+        .number()
+        .nullish()
+        .describe("Game number in BO series (1,2,3); null for BO1"),
+      vodType: zod
+        .string()
+        .nullish()
+        .describe("spectator | team-pov | player-pov"),
+      teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+      teamEloAtTime: zod.number().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Update VOD (admin)
  */
 export const UpdateVodParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateVodBody = zod.object({
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish()
-})
+  eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  gameNumber: zod
+    .number()
+    .nullish()
+    .describe("Game number in BO series (1,2,3); null for BO1"),
+  vodType: zod.string().nullish().describe("spectator | team-pov | player-pov"),
+  teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+  teamEloAtTime: zod.number().nullish(),
+});
 
 export const UpdateVodResponse = zod.object({
-  "id": zod.number(),
-  "eventId": zod.number().nullish(),
-  "matchId": zod.number().nullish(),
-  "eventTitle": zod.string().nullish(),
-  "title": zod.string(),
-  "format": zod.string().nullish(),
-  "playerNames": zod.string().nullish(),
-  "roleTag": zod.string().nullish(),
-  "notes": zod.string().nullish(),
-  "videoUrl": zod.string(),
-  "playerId": zod.number().nullish(),
-  "playerRiotId": zod.string().nullish(),
-  "champion": zod.string().nullish(),
-  "opponentChampion": zod.string().nullish(),
-  "position": zod.string().nullish(),
-  "patch": zod.string().nullish(),
-  "gameNumber": zod.number().nullish().describe('Game number in BO series (1,2,3); null for BO1'),
-  "vodType": zod.string().nullish().describe('spectator | team-pov | player-pov'),
-  "teamId": zod.number().nullish().describe('Team for team-pov VODs'),
-  "playerEloAtTime": zod.number().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  eventId: zod.number().nullish(),
+  matchId: zod.number().nullish(),
+  eventTitle: zod.string().nullish(),
+  title: zod.string(),
+  format: zod.string().nullish(),
+  playerNames: zod.string().nullish(),
+  roleTag: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  videoUrl: zod.string(),
+  playerId: zod.number().nullish(),
+  playerRiotId: zod.string().nullish(),
+  champion: zod.string().nullish(),
+  opponentChampion: zod.string().nullish(),
+  position: zod.string().nullish(),
+  patch: zod.string().nullish(),
+  gameNumber: zod
+    .number()
+    .nullish()
+    .describe("Game number in BO series (1,2,3); null for BO1"),
+  vodType: zod.string().nullish().describe("spectator | team-pov | player-pov"),
+  teamId: zod.number().nullish().describe("Team for team-pov VODs"),
+  teamEloAtTime: zod.number().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Delete VOD (admin)
  */
 export const DeleteVodParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteVodResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Get timestamps for a VOD
  */
 export const ListVodTimestampsParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const ListVodTimestampsResponseItem = zod.object({
-  "id": zod.number(),
-  "vodId": zod.number(),
-  "label": zod.string(),
-  "seconds": zod.number(),
-  "type": zod.string(),
-  "createdAt": zod.string()
-})
-export const ListVodTimestampsResponse = zod.array(ListVodTimestampsResponseItem)
-
+  id: zod.number(),
+  vodId: zod.number(),
+  label: zod.string(),
+  seconds: zod.number(),
+  type: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListVodTimestampsResponse = zod.array(
+  ListVodTimestampsResponseItem,
+);
 
 /**
  * @summary Add timestamp (admin)
  */
 export const CreateVodTimestampParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const CreateVodTimestampBody = zod.object({
-  "label": zod.string(),
-  "seconds": zod.number(),
-  "type": zod.string().nullish()
-})
-
+  label: zod.string(),
+  seconds: zod.number(),
+  type: zod.string().nullish(),
+});
 
 /**
  * @summary Delete timestamp (admin)
  */
 export const DeleteVodTimestampParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteVodTimestampResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary List all seasons
  */
 export const ListSeasonsResponseItem = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string(),
-  "defaultMatchFormat": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-export const ListSeasonsResponse = zod.array(ListSeasonsResponseItem)
-
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListSeasonsResponse = zod.array(ListSeasonsResponseItem);
 
 /**
  * @summary Create season (admin)
  */
 export const CreateSeasonBody = zod.object({
-  "name": zod.string(),
-  "status": zod.string().nullish(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string().nullish(),
-  "defaultMatchFormat": zod.string().nullish()
-})
-
+  name: zod.string(),
+  status: zod.string().nullish(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string().nullish(),
+  defaultMatchFormat: zod.string().nullish(),
+});
 
 /**
  * @summary Update season (admin)
  */
 export const UpdateSeasonParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateSeasonBody = zod.object({
-  "name": zod.string(),
-  "status": zod.string().nullish(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string().nullish(),
-  "defaultMatchFormat": zod.string().nullish()
-})
+  name: zod.string(),
+  status: zod.string().nullish(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string().nullish(),
+  defaultMatchFormat: zod.string().nullish(),
+});
 
 export const UpdateSeasonResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string(),
-  "defaultMatchFormat": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Delete season (admin)
  */
 export const DeleteSeasonParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const DeleteSeasonResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Activate season (deactivates others)
  */
 export const ActivateSeasonParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const ActivateSeasonResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string(),
-  "defaultMatchFormat": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  eloResetFactor: zod.string(),
+  defaultMatchFormat: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Complete season (ELO soft reset)
  */
 export const CompleteSeasonParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const CompleteSeasonResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
- * @summary Team ELO ladder
+ * v3.1: sorted by wins desc at launch (scrim W/L record board).
+When tournament matches exist, includes ELO ranking.
+Team aggregate data (W/L, ELO) is always public.
+
+ * @summary Team leaderboard (W/L record; ELO when tournament data exists)
  */
 export const GetLadderResponse = zod.object({
-  "season": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "startDate": zod.string(),
-  "endDate": zod.string(),
-  "eloResetFactor": zod.string(),
-  "defaultMatchFormat": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "updatedAt": zod.string()
-}).nullish(),
-  "entries": zod.array(zod.object({
-  "rank": zod.number(),
-  "id": zod.number(),
-  "name": zod.string(),
-  "tag": zod.string(),
-  "teamElo": zod.number(),
-  "peakElo": zod.number(),
-  "wins": zod.number(),
-  "losses": zod.number(),
-  "winRate": zod.number().optional()
-}))
-})
-
+  season: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      status: zod.string(),
+      startDate: zod.string(),
+      endDate: zod.string(),
+      eloResetFactor: zod.string(),
+      defaultMatchFormat: zod.string().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    })
+    .nullish(),
+  entries: zod.array(
+    zod.object({
+      rank: zod.number(),
+      id: zod.number(),
+      name: zod.string(),
+      tag: zod.string(),
+      teamElo: zod.number(),
+      peakElo: zod.number(),
+      wins: zod.number(),
+      losses: zod.number(),
+      winRate: zod.number().optional(),
+    }),
+  ),
+});
 
 /**
  * @summary Get ladder settings
  */
 export const GetLadderSettingsResponse = zod.object({
-  "id": zod.number(),
-  "kFactor": zod.number(),
-  "minMatchesForDisplay": zod.number(),
-  "playoffSize": zod.number(),
-  "playoffFormat": zod.string(),
-  "defaultMatchFormat": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
  * @summary Update ladder settings (admin)
  */
 export const UpdateLadderSettingsBody = zod.object({
-  "id": zod.number(),
-  "kFactor": zod.number(),
-  "minMatchesForDisplay": zod.number(),
-  "playoffSize": zod.number(),
-  "playoffFormat": zod.string(),
-  "defaultMatchFormat": zod.string(),
-  "updatedAt": zod.string()
-})
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
+  updatedAt: zod.string(),
+});
 
 export const UpdateLadderSettingsResponse = zod.object({
-  "id": zod.number(),
-  "kFactor": zod.number(),
-  "minMatchesForDisplay": zod.number(),
-  "playoffSize": zod.number(),
-  "playoffFormat": zod.string(),
-  "defaultMatchFormat": zod.string(),
-  "updatedAt": zod.string()
-})
-
+  id: zod.number(),
+  kFactor: zod.number(),
+  minMatchesForDisplay: zod.number(),
+  playoffSize: zod.number(),
+  playoffFormat: zod.string(),
+  defaultMatchFormat: zod.string(),
+  updatedAt: zod.string(),
+});
 
 /**
+ * v3.1: only contains entries from tournament/event matches. Scrim matches do not generate ELO history. May be empty if team has no tournament matches.
  * @summary ELO history for a team
  */
 export const GetTeamEloHistoryParams = zod.object({
-  "teamId": zod.coerce.number()
-})
+  teamId: zod.coerce.number(),
+});
 
 export const GetTeamEloHistoryResponseItem = zod.object({
-  "id": zod.number(),
-  "teamId": zod.number(),
-  "elo": zod.number(),
-  "delta": zod.number(),
-  "matchId": zod.number().nullish(),
-  "reason": zod.string(),
-  "createdAt": zod.string()
-})
-export const GetTeamEloHistoryResponse = zod.array(GetTeamEloHistoryResponseItem)
-
+  id: zod.number(),
+  teamId: zod.number(),
+  elo: zod.number(),
+  delta: zod.number(),
+  matchId: zod.number().nullish(),
+  reason: zod.string(),
+  createdAt: zod.string(),
+});
+export const GetTeamEloHistoryResponse = zod.array(
+  GetTeamEloHistoryResponseItem,
+);
 
 /**
  * @summary All season champions
  */
 export const ListSeasonChampionsResponseItem = zod.object({
-  "id": zod.number(),
-  "seasonId": zod.number(),
-  "teamId": zod.number(),
-  "teamName": zod.string().nullish(),
-  "finalElo": zod.number(),
-  "createdAt": zod.string()
-})
-export const ListSeasonChampionsResponse = zod.array(ListSeasonChampionsResponseItem)
-
+  id: zod.number(),
+  seasonId: zod.number(),
+  teamId: zod.number(),
+  teamName: zod.string().nullish(),
+  finalElo: zod.number(),
+  createdAt: zod.string(),
+});
+export const ListSeasonChampionsResponse = zod.array(
+  ListSeasonChampionsResponseItem,
+);
 
 /**
  * @summary Champion for a season
  */
 export const GetSeasonChampionParams = zod.object({
-  "seasonId": zod.coerce.number()
-})
+  seasonId: zod.coerce.number(),
+});
 
 export const GetSeasonChampionResponse = zod.object({
-  "id": zod.number(),
-  "seasonId": zod.number(),
-  "teamId": zod.number(),
-  "teamName": zod.string().nullish(),
-  "finalElo": zod.number(),
-  "createdAt": zod.string()
-})
-
+  id: zod.number(),
+  seasonId: zod.number(),
+  teamId: zod.number(),
+  teamName: zod.string().nullish(),
+  finalElo: zod.number(),
+  createdAt: zod.string(),
+});
 
 /**
  * @summary Badges for a player
  */
 export const GetPlayerBadgesParams = zod.object({
-  "playerId": zod.coerce.number()
-})
+  playerId: zod.coerce.number(),
+});
 
 export const GetPlayerBadgesResponseItem = zod.object({
-  "id": zod.number(),
-  "playerId": zod.number(),
-  "badgeType": zod.string(),
-  "earnedAt": zod.string(),
-  "seasonId": zod.number().nullish()
-})
-export const GetPlayerBadgesResponse = zod.array(GetPlayerBadgesResponseItem)
-
+  id: zod.number(),
+  playerId: zod.number(),
+  badgeType: zod.string(),
+  earnedAt: zod.string(),
+  seasonId: zod.number().nullish(),
+});
+export const GetPlayerBadgesResponse = zod.array(GetPlayerBadgesResponseItem);
 
 /**
  * @summary Submit replay reference
  */
 export const SubmitReplayBody = zod.object({
-  "matchId": zod.number(),
-  "playerId": zod.number().nullish(),
-  "roflFilePath": zod.string().nullish(),
-  "fileSizeBytes": zod.number().nullish(),
-  "renderMode": zod.string()
-})
-
+  matchId: zod.number(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  renderMode: zod.string(),
+});
 
 /**
  * @summary Replay queue (admin)
  */
 export const ListReplayQueueResponseItem = zod.object({
-  "id": zod.number(),
-  "matchId": zod.number().nullish(),
-  "playerId": zod.number().nullish(),
-  "roflFilePath": zod.string().nullish(),
-  "fileSizeBytes": zod.number().nullish(),
-  "status": zod.string(),
-  "renderMode": zod.string(),
-  "youtubeUrlA": zod.string().nullish(),
-  "youtubeUrlB": zod.string().nullish(),
-  "errorMessage": zod.string().nullish(),
-  "submittedAt": zod.string(),
-  "processedAt": zod.string().nullish()
-})
-export const ListReplayQueueResponse = zod.array(ListReplayQueueResponseItem)
-
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
+});
+export const ListReplayQueueResponse = zod.array(ListReplayQueueResponseItem);
 
 /**
  * @summary Next pending job (render machine)
  */
 export const GetNextReplayJobResponse = zod.object({
-  "id": zod.number(),
-  "matchId": zod.number().nullish(),
-  "playerId": zod.number().nullish(),
-  "roflFilePath": zod.string().nullish(),
-  "fileSizeBytes": zod.number().nullish(),
-  "status": zod.string(),
-  "renderMode": zod.string(),
-  "youtubeUrlA": zod.string().nullish(),
-  "youtubeUrlB": zod.string().nullish(),
-  "errorMessage": zod.string().nullish(),
-  "submittedAt": zod.string(),
-  "processedAt": zod.string().nullish()
-})
-
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
+});
 
 /**
  * @summary Update replay status (render machine)
  */
 export const UpdateReplayStatusParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const UpdateReplayStatusBody = zod.object({
-  "status": zod.string(),
-  "youtubeUrlA": zod.string().nullish(),
-  "youtubeUrlB": zod.string().nullish(),
-  "errorMessage": zod.string().nullish()
-})
+  status: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+});
 
 export const UpdateReplayStatusResponse = zod.object({
-  "id": zod.number(),
-  "matchId": zod.number().nullish(),
-  "playerId": zod.number().nullish(),
-  "roflFilePath": zod.string().nullish(),
-  "fileSizeBytes": zod.number().nullish(),
-  "status": zod.string(),
-  "renderMode": zod.string(),
-  "youtubeUrlA": zod.string().nullish(),
-  "youtubeUrlB": zod.string().nullish(),
-  "errorMessage": zod.string().nullish(),
-  "submittedAt": zod.string(),
-  "processedAt": zod.string().nullish()
-})
-
+  id: zod.number(),
+  matchId: zod.number().nullish(),
+  playerId: zod.number().nullish(),
+  roflFilePath: zod.string().nullish(),
+  fileSizeBytes: zod.number().nullish(),
+  status: zod.string(),
+  renderMode: zod.string(),
+  youtubeUrlA: zod.string().nullish(),
+  youtubeUrlB: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  submittedAt: zod.string(),
+  processedAt: zod.string().nullish(),
+});
 
 /**
  * @summary Notifications for current player
  */
 export const ListNotificationsResponseItem = zod.object({
-  "id": zod.number(),
-  "type": zod.string(),
-  "title": zod.string(),
-  "message": zod.string(),
-  "entityId": zod.number().nullish().describe('Reference ID for the notification subject (e.g. matchId for match_result, eventId for event notifications)'),
-  "isRead": zod.boolean().nullish(),
-  "dmSent": zod.boolean().nullish(),
-  "dmFailed": zod.boolean().nullish(),
-  "createdAt": zod.string()
-})
-export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
-
+  id: zod.number(),
+  type: zod.string(),
+  title: zod.string(),
+  message: zod.string(),
+  entityId: zod
+    .number()
+    .nullish()
+    .describe(
+      "Reference ID for the notification subject (e.g. matchId for match_result, eventId for event notifications)",
+    ),
+  isRead: zod.boolean().nullish(),
+  dmSent: zod.boolean().nullish(),
+  dmFailed: zod.boolean().nullish(),
+  createdAt: zod.string(),
+});
+export const ListNotificationsResponse = zod.array(
+  ListNotificationsResponseItem,
+);
 
 /**
  * @summary Mark as read
  */
 export const MarkNotificationReadParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const MarkNotificationReadResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary List active bans (admin)
  */
 export const ListBansResponseItem = zod.object({
-  "id": zod.number(),
-  "playerId": zod.number().nullish(),
-  "teamId": zod.number().nullish(),
-  "reason": zod.string(),
-  "bannedBy": zod.number(),
-  "banType": zod.string(),
-  "expiresAt": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "createdAt": zod.string()
-})
-export const ListBansResponse = zod.array(ListBansResponseItem)
-
+  id: zod.number(),
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  bannedBy: zod.number(),
+  banType: zod.string(),
+  expiresAt: zod.string().nullish(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListBansResponse = zod.array(ListBansResponseItem);
 
 /**
  * @summary Ban a player or team (admin)
  */
 export const CreateBanBody = zod.object({
-  "playerId": zod.number().nullish(),
-  "teamId": zod.number().nullish(),
-  "reason": zod.string(),
-  "banType": zod.string().nullish(),
-  "expiresAt": zod.string().nullish()
-})
-
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  banType: zod.string().nullish(),
+  expiresAt: zod.string().nullish(),
+});
 
 /**
  * @summary Lift a ban (admin)
  */
 export const LiftBanParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const LiftBanResponse = zod.object({
-  "id": zod.number(),
-  "playerId": zod.number().nullish(),
-  "teamId": zod.number().nullish(),
-  "reason": zod.string(),
-  "bannedBy": zod.number(),
-  "banType": zod.string(),
-  "expiresAt": zod.string().nullish(),
-  "isActive": zod.boolean(),
-  "createdAt": zod.string()
-})
-
+  id: zod.number(),
+  playerId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  reason: zod.string(),
+  bannedBy: zod.number(),
+  banType: zod.string(),
+  expiresAt: zod.string().nullish(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
 
 /**
  * @summary Check if Discord bot is online
  */
 export const GetBotStatusResponse = zod.object({
-  "online": zod.boolean(),
-  "lastSeen": zod.string().nullish()
-})
-
+  online: zod.boolean(),
+  lastSeen: zod.string().nullish(),
+});
 
 /**
  * @summary Claim unregistered side of a match for a team (captain)
  */
 export const ClaimTeamForMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
+  id: zod.coerce.number(),
+});
 
 export const ClaimTeamForMatchBody = zod.object({
-  "teamId": zod.number()
-})
+  teamId: zod.number(),
+});
 
 export const ClaimTeamForMatchResponse = zod.object({
-  "success": zod.boolean()
-})
-
+  success: zod.boolean(),
+});
 
 /**
  * @summary Render pipeline monitoring (admin)
  */
 export const GetReplayQueueStatsResponse = zod.object({
-  "pending": zod.number(),
-  "processing": zod.number(),
-  "failedLast24h": zod.number(),
-  "oldestPendingAge": zod.string().nullish(),
-  "staleJobsReset": zod.number()
-})
-
+  pending: zod.number(),
+  processing: zod.number(),
+  failedLast24h: zod.number(),
+  oldestPendingAge: zod.string().nullish(),
+  staleJobsReset: zod.number(),
+});
 
 /**
  * @summary Global search across teams, players, events, matches
  */
 export const globalSearchQueryQMin = 2;
 
-
-
 export const GlobalSearchQueryParams = zod.object({
-  "q": zod.coerce.string().min(globalSearchQueryQMin)
-})
+  q: zod.coerce.string().min(globalSearchQueryQMin),
+});
 
 export const GlobalSearchResponse = zod.object({
-  "teams": zod.array(zod.object({
-  "type": zod.string().optional(),
-  "id": zod.number().optional(),
-  "name": zod.string().optional(),
-  "tag": zod.string().optional(),
-  "teamElo": zod.number().optional()
-})).optional(),
-  "players": zod.array(zod.object({
-  "type": zod.string().optional(),
-  "id": zod.number().optional(),
-  "riotId": zod.string().optional(),
-  "primaryRole": zod.string().nullish()
-})).optional(),
-  "events": zod.array(zod.object({
-  "type": zod.string().optional(),
-  "id": zod.number().optional(),
-  "title": zod.string().optional(),
-  "slug": zod.string().optional(),
-  "format": zod.string().nullish()
-})).optional(),
-  "matches": zod.array(zod.object({
-  "type": zod.string().optional(),
-  "id": zod.number().optional(),
-  "sideAName": zod.string().optional(),
-  "sideBName": zod.string().optional(),
-  "matchTitle": zod.string().optional(),
-  "score": zod.string().nullish(),
-  "winnerName": zod.string().optional(),
-  "createdAt": zod.string().optional()
-})).optional()
-})
-
-
+  teams: zod
+    .array(
+      zod.object({
+        type: zod.string().optional(),
+        id: zod.number().optional(),
+        name: zod.string().optional(),
+        tag: zod.string().optional(),
+        teamElo: zod.number().optional(),
+      }),
+    )
+    .optional(),
+  players: zod
+    .array(
+      zod.object({
+        type: zod.string().optional(),
+        id: zod.number().optional(),
+        riotId: zod.string().optional(),
+        primaryRole: zod.string().nullish(),
+      }),
+    )
+    .optional(),
+  events: zod
+    .array(
+      zod.object({
+        type: zod.string().optional(),
+        id: zod.number().optional(),
+        title: zod.string().optional(),
+        slug: zod.string().optional(),
+        format: zod.string().nullish(),
+      }),
+    )
+    .optional(),
+  matches: zod
+    .array(
+      zod.object({
+        type: zod.string().optional(),
+        id: zod.number().optional(),
+        sideAName: zod.string().optional(),
+        sideBName: zod.string().optional(),
+        matchTitle: zod.string().optional(),
+        score: zod.string().nullish(),
+        winnerName: zod.string().optional(),
+        createdAt: zod.string().optional(),
+      }),
+    )
+    .optional(),
+});

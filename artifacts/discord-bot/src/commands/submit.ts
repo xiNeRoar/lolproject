@@ -299,13 +299,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
       // Create match row
       // Derive visibleAfter from team's defaultMatchVisibility setting.
-      // Priority: sideA setting → sideB setting → 7-day default.
-      const resolvedVis = teamA?.defaultMatchVisibility ?? teamB?.defaultMatchVisibility ?? "default";
+      // v3.1: only public or private. Default for new teams is private.
+      const resolvedVis = teamA?.defaultMatchVisibility ?? teamB?.defaultMatchVisibility ?? "private";
       const visibleAfter = resolvedVis === "public"
         ? new Date(0)                              // always public
-        : resolvedVis === "private"
-          ? new Date("9999-01-01T00:00:00Z")       // permanent private
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day default
+        : new Date("9999-01-01T00:00:00Z");        // private (visible only to participants)
       const [createdMatch] = await tx
         .insert(matchesTable)
         .values({

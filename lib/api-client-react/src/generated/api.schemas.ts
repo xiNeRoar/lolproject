@@ -76,6 +76,27 @@ export interface CreateTeamRequest {
   isActive?: boolean | null;
 }
 
+export type MatchResultSource =
+  (typeof MatchResultSource)[keyof typeof MatchResultSource];
+
+export const MatchResultSource = {
+  rofl_parse: "rofl_parse",
+  tournament_api: "tournament_api",
+  admin_manual: "admin_manual",
+} as const;
+
+/**
+ * v3.1: scrim = no ELO. ranked_tournament/event = ELO counted.
+ */
+export type MatchMatchType =
+  (typeof MatchMatchType)[keyof typeof MatchMatchType];
+
+export const MatchMatchType = {
+  scrim: "scrim",
+  ranked_tournament: "ranked_tournament",
+  event: "event",
+} as const;
+
 export interface Match {
   id: number;
   teamAId?: number | null;
@@ -99,7 +120,11 @@ export interface Match {
   gameId?: string | null;
   gameDuration?: number | null;
   gameVersion?: string | null;
-  resultSource: string;
+  resultSource: MatchResultSource;
+  /** v3.1: scrim = no ELO. ranked_tournament/event = ELO counted. */
+  matchType: MatchMatchType;
+  /** Riot Tournament API code. Set for ranked_tournament matches. */
+  tournamentCode?: string | null;
   visibleAfter?: string | null;
   seasonId?: number | null;
   eventId?: number | null;
@@ -118,10 +143,10 @@ export interface Match {
   updatedAt: string;
 }
 
-export type TeamProfileRecentMatchesItem = Match & ({
+export type TeamProfileRecentMatchesItem = Match & {
   /** Champion played by this player in the match */
   playerChampion?: string | null;
-});
+};
 
 export interface TeamMember {
   id: number;
@@ -168,8 +193,12 @@ export interface Player {
   primaryRole?: string | null;
   secondaryRole?: string | null;
   isActive: boolean;
-  /** public | private */
+  /** private | public | participants-only (v3.1: default PRIVATE) */
   profileVisibility?: string;
+  /** v3.1: true after RSO verified + player consents to public display */
+  rsoOptIn?: boolean;
+  /** When RSO was linked */
+  rsoLinkedAt?: string | null;
   email?: string | null;
   notificationPreference?: string | null;
   registrationStatus?: string | null;
@@ -201,14 +230,14 @@ export interface UpdatePlayerProfileRequest {
   notificationPreference?: string | null;
   primaryRole?: string | null;
   secondaryRole?: string | null;
-  /** public | private */
+  /** private | public | participants-only (v3.1: default PRIVATE) */
   profileVisibility?: string | null;
 }
 
-export type PlayerProfileRecentMatchesItem = Match & ({
+export type PlayerProfileRecentMatchesItem = Match & {
   /** Champion played by this player in the match */
   playerChampion?: string | null;
-});
+};
 
 export interface PlayerTeamEntry {
   teamId: number;
@@ -262,7 +291,7 @@ export interface VodEntry {
   vodType?: string | null;
   /** Team for team-pov VODs */
   teamId?: number | null;
-  playerEloAtTime?: number | null;
+  teamEloAtTime?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,13 +353,13 @@ export interface MatchPlayerEntry {
   createdAt: string;
 }
 
-export type MatchDetail = Match & ({
+export type MatchDetail = Match & {
   eventSlug?: string | null;
   /** Bracket size derived from event registration count */
   bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
-});
+};
 
 export interface CreateMatchRequest {
   teamAId?: number | null;
@@ -344,6 +373,9 @@ export interface CreateMatchRequest {
   vodCount?: number;
   format?: string | null;
   resultSource?: string | null;
+  /** scrim | ranked_tournament | event */
+  matchType?: string | null;
+  tournamentCode?: string | null;
   eventId?: number | null;
   seasonId?: number | null;
   isPlayoff?: boolean | null;
@@ -352,13 +384,13 @@ export interface CreateMatchRequest {
   isLosersBracket?: boolean | null;
 }
 
-export type UpdateVisibilityRequestVisibility = typeof UpdateVisibilityRequestVisibility[keyof typeof UpdateVisibilityRequestVisibility];
-
+export type UpdateVisibilityRequestVisibility =
+  (typeof UpdateVisibilityRequestVisibility)[keyof typeof UpdateVisibilityRequestVisibility];
 
 export const UpdateVisibilityRequestVisibility = {
-  public: 'public',
-  private: 'private',
-  default: 'default',
+  public: "public",
+  private: "private",
+  default: "default",
 } as const;
 
 export interface UpdateVisibilityRequest {
@@ -449,7 +481,7 @@ export interface CreateVodRequest {
   vodType?: string | null;
   /** Team for team-pov VODs */
   teamId?: number | null;
-  playerEloAtTime?: number | null;
+  teamEloAtTime?: number | null;
 }
 
 export interface VodTimestamp {
@@ -484,7 +516,7 @@ export interface VodDetail {
   vodType?: string | null;
   /** Team for team-pov VODs */
   teamId?: number | null;
-  playerEloAtTime?: number | null;
+  teamEloAtTime?: number | null;
   timestamps: VodTimestamp[];
   relatedVods: VodEntry[];
   createdAt: string;
@@ -645,8 +677,29 @@ export type ListAdminActions200Item = {
   createdAt: string;
 };
 
+export type GetRsoAuthorizeParams = {
+  /**
+   * One-time token from bot /connect command (optional)
+   */
+  token?: string;
+};
+
+export type GetRsoCallbackParams = {
+  code: string;
+  state?: string;
+};
+
+export type PostAuthConnectBody = {
+  token: string;
+};
+
+export type PostAuthConnect200 = {
+  discordId?: string;
+  expiresAt?: string;
+};
+
 export type ListTeamsParams = {
-active?: boolean;
+  active?: boolean;
 };
 
 export type AddTeamMemberBody = {
@@ -683,18 +736,18 @@ export type BulkSetMatchVisibility200 = {
 };
 
 export type GetTeamMatchesParams = {
-/**
- * Page number (default 1)
- */
-page?: number;
-/**
- * Results per page (default 20, max 100)
- */
-limit?: number;
-/**
- * Search by opponent or match title
- */
-search?: string;
+  /**
+   * Page number (default 1)
+   */
+  page?: number;
+  /**
+   * Results per page (default 20, max 100)
+   */
+  limit?: number;
+  /**
+   * Search by opponent or match title
+   */
+  search?: string;
 };
 
 export type GetTeamMatches200MatchesItem = {
@@ -716,7 +769,12 @@ export type GetTeamMatches200 = {
   totalPages?: number;
 };
 
-export type PostMatchesSubmitRofl201EloDeltas = { [key: string]: unknown } | null;
+/**
+ * v3.1: always null for scrim matches. Only populated for tournament/event matches.
+ */
+export type PostMatchesSubmitRofl201EloDeltas = {
+  [key: string]: unknown;
+} | null;
 
 export type PostMatchesSubmitRofl201 = {
   matchId?: number;
@@ -724,23 +782,24 @@ export type PostMatchesSubmitRofl201 = {
   sideBName?: string;
   winnerName?: string;
   bothTeamsIdentified?: boolean;
+  /** v3.1: always null for scrim matches. Only populated for tournament/event matches. */
   eloDeltas?: PostMatchesSubmitRofl201EloDeltas;
 };
 
 export type ListMatchesParams = {
-eventId?: number;
-seasonId?: number;
-teamId?: number;
-/**
- * Filter to matches where player participated
- */
-playerId?: number;
-search?: string;
+  eventId?: number;
+  seasonId?: number;
+  teamId?: number;
+  /**
+   * Filter to matches where player participated
+   */
+  playerId?: number;
+  search?: string;
 };
 
 export type GetReplayStatusParams = {
-matchId: number;
-playerId: number;
+  matchId: number;
+  playerId: number;
 };
 
 export type GetReplayStatus200 = {
@@ -766,32 +825,31 @@ export type RegisterTeamForEvent201 = {
 };
 
 export type ListRegistrationsParams = {
-eventId?: number;
+  eventId?: number;
 };
 
 export type ListVodsParams = {
-eventId?: number;
-format?: string;
-roleTag?: string;
-search?: string;
-champion?: string;
-position?: string;
-patch?: string;
-teamId?: number;
-playerId?: number;
-/**
- * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
- */
-type?: ListVodsType;
+  eventId?: number;
+  format?: string;
+  roleTag?: string;
+  search?: string;
+  champion?: string;
+  position?: string;
+  patch?: string;
+  teamId?: number;
+  playerId?: number;
+  /**
+   * Filter by VOD type. Uses vodType column (spectator|team-pov|player-pov), falls back to playerId heuristic for legacy VODs without vodType set
+   */
+  type?: ListVodsType;
 };
 
-export type ListVodsType = typeof ListVodsType[keyof typeof ListVodsType];
-
+export type ListVodsType = (typeof ListVodsType)[keyof typeof ListVodsType];
 
 export const ListVodsType = {
-  spectator: 'spectator',
-  pov: 'pov',
-  all: 'all',
+  spectator: "spectator",
+  pov: "pov",
+  all: "all",
 } as const;
 
 export type GetBotStatus200 = {
@@ -812,10 +870,10 @@ export type GetReplayQueueStats200 = {
 };
 
 export type GlobalSearchParams = {
-/**
- * @minLength 2
- */
-q: string;
+  /**
+   * @minLength 2
+   */
+  q: string;
 };
 
 export type GlobalSearch200TeamsItem = {
@@ -858,4 +916,3 @@ export type GlobalSearch200 = {
   events?: GlobalSearch200EventsItem[];
   matches?: GlobalSearch200MatchesItem[];
 };
-

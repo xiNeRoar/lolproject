@@ -11,6 +11,6 @@ export interface UpdatePlayerProfileRequest {
   notificationPreference?: string | null;
   primaryRole?: string | null;
   secondaryRole?: string | null;
-  /** public | private */
+  /** private | public | participants-only (v3.1: default PRIVATE) */
   profileVisibility?: string | null;
 }

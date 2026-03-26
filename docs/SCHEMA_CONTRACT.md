@@ -23,7 +23,7 @@ export const teamsTable = pgTable("teams", {
   wins: integer("wins").notNull().default(0),
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  defaultMatchVisibility: text("default_match_visibility").default("default"), // public | private | default
+  defaultMatchVisibility: text("default_match_visibility").default("private"), // public | private (v3.1: default PRIVATE)
   lastMatchAt: timestamp("last_match_at"),           // updated on every match submission; null = never played
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -114,7 +114,7 @@ export const matchesTable = pgTable("matches", {
   tournamentCode: text("tournament_code"),    // Riot Tournament API code, nullable
   roflFilePath: text("rofl_file_path"),       // stored .rofl for VOD pipeline
   // Visibility: scrim = private by default. Tournament/event = public by default. Captain can override.
-  visibleAfter: timestamp("visible_after"),   // new Date(0) = always public. 9999-01-01 = permanent private. now+7days = delayed.
+  visibleAfter: timestamp("visible_after"),   // new Date(0) = always public. 9999-01-01 = private (participants only). v3.1: default is private.
   // Season + Event links
   seasonId: integer("season_id").references(() => seasonsTable.id, { onDelete: "set null" }),
   eventId: integer("event_id").references(() => eventsTable.id, { onDelete: "set null" }),

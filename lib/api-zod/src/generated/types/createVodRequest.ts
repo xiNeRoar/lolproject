@@ -26,5 +26,5 @@ export interface CreateVodRequest {
   vodType?: string | null;
   /** Team for team-pov VODs */
   teamId?: number | null;
-  playerEloAtTime?: number | null;
+  teamEloAtTime?: number | null;
 }

@@ -5,7 +5,7 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { GetTeamMatches200MatchesItem } from './getTeamMatches200MatchesItem';
+import type { GetTeamMatches200MatchesItem } from "./getTeamMatches200MatchesItem";
 
 export type GetTeamMatches200 = {
   matches?: GetTeamMatches200MatchesItem[];

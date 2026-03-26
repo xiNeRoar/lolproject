@@ -25,7 +25,7 @@ export const vodEntriesTable = pgTable("vod_entries", {
   gameNumber: integer("game_number"),             // game within BO series (1,2,3); null=BO1 (#116)
   vodType: text("vod_type"),                      // spectator | team-pov | player-pov (#116)
   teamId: integer("team_id").references(() => teamsTable.id, { onDelete: "set null" }), // team-pov only
-  playerEloAtTime: integer("player_elo_at_time"),
+  teamEloAtTime: integer("team_elo_at_time"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

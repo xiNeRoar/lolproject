@@ -6,4 +6,9 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export type PostMatchesSubmitRofl201EloDeltas = { [key: string]: unknown } | null;
+/**
+ * v3.1: always null for scrim matches. Only populated for tournament/event matches.
+ */
+export type PostMatchesSubmitRofl201EloDeltas = {
+  [key: string]: unknown;
+} | null;

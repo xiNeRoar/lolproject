@@ -335,7 +335,7 @@ Build complete site + bot. RSO button shows "pending Riot approval." Placeholder
 
 ## 14. Bot Commands (Final)
 
-**Core:** `/register-team`, `/submit`, `/stats`, `/roster`, `/connect`
+**Core:** `/register-team` (requires RSO verified), `/submit`, `/stats`, `/roster`, `/connect`
 **Management:** `/visibility`, `/transfer-captain`, `/leave`, `/remove`
 **Situational:** `/register-event`, `/claim-match`
 **Deleted:** ~~/add~~ (→ .rofl auto-discovery), ~~/link-riot~~ (→ RSO /connect)

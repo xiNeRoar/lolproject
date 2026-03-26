@@ -29,7 +29,7 @@ export interface VodEntry {
   vodType?: string | null;
   /** Team for team-pov VODs */
   teamId?: number | null;
-  playerEloAtTime?: number | null;
+  teamEloAtTime?: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,7 +5,7 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { PostMatchesSubmitRofl201EloDeltas } from './postMatchesSubmitRofl201EloDeltas';
+import type { PostMatchesSubmitRofl201EloDeltas } from "./postMatchesSubmitRofl201EloDeltas";
 
 export type PostMatchesSubmitRofl201 = {
   matchId?: number;
@@ -13,5 +13,6 @@ export type PostMatchesSubmitRofl201 = {
   sideBName?: string;
   winnerName?: string;
   bothTeamsIdentified?: boolean;
+  /** v3.1: always null for scrim matches. Only populated for tournament/event matches. */
   eloDeltas?: PostMatchesSubmitRofl201EloDeltas;
 };

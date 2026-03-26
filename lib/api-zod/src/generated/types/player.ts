@@ -5,7 +5,7 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { PlayerPrimaryTeam } from './playerPrimaryTeam';
+import type { PlayerPrimaryTeam } from "./playerPrimaryTeam";
 
 export interface Player {
   id: number;
@@ -19,8 +19,12 @@ export interface Player {
   primaryRole?: string | null;
   secondaryRole?: string | null;
   isActive: boolean;
-  /** public | private */
+  /** private | public | participants-only (v3.1: default PRIVATE) */
   profileVisibility?: string;
+  /** v3.1: true after RSO verified + player consents to public display */
+  rsoOptIn?: boolean;
+  /** When RSO was linked */
+  rsoLinkedAt?: string | null;
   email?: string | null;
   notificationPreference?: string | null;
   registrationStatus?: string | null;
