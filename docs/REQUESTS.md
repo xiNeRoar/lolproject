@@ -7,15 +7,6 @@ Format: one section per request.
 
 
 
-## Request: participants-only visibility not accepted or handled
-
-**Needed for:** PRD §7 Layer 2
-**Endpoint:** PUT /api/players/:id/profile, GET /api/players/:riotId
-**Why:** PRD defines three visibility levels: `public / private / participants-only`. But PUT profile (line 518) only accepts "public" or "private". GET /:riotId privacy gate only checks `=== "private"` — a player set to "participants-only" would be treated as public.
-**Fix:** (1) Accept "participants-only" in PUT profile validation. (2) In GET /:riotId, handle "participants-only" by checking if the requesting player shares any match with the target player (via match_players table).
-**File:** `artifacts/api-server/src/routes/players.ts` lines 518, 394-416
-
----
 
 ## Request: Badge thresholds don't match PRD
 

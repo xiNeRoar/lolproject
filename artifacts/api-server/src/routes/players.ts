@@ -388,13 +388,32 @@ router.get("/:riotId", async (req, res) => {
       return;
     }
 
-    // Privacy gate: if profile is private, only the player themselves or an admin can see full data
+    // Privacy gate (PRD v3.1 §7 Layer 2): public | private | participants-only
     const isOwner = req.session.playerId === player.id;
     const isAdmin = !!req.session.adminId;
-    const isPrivate = (player.profileVisibility ?? "private") === "private";
+    const visibility = player.profileVisibility ?? "private";
 
-    if (isPrivate && !isOwner && !isAdmin) {
-      // Return redacted profile — riotId + team affiliations only, no stats
+    if (visibility !== "public" && !isOwner && !isAdmin) {
+      // For participants-only: check if requester shares any match with target
+      if (visibility === "participants-only" && req.session.playerId) {
+        const [shared] = await db
+          .select({ id: matchPlayersTable.id })
+          .from(matchPlayersTable)
+          .where(eq(matchPlayersTable.playerId, player.id))
+          .innerJoin(
+            sql`(SELECT DISTINCT match_id FROM match_players WHERE player_id = ${req.session.playerId}) AS requester_matches`,
+            sql`${matchPlayersTable.matchId} = requester_matches.match_id`
+          )
+          .limit(1);
+
+        if (shared) {
+          // Co-participant — allow full profile
+          res.json(await buildPlayerProfile(player));
+          return;
+        }
+      }
+
+      // Private or participants-only without shared match — return redacted
       const memberRows = await db
         .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag, status: teamMembersTable.status })
         .from(teamMembersTable)
@@ -515,7 +534,7 @@ router.put("/:id/profile", async (req, res) => {
     if (notificationPreference !== undefined) updates.notificationPreference = notificationPreference;
     if (primaryRole !== undefined) updates.primaryRole = primaryRole;
     if (secondaryRole !== undefined) updates.secondaryRole = secondaryRole;
-    if (profileVisibility !== undefined && (profileVisibility === "public" || profileVisibility === "private")) {
+    if (profileVisibility !== undefined && (profileVisibility === "public" || profileVisibility === "private" || profileVisibility === "participants-only")) {
       updates.profileVisibility = profileVisibility;
     }
 
