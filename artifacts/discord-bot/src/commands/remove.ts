@@ -161,7 +161,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     dmFailed: false,
   }).catch((err) => console.error("[remove] Failed to insert notification:", err));
 
-  // Also DM directly (fire-and-forget, same pattern as /add DM)
+  // Also DM directly (fire-and-forget, same pattern as submit auto-add DM)
   if (targetUser.id) {
     try {
       const dmUser = await interaction.client.users.fetch(targetUser.id);

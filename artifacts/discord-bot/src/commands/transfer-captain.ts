@@ -110,7 +110,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (!targetPlayer) {
     await replyError(interaction, 
-      `❌ <@${targetDiscordUser.id}> doesn't have a VCLoL player record. They need to be added to the team with \`/add\` first.`
+      `❌ <@${targetDiscordUser.id}> doesn't have a VCLoL player record. They need to run \`/connect\` to verify their account and appear in a match replay first.`
     );
     return;
   }

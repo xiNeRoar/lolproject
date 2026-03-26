@@ -70,3 +70,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   await interaction.editReply({ embeds: [embed] });
 }
+
+/** Clean up expired auth sessions (call on bot startup). */
+export async function cleanupExpiredAuthSessions(): Promise<void> {
+  const { lt, and, isNull } = await import("drizzle-orm");
+  const deleted = await db
+    .delete(authSessionsTable)
+    .where(
+      and(
+        lt(authSessionsTable.expiresAt, new Date()),
+        isNull(authSessionsTable.completedAt)
+      )
+    )
+    .returning({ id: authSessionsTable.id });
+
+  if (deleted.length > 0) {
+    console.log(`[connect] Cleaned up ${deleted.length} expired auth session(s).`);
+  }
+}

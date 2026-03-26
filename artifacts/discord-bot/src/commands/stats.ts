@@ -191,7 +191,7 @@ async function showInvokerStats(interaction: ChatInputCommandInteraction) {
 
   if (!player) {
     await replyError(interaction, 
-      "❌ You don't have a VCLoL profile yet. Ask a captain to `/add` you."
+      "❌ You don't have a VCLoL profile yet. Run `/connect` to verify your account."
     );
     return;
   }

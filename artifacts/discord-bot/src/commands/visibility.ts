@@ -1,5 +1,5 @@
 /**
- * /visibility [match-id] <public|private|default>
+ * /visibility [match-id] <public|private>
  *
  * Captain controls match visibility from Discord.
  * Spec: docs/BOT_SPEC.md → /visibility
@@ -31,12 +31,11 @@ export const data = new SlashCommandBuilder()
   .addStringOption((o) =>
     o
       .setName("setting")
-      .setDescription("public = visible to all | private = team only | default = public after 7 days")
+      .setDescription("public = visible to all | private = participants only")
       .setRequired(true)
       .addChoices(
-        { name: "public — visible to everyone now", value: "public" },
-        { name: "private — team only, forever", value: "private" },
-        { name: "default — public after 7 days", value: "default" }
+        { name: "public — visible to everyone", value: "public" },
+        { name: "private — participants only", value: "private" }
       )
   )
   .addIntegerOption((o) =>
@@ -54,7 +53,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
 
-  const setting = interaction.options.getString("setting", true) as "public" | "private" | "default";
+  const setting = interaction.options.getString("setting", true) as "public" | "private";
   const explicitMatchId = interaction.options.getInteger("match-id");
   const discordId = interaction.user.id;
 
@@ -141,11 +140,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       break;
     case "private":
       visibleAfter = new Date("9999-01-01");
-      settingLabel = "🔒 Private — team only, permanently";
-      break;
-    case "default":
-      visibleAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day auto-public (consistent with /submit)
-      settingLabel = "⏳ Default — public 7 days from now";
+      settingLabel = "🔒 Private — participants only";
       break;
   }
 

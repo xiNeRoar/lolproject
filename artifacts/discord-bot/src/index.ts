@@ -43,6 +43,7 @@ import * as stats from "./commands/stats.js";
 import * as roster from "./commands/roster.js";
 import * as remove from "./commands/remove.js";
 import * as connect from "./commands/connect.js";
+import { cleanupExpiredAuthSessions } from "./commands/connect.js";
 
 const commands = [registerTeam, submit, claimMatch, visibility, leave, transferCaptain, registerEvent, stats, roster, remove, connect];
 
@@ -122,6 +123,11 @@ client.once(Events.ClientReady, async (c) => {
   // ── Clean up expired pending invites from previous sessions ──────────────
   cleanupExpiredInvites().catch((err) =>
     console.error("[bot] Failed to clean expired invites:", err)
+  );
+
+  // ── Clean up expired auth sessions (v3.1: /connect tokens) ──────────────
+  cleanupExpiredAuthSessions().catch((err) =>
+    console.error("[bot] Failed to clean expired auth sessions:", err)
   );
 });
 

@@ -37,7 +37,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (!invoker) {
     await replyError(interaction, 
-      "❌ You don't have a VCLoL player record. Ask a captain to `/add` you."
+      "❌ You don't have a VCLoL player record. Run `/connect` to verify your account."
     );
     return;
   }

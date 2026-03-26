@@ -203,7 +203,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     else {
       await replyError(interaction, 
         "❌ You must be a registered team member to submit a match for an identified team. " +
-        "Ask your captain to `/add` you first."
+        "Run `/connect` to verify your Riot Account first."
       );
       return;
     }
@@ -867,7 +867,7 @@ async function checkRosterInactivity(teamIds: number[], currentMatchId: number):
           playerId: member.playerId,
           type: "no_show_flagged",
           title: "Roster status updated",
-          message: `You have been marked inactive on your team after missing ${INACTIVITY_THRESHOLD} consecutive matches. Use /add to rejoin or contact your captain.`,
+          message: `You have been marked inactive on your team after missing ${INACTIVITY_THRESHOLD} consecutive matches. Submit a new match or contact your captain to rejoin.`,
           isRead: false,
           dmSent: false,
           dmFailed: false,

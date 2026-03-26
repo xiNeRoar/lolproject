@@ -54,7 +54,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )[0];
 
   if (!invoker) {
-    await replyError(interaction, "❌ You don't have a player record. Ask a captain to `/add` you.");
+    await replyError(interaction, "❌ You don't have a player record. Run `/connect` to verify your account.");
     return;
   }
 
