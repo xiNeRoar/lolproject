@@ -159,12 +159,11 @@ export const playersTable = pgTable("players", {
 **Removed from v1:** `currentElo`, `peakElo`, `wins`, `losses`
 **Changed in v3.1:** `profileVisibility` default → `"private"`. Added `rsoOptIn`, RSO token fields.
 
-### `eloHistory` (MODIFY — add teamId)
+### `eloHistory` (MODIFY -- team-only ELO, no playerId)
 ```typescript
 export const eloHistoryTable = pgTable("elo_history", {
   id: serial("id").primaryKey(),
-  teamId: integer("team_id").references(() => teamsTable.id, { onDelete: "cascade" }),  // NEW
-  playerId: integer("player_id").references(() => playersTable.id, { onDelete: "cascade" }),  // keep for backward compat
+  teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
   elo: integer("elo").notNull(),
   delta: integer("delta").notNull().default(0),
   matchId: integer("match_id").references(() => matchesTable.id, { onDelete: "set null" }),
