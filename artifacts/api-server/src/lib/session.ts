@@ -11,6 +11,7 @@ declare module "express-session" {
     discordUsername?: string;
     connectToken?: string;       // bot /connect flow: authSession token
     connectDiscordId?: string;   // bot /connect flow: who initiated
+    oauthState?: string;         // CSRF state for OAuth flows (Discord + RSO)
   }
 }
 
