@@ -788,9 +788,9 @@ router.put("/:id/visibility", async (req, res) => {
     // Check authorization: must be admin or captain of one of the teams
     const isAdmin = !!req.session.adminId;
     if (!isAdmin) {
-      const playerId = req.session.playerId || (req.body as any).playerId;
+      const playerId = req.session.playerId;
       if (!playerId) {
-        res.status(403).json({ error: "Not authorized" });
+        res.status(401).json({ error: "Login required to change visibility" });
         return;
       }
       const isCaptainA = match.teamAId
