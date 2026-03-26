@@ -20,15 +20,6 @@ Format: one section per request.
 
 
 
-## Request: Tournament/event matches should be public by default
-
-**Needed for:** PRD §7 Layer 3
-**Endpoint:** GET /api/matches/:id
-**Why:** `isVisible()` only checks `visibleAfter` timestamp. PRD §7 Layer 3: "All tournament match data public by default." A tournament match with a future `visibleAfter` date would incorrectly be gated.
-**Fix:** In `isVisible()`, also check `matchType`: if `matchType === "ranked_tournament" || matchType === "event"`, return `true` regardless of `visibleAfter` (unless captain explicitly overrode to private).
-**File:** `artifacts/api-server/src/routes/matches.ts` lines 26-32
-
----
 
 ## Request: ELO concurrent update race condition — needs FOR UPDATE lock
 

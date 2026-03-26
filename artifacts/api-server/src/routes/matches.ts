@@ -24,9 +24,20 @@ const router = Router();
 
 /** Returns true if the match is publicly visible at the current time. */
 function isVisible(m: typeof matchesTable.$inferSelect): boolean {
+  const mt = (m as any).matchType ?? "scrim";
+
+  // PRD v3.1 §7 Layer 3: tournament/event matches public by default
+  // Captain can override to private (visibleAfter = 9999-01-01)
+  if (mt === "ranked_tournament" || mt === "event") {
+    if (m.visibleAfter && m.visibleAfter.getFullYear() >= 9000) {
+      return false; // Captain explicitly set private
+    }
+    return true; // Public by default
+  }
+
+  // Scrim: private by default, check visibleAfter
   if (!m.visibleAfter) {
-    // Default: visible 7 days after creation
-    return Date.now() >= m.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000;
+    return false; // No visibleAfter = private (v3.1: scrims default private)
   }
   return Date.now() >= m.visibleAfter.getTime();
 }
