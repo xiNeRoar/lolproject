@@ -282,8 +282,10 @@ router.get("/rso/callback", async (req, res) => {
           puuid: account.puuid,
           riotId,
           rsoOptIn: true,
-          rsoAccessToken: tokenData.access_token,
-          rsoRefreshToken: tokenData.refresh_token ?? null,
+          // TODO: Tournament API integration requires encrypted token storage
+          // See PROJECT.md Key Decisions. Columns kept for future use.
+          rsoAccessToken: null,
+          rsoRefreshToken: null,
           rsoLinkedAt: now,
           discordId: discordId ?? player.discordId,
           updatedAt: now,
@@ -302,8 +304,10 @@ router.get("/rso/callback", async (req, res) => {
           discordId,
           discordUsername: account.gameName,
           rsoOptIn: true,
-          rsoAccessToken: tokenData.access_token,
-          rsoRefreshToken: tokenData.refresh_token ?? null,
+          // TODO: Tournament API integration requires encrypted token storage
+          // See PROJECT.md Key Decisions. Columns kept for future use.
+          rsoAccessToken: null,
+          rsoRefreshToken: null,
           rsoLinkedAt: now,
           registrationStatus: "active",
         })
