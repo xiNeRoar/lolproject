@@ -12,15 +12,6 @@ Format: one section per request.
 
 
 
-## Request: ELO concurrent update race condition — needs FOR UPDATE lock
-
-**Needed for:** Data integrity
-**Endpoint:** POST /api/matches (and /submit-rofl)
-**Why:** `applyTeamElo()` does SELECT → calculate → UPDATE inside a transaction but without row-level locking. Two concurrent match submissions for the same team could read the same ELO value, calculate independently, and one update overwrites the other (lost update).
-**Fix:** Add `FOR UPDATE` to the team SELECT queries inside `applyTeamElo()`: use Drizzle's `db.execute(sql\`SELECT ... FOR UPDATE\`)` or equivalent.
-**File:** `artifacts/api-server/src/routes/matches.ts` lines 152-153
-
----
 
 ## Request: GET /players N+1 query performance
 

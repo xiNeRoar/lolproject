@@ -199,8 +199,19 @@ async function applyTeamElo(
   sideAName: string,
   kFactor: number
 ): Promise<{ teamABefore: number; teamAAfter: number; teamBBefore: number; teamBAfter: number }> {
-  const [teamA] = await tx.select().from(teamsTable).where(eq(teamsTable.id, teamAId));
-  const [teamB] = await tx.select().from(teamsTable).where(eq(teamsTable.id, teamBId));
+  // FOR UPDATE: acquire row-level locks to prevent lost updates from
+  // concurrent match submissions for the same team (industry standard
+  // pessimistic locking pattern for read-compute-write in transactions).
+  const [teamA] = await tx
+    .select()
+    .from(teamsTable)
+    .where(eq(teamsTable.id, teamAId))
+    .for("update");
+  const [teamB] = await tx
+    .select()
+    .from(teamsTable)
+    .where(eq(teamsTable.id, teamBId))
+    .for("update");
 
   if (!teamA || !teamB) throw new Error("Team not found for ELO update");
 
