@@ -1,20 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetTeam, getGetTeamQueryKey, useAddTeamMember, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
+import { useGetTeam, getGetTeamQueryKey, useUpdateTeamMember, useRemoveTeamMember } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  ChevronLeft, Eye, EyeOff, Users, Settings, ShieldCheck, UserPlus, Trash2,
+  ChevronLeft, Eye, EyeOff, Users, Settings, ShieldCheck, Trash2,
   Crown, AlertTriangle, Check, X, Loader2
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const ROLES = ["Top", "Jungle", "Mid", "Bot", "Support", null] as const;
-const VIS_OPTIONS = ["public", "default", "private"] as const;
+const VIS_OPTIONS = ["public", "private"] as const;
 
 function visLabel(visibleAfter: string | null | undefined): string {
   if (visibleAfter == null) return "default";
@@ -85,37 +85,11 @@ function MatchVisibilitySection({ team, teamId }: { team: any; teamId: number })
 
 function RosterSection({ team, teamId }: { team: any; teamId: number }) {
   const queryClient = useQueryClient();
-  const addMember = useAddTeamMember();
   const updateMember = useUpdateTeamMember();
   const removeMember = useRemoveTeamMember();
-  const [riotId, setRiotId] = useState("");
-  const [addLoading, setAddLoading] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
 
   const members = (team.members ?? []).filter((m: any) => m.status === "active");
-
-  const handleAdd = async () => {
-    const trimmed = riotId.trim();
-    if (!trimmed) return;
-    setAddLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/players?search=${encodeURIComponent(trimmed)}`);
-      const players = await res.json();
-      const player = players.find((p: any) => p.riotId?.toLowerCase() === trimmed.toLowerCase());
-      if (!player) {
-        toast.error("Player not found. They must be registered first.");
-        setAddLoading(false);
-        return;
-      }
-      await addMember.mutateAsync({ id: teamId, data: { playerId: player.id } });
-      queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(teamId) });
-      setRiotId("");
-      toast.success(`Added ${player.riotId} to the team`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to add member");
-    }
-    setAddLoading(false);
-  };
 
   const handleRemove = async (memberId: number) => {
     try {
@@ -147,23 +121,9 @@ function RosterSection({ team, teamId }: { team: any; teamId: number }) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="px-6 py-3 border-b border-border/30">
-          <div className="flex gap-2">
-            <input
-              value={riotId}
-              onChange={e => setRiotId(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleAdd()}
-              placeholder="Add by Riot ID (e.g. Player#NA1)"
-              className="flex-1 px-3 py-2 rounded-md bg-muted/30 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <button
-              onClick={handleAdd}
-              disabled={addLoading || !riotId.trim()}
-              className="px-4 py-2 rounded-md bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors border border-primary/20 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {addLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-              Add
-            </button>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Members are automatically added when they appear in submitted match replays. Use <code className="text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">/connect</code> in Discord to verify Riot identity.
+          </p>
         </div>
 
         {members.length === 0 ? (
@@ -172,22 +132,22 @@ function RosterSection({ team, teamId }: { team: any; teamId: number }) {
           <div className="divide-y divide-border/30">
             {members.map((m: any) => {
               const isCaptain = m.playerId === team.captainPlayerId;
-              const linked = !!m.playerRiotId;
+              const verified = !!m.playerRiotId && !m.playerRiotId.startsWith("pending");
               return (
                 <div key={m.id} className="px-6 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      {linked ? (
+                      {verified ? (
                         <Link href={`/players/${encodeURIComponent(m.playerRiotId)}`} className="text-sm font-medium hover:text-primary transition-colors">
                           {m.playerRiotId}
                         </Link>
                       ) : (
-                        <span className="text-sm font-medium text-muted-foreground">Player #{m.playerId} <span className="text-yellow-400 text-xs">(pending)</span></span>
+                        <span className="text-sm font-medium text-muted-foreground">Player #{m.playerId}</span>
                       )}
-                      {linked ? (
-                        <span className="text-green-400 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" /> linked</span>
+                      {verified ? (
+                        <span className="text-green-400 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" /> verified</span>
                       ) : (
-                        <span className="text-yellow-400 text-xs flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" /> pending</span>
+                        <span className="text-yellow-400 text-xs flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" /> unverified</span>
                       )}
                     </div>
                     {m.playerDiscordUsername && (

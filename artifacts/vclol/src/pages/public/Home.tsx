@@ -162,8 +162,8 @@ export default function Home() {
           <Badge className="mb-3">Active Competition</Badge>
           <h2 className="text-xl font-bold font-display mb-3">The competitive ladder is live</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
-            Structured competitive LoL ladder with ELO tracking. Register your team to compete, 
-            build your match record, and track your ELO over time.
+            Structured competitive LoL ladder with W/L record tracking. Register your team to compete,
+            build your match record, and track your progress over time.
           </p>
         </div>
       </section>
@@ -182,7 +182,7 @@ export default function Home() {
               {
                 icon: BarChart3,
                 title: "Persistent Competitive Resume",
-                desc: "Build a public profile showing your organized team play history: champion pool, aggregate KDA, win rate, and ELO trajectory across all teams. The team play resume OP.GG can't provide.",
+                desc: "Build a public profile showing your organized team play history: champion pool, aggregate KDA, win rate, and career history across all your teams. The team play resume OP.GG can't provide.",
                 delay: 0.1,
               },
               {
@@ -310,7 +310,7 @@ export default function Home() {
           <MessageCircle className="w-10 h-10 text-primary mx-auto mb-5 opacity-80" />
           <h2 className="text-2xl font-bold font-display mb-3">Discord Bot</h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-8">
-            Use slash commands in any Discord server to register your team, add players, and submit match replays. The bot works in your existing server — no need to join ours.
+            Use slash commands in any Discord server to register your team, verify your identity, and submit match replays. The bot works in your existing server — no need to join ours.
           </p>
           <Link href="/register">
             <Button size="lg" className="font-semibold">

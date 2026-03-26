@@ -2,9 +2,9 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetLadder, useGetLadderSettings } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, TrendingUp, Clock } from "lucide-react";
+import { Trophy, Clock } from "lucide-react";
 import { Link } from "wouter";
-import { eloBadgeColor, rankLabel, rankIcon } from "@/lib/lol-utils";
+import { rankIcon } from "@/lib/lol-utils";
 
 function daysUntil(dateStr: string): number {
   const diff = new Date(dateStr).getTime() - Date.now();
@@ -84,18 +84,13 @@ export default function Teams() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium truncate">{entry.name}</span>
                             <span className="text-xs text-muted-foreground">[{entry.tag}]</span>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full border font-medium ${eloBadgeColor(entry.teamElo)}`}
-                            >
-                              {rankLabel(entry.teamElo)}
-                            </span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-4 shrink-0">
                           <div className="text-center">
-                            <div className="text-xs text-muted-foreground">W/L</div>
-                            <div className="text-sm font-medium">
+                            <div className="text-xs text-muted-foreground">Record</div>
+                            <div className="text-sm font-display font-bold">
                               <span className="text-green-400">{entry.wins}W</span>
                               {" / "}
                               <span className="text-red-400">{entry.losses}L</span>
@@ -103,15 +98,7 @@ export default function Teams() {
                           </div>
                           <div className="text-center hidden sm:block">
                             <div className="text-xs text-muted-foreground">Win Rate</div>
-                            <div className="text-sm font-medium">{entry.winRate}%</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <TrendingUp className="w-3 h-3" /> ELO
-                            </div>
-                            <div className="text-lg font-display font-bold text-primary">
-                              {entry.teamElo}
-                            </div>
+                            <div className="text-lg font-display font-bold text-primary">{entry.winRate}%</div>
                           </div>
                         </div>
                       </CardContent>
@@ -129,7 +116,7 @@ export default function Teams() {
           <h3 className="text-lg font-display font-semibold mb-4">How the Ranking Works</h3>
           {settings ? (
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• ELO system: each match is worth ±{settings.kFactor} points (varies by opponent ELO)</li>
+              <li>• Teams are ranked by <span className="text-foreground">win count</span> — every match result is verified from .rofl replay files</li>
               <li>• Minimum <span className="text-foreground">{settings.minMatchesForDisplay} matches</span> required to appear in the ranking</li>
               <li>• Top <span className="text-foreground">{playoffSize} teams</span> qualify for season playoffs</li>
               <li>• Default match format: <span className="text-foreground">{settings.defaultMatchFormat}</span></li>

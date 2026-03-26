@@ -82,10 +82,14 @@ export default function Register() {
                   3
                 </div>
                 <div>
-                  <h2 className="text-xl font-display font-bold mb-1">Add Players</h2>
+                  <h2 className="text-xl font-display font-bold mb-1">Verify Your Riot Identity</h2>
                   <p className="text-sm text-muted-foreground">
-                    Invite your teammates with <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/add @player</code>.
-                    Each team needs 5 players to compete.
+                    Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/connect</code> in Discord.
+                    The bot will send you a link to verify your Riot account through Riot Sign-On (RSO).
+                    This links your PUUID to your profile and unlocks champion stats, KDA, and match history.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Players are automatically added to teams when they appear in submitted match replays — no manual roster management needed.
                   </p>
                 </div>
               </div>
@@ -97,26 +101,6 @@ export default function Register() {
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-lg font-display font-bold text-primary shrink-0">
                   4
-                </div>
-                <div>
-                  <h2 className="text-xl font-display font-bold mb-1">Link Riot Accounts</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Each player should use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/link-riot RiotName#TAG</code> in
-                    Discord to connect their Riot account. This unlocks champion stats, KDA, and CS tracking.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2 italic">
-                    Matches still record without it — but individual stats won't appear until linked.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/40 bg-card/60">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-lg font-display font-bold text-primary shrink-0">
-                  5
                 </div>
                 <div>
                   <h2 className="text-xl font-display font-bold mb-1">Submit Replays</h2>

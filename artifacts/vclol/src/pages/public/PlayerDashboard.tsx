@@ -106,9 +106,9 @@ function DashboardContent({ pid }: { pid: number }) {
         <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3">
           <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-yellow-400">Riot ID not linked</p>
+            <p className="text-sm font-medium text-yellow-400">Riot Account not verified</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/link-riot</code> in Discord to connect your Riot account. This unlocks champion stats, match history, and more.
+              Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/connect</code> in Discord to verify your Riot identity through RSO. This unlocks champion stats, match history, and your public profile.
             </p>
           </div>
         </div>
@@ -197,9 +197,9 @@ function DashboardContent({ pid }: { pid: number }) {
         const hasLinkedRiot = player.riotId !== "pending" && !!player.puuid;
 
         const steps = [
-          { done: hasRoster, label: "Add 5 players to your roster", cmd: "/add @player" },
-          { done: hasLinkedRiot, label: "Get players to link Riot ID", cmd: "/link-riot" },
+          { done: hasLinkedRiot, label: "Verify your Riot identity", cmd: "/connect" },
           { done: hasMatches, label: "Submit your first scrim", cmd: "/submit" },
+          { done: hasRoster, label: "Build your roster through match replays", cmd: null },
         ];
 
         const allDone = steps.every((s) => s.done);
@@ -294,7 +294,7 @@ function DashboardContent({ pid }: { pid: number }) {
           ) : (
             <p className="text-sm text-muted-foreground">
               Teams are managed through Discord. Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/register-team</code> to
-              create a team, or ask a captain to add you with <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/add @you</code>.
+              create a team. Players are automatically added from submitted match replays.
             </p>
           )}
         </CardContent>
@@ -423,11 +423,14 @@ function DashboardContent({ pid }: { pid: number }) {
           <p className="text-xs text-muted-foreground">
             {currentPrivacy === "private"
               ? "Your profile is private. Only your Riot ID and team affiliations are visible to others."
+              : currentPrivacy === "participants-only"
+              ? "Your profile is visible only to players who have been in a match with you."
               : "Your profile is public. Anyone can see your stats, champion pool, and match history."}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
               { value: "public", label: "Public", desc: "Full profile visible" },
+              { value: "participants-only", label: "Participants", desc: "Match participants only" },
               { value: "private", label: "Private", desc: "Stats hidden" },
             ].map((opt) => (
               <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded border border-border/40 hover:border-primary/40">
