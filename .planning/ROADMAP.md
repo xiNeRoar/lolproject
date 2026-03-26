@@ -28,7 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. CORS configuration rejects requests from origins other than the production domain (no wildcard with credentials)
   4. RSO access/refresh tokens are not stored in the database -- only PUUID persists after auth completes
   5. Match visibility PUT endpoint derives playerId from the authenticated session, ignoring any playerId in the request body
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md -- Schema sync (drizzle-kit push) and eloHistory doc fix
+- [ ] 01-02-PLAN.md -- CORS restriction, session secret validation, visibility endpoint fix
+- [ ] 01-03-PLAN.md -- OAuth state parameters on all flows, RSO token write removal
 
 ### Phase 2: Privacy Gates
 **Goal**: Every API response respects the 3-layer visibility model -- scrims restricted, tournaments public, player profiles gated by opt-in
@@ -59,6 +64,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema Sync & Auth Hardening | 0/0 | Not started | - |
+| 1. Schema Sync & Auth Hardening | 0/3 | Not started | - |
 | 2. Privacy Gates | 0/0 | Not started | - |
 | 3. API Contract & Performance | 0/0 | Not started | - |
