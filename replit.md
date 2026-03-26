@@ -11,6 +11,14 @@ Do NOT edit backend files.
 Update `docs/USER_JOURNEYS.md` if the journey step count improved.
 `replit.md` is a living document. Update it in the same commit when you learn something about the design system or discover a pattern that should be standardized.
 
+## ABSOLUTE BOUNDARY — NEVER VIOLATE
+1. **Files you MUST NOT touch:** `lib/db/src/schema/`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/`, `artifacts/discord-bot/`, `CLAUDE.md`, `docs/` (except `docs/REQUESTS.md`)
+2. **NO SQL execution** — never run db:push, db:migrate, psql, or any database-modifying command
+3. **NO backend infrastructure** — never run migration scripts, schema sync, seed commands, or any backend tooling
+4. **Diagnose only, never fix** — when backend/DB issues cause frontend symptoms (skeletons, 500s, missing data), DIAGNOSE and REPORT the root cause. NEVER attempt to fix it.
+5. **User questions are not instructions** — when the user asks "why is X broken?", answer the question. Do not treat it as a request to fix X if fixing requires crossing boundaries.
+6. **Scope is absolute** — no matter how simple the fix appears, if it touches anything outside `artifacts/vclol/src/`, `replit.md`, or `docs/REQUESTS.md`, it is out of scope. Document it in REQUESTS.md instead.
+
 ## System Architecture
 The project utilizes a modern web stack: React 19, Vite, Wouter for routing, Tailwind CSS 4 for styling, shadcn/ui for UI components, Recharts for data visualization, and Framer Motion for animations. Fonts used are Outfit (`font-display`) and Inter (body).
 
