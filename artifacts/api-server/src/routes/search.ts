@@ -23,7 +23,11 @@ router.get("/", async (req, res) => {
         .from(teamsTable).where(or(ilike(teamsTable.name, p), ilike(teamsTable.tag, p))).limit(5),
       db.select({ id: playersTable.id, riotId: playersTable.riotId, primaryRole: playersTable.primaryRole })
         .from(playersTable)
-        .where(and(eq(playersTable.isActive, true), or(ilike(playersTable.riotId, p), ilike(playersTable.discordUsername, p))))
+        .where(and(
+          eq(playersTable.isActive, true),
+          eq(playersTable.rsoOptIn, true),
+          or(ilike(playersTable.riotId, p), ilike(playersTable.discordUsername, p))
+        ))
         .limit(5),
       db.select({ id: eventsTable.id, title: eventsTable.title, slug: eventsTable.slug, format: eventsTable.format })
         .from(eventsTable).where(ilike(eventsTable.title, p)).limit(5),

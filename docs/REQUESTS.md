@@ -18,15 +18,6 @@ Format: one section per request.
 
 ---
 
-## Request: Player search must respect rsoOptIn gate
-
-**Needed for:** PRD §7 Layer 2
-**Endpoint:** GET /api/search?q=
-**Why:** PRD says non-opted-in players should not be searchable. Current search.ts returns all active players matching the query — no `rsoOptIn` check. A player who hasn't opted in can still be found by anyone.
-**Fix:** Add `eq(playersTable.rsoOptIn, true)` to the player search WHERE clause.
-**File:** `artifacts/api-server/src/routes/search.ts` line 26
-
----
 
 ## Request: RSO OAuth routes (launch requirement)
 
