@@ -12,7 +12,7 @@ import {
   eloHistoryTable,
   playersTable,
 } from "@workspace/db";
-import { eq, desc, and, inArray, or, count } from "drizzle-orm";
+import { eq, desc, and, inArray, or, count, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges, checkClimberBadge } from "../lib/badges";
@@ -140,6 +140,45 @@ function formatMatchPlayer(
 }
 
 /** Apply ELO update for both teams inside a transaction. */
+/**
+ * Update wins/losses/lastMatchAt for both teams. Called for ALL match types.
+ * Separated from ELO to enforce PRD v3.1 §8: scrims update record only.
+ */
+async function updateTeamRecord(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  teamAId: number,
+  teamBId: number,
+  winnerName: string,
+  sideAName: string
+): Promise<void> {
+  const teamAWon = winnerName === sideAName;
+  const now = new Date();
+
+  await tx
+    .update(teamsTable)
+    .set({
+      wins: sql`${teamsTable.wins} + ${teamAWon ? 1 : 0}`,
+      losses: sql`${teamsTable.losses} + ${teamAWon ? 0 : 1}`,
+      lastMatchAt: now,
+      updatedAt: now,
+    })
+    .where(eq(teamsTable.id, teamAId));
+
+  await tx
+    .update(teamsTable)
+    .set({
+      wins: sql`${teamsTable.wins} + ${teamAWon ? 0 : 1}`,
+      losses: sql`${teamsTable.losses} + ${teamAWon ? 1 : 0}`,
+      lastMatchAt: now,
+      updatedAt: now,
+    })
+    .where(eq(teamsTable.id, teamBId));
+}
+
+/**
+ * Calculate and apply ELO changes for both teams. ONLY for tournament/event matches.
+ * PRD v3.1 §8: "Scrim (.rofl) does NOT count ELO."
+ */
 async function applyTeamElo(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   matchId: number,
@@ -160,33 +199,22 @@ async function applyTeamElo(
   const teamAAfter = calculateElo(teamABefore, teamBBefore, teamAWon, kFactor);
   const teamBAfter = calculateElo(teamBBefore, teamABefore, !teamAWon, kFactor);
 
-  // Update Team A
   await tx
     .update(teamsTable)
     .set({
       teamElo: teamAAfter,
       peakElo: Math.max(teamA.peakElo, teamAAfter),
-      wins: teamAWon ? teamA.wins + 1 : teamA.wins,
-      losses: teamAWon ? teamA.losses : teamA.losses + 1,
-      lastMatchAt: new Date(),
-      updatedAt: new Date(),
     })
     .where(eq(teamsTable.id, teamAId));
 
-  // Update Team B
   await tx
     .update(teamsTable)
     .set({
       teamElo: teamBAfter,
       peakElo: Math.max(teamB.peakElo, teamBAfter),
-      wins: !teamAWon ? teamB.wins + 1 : teamB.wins,
-      losses: !teamAWon ? teamB.losses : teamB.losses + 1,
-      lastMatchAt: new Date(),
-      updatedAt: new Date(),
     })
     .where(eq(teamsTable.id, teamBId));
 
-  // Write elo_history for both teams
   await tx.insert(eloHistoryTable).values([
     {
       teamId: teamAId,
@@ -312,6 +340,8 @@ router.post("/", requireAdmin, async (req, res) => {
       score,
       format,
       resultSource,
+      matchType,
+      tournamentCode,
       eventId,
       seasonId,
       isPlayoff,
@@ -328,6 +358,8 @@ router.post("/", requireAdmin, async (req, res) => {
       score?: string | null;
       format?: string | null;
       resultSource?: string | null;
+      matchType?: string | null;
+      tournamentCode?: string | null;
       eventId?: number | null;
       seasonId?: number | null;
       isPlayoff?: boolean | null;
@@ -345,6 +377,9 @@ router.post("/", requireAdmin, async (req, res) => {
       return;
     }
 
+    const resolvedMatchType = matchType ?? "scrim";
+    const eloEligible = resolvedMatchType === "ranked_tournament" || resolvedMatchType === "event";
+
     const [settings] = await db.select().from(ladderSettingsTable).limit(1);
     const kFactor = settings?.kFactor ?? 32;
 
@@ -357,7 +392,6 @@ router.post("/", requireAdmin, async (req, res) => {
     };
 
     await db.transaction(async (tx) => {
-      // Insert match first (without ELO fields)
       const [match] = await tx
         .insert(matchesTable)
         .values({
@@ -370,6 +404,8 @@ router.post("/", requireAdmin, async (req, res) => {
           score: score ?? null,
           format: format ?? null,
           resultSource: resultSource ?? "admin_manual",
+          matchType: resolvedMatchType,
+          tournamentCode: tournamentCode ?? null,
           eventId: eventId ? Number(eventId) : null,
           seasonId: seasonId ? Number(seasonId) : null,
           isPlayoff: isPlayoff ?? false,
@@ -381,23 +417,28 @@ router.post("/", requireAdmin, async (req, res) => {
 
       createdMatchId = match!.id;
 
-      // Apply ELO only when both teams are known
+      // Always update wins/losses for both teams (PRD v3.1 §8)
       if (teamAId && teamBId) {
-        const elo = await applyTeamElo(
-          tx,
-          createdMatchId,
-          Number(teamAId),
-          Number(teamBId),
-          winnerName,
-          sideAName,
-          kFactor
-        );
-        eloSnapshot = {
-          teamAEloBefore: elo.teamABefore,
-          teamAEloAfter: elo.teamAAfter,
-          teamBEloBefore: elo.teamBBefore,
-          teamBEloAfter: elo.teamBAfter,
-        };
+        await updateTeamRecord(tx, Number(teamAId), Number(teamBId), winnerName, sideAName);
+
+        // ELO only for tournament/event matches (PRD v3.1 §8)
+        if (eloEligible) {
+          const elo = await applyTeamElo(
+            tx,
+            createdMatchId,
+            Number(teamAId),
+            Number(teamBId),
+            winnerName,
+            sideAName,
+            kFactor
+          );
+          eloSnapshot = {
+            teamAEloBefore: elo.teamABefore,
+            teamAEloAfter: elo.teamAAfter,
+            teamBEloBefore: elo.teamBBefore,
+            teamBEloAfter: elo.teamBAfter,
+          };
+        }
 
         // Back-fill ELO snapshot on the match row
         await tx
@@ -875,32 +916,37 @@ router.post("/:id/claim-team", async (req, res) => {
       const [updatedMatch] = await tx.select().from(matchesTable).where(eq(matchesTable.id, id));
 
       if (updatedMatch && updatedMatch.teamAId !== null && updatedMatch.teamBId !== null) {
-        // Both sides now assigned — calculate ELO retroactively
-        const [settings] = await tx.select().from(ladderSettingsTable).limit(1);
-        const kFactor = settings?.kFactor ?? 32;
+        // Always update W/L for both teams
+        await updateTeamRecord(tx, updatedMatch.teamAId, updatedMatch.teamBId, updatedMatch.winnerName, updatedMatch.sideAName);
 
-        const elo = await applyTeamElo(
-          tx,
-          id,
-          updatedMatch.teamAId,
-          updatedMatch.teamBId,
-          updatedMatch.winnerName,
-          updatedMatch.sideAName,
-          kFactor
-        );
+        // ELO only for tournament/event (PRD v3.1 §8)
+        const mt = (updatedMatch as any).matchType ?? "scrim";
+        if (mt === "ranked_tournament" || mt === "event") {
+          const [settings] = await tx.select().from(ladderSettingsTable).limit(1);
+          const kFactor = settings?.kFactor ?? 32;
 
-        // Back-fill ELO snapshot on the match row
-        await tx
-          .update(matchesTable)
-          .set({
-            teamAEloBefore: elo.teamABefore,
-            teamAEloAfter: elo.teamAAfter,
-            teamBEloBefore: elo.teamBBefore,
-            teamBEloAfter: elo.teamBAfter,
-          })
-          .where(eq(matchesTable.id, id));
+          const elo = await applyTeamElo(
+            tx,
+            id,
+            updatedMatch.teamAId,
+            updatedMatch.teamBId,
+            updatedMatch.winnerName,
+            updatedMatch.sideAName,
+            kFactor
+          );
 
-        eloUpdated = true;
+          await tx
+            .update(matchesTable)
+            .set({
+              teamAEloBefore: elo.teamABefore,
+              teamAEloAfter: elo.teamAAfter,
+              teamBEloBefore: elo.teamBBefore,
+              teamBEloAfter: elo.teamBAfter,
+            })
+            .where(eq(matchesTable.id, id));
+
+          eloUpdated = true;
+        }
       }
     });
 

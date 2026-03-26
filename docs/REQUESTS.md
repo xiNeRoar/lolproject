@@ -5,15 +5,6 @@ Format: one section per request.
 
 ---
 
-## Request: ELO guard — POST /matches must check matchType before applying ELO
-
-**Needed for:** PRD §8 compliance
-**Endpoint:** POST /api/matches
-**Why:** `applyTeamElo()` is called whenever `teamAId && teamBId`, regardless of `matchType`. PRD §8: "Scrim (.rofl) does NOT count ELO. ELO only for Tournament Code + Event matches." Admin-created scrim matches currently modify team ELO incorrectly.
-**Fix:** Add guard: only call `applyTeamElo()` when `matchType === "ranked_tournament" || matchType === "event"`. Scrim matches should still update `wins/losses` but NOT `teamElo/peakElo/eloHistory`.
-**File:** `artifacts/api-server/src/routes/matches.ts` line 385
-
----
 
 ## Request: profileVisibility null fallback must be "private" not "public"
 
