@@ -30,6 +30,7 @@ import {
 import { db, botHeartbeatsTable } from "./lib/db.js";
 import { startNotificationPoller, stopNotificationPoller } from "./lib/notificationPoller.js";
 import { startSeasonBroadcaster } from "./lib/seasonBroadcaster.js";
+import { startTeamInactivityScheduler } from "./lib/teamInactivityScheduler.js";
 import { handleInviteButton, cleanupExpiredInvites } from "./lib/inviteHandler.js";
 
 import * as registerTeam from "./commands/register-team.js";
@@ -119,6 +120,7 @@ client.once(Events.ClientReady, async (c) => {
 
   // ── Season broadcaster (BOT_SPEC §Season Broadcast) ─────────────────────
   startSeasonBroadcaster(c);
+  startTeamInactivityScheduler();
 
   // ── Clean up expired pending invites from previous sessions ──────────────
   cleanupExpiredInvites().catch((err) =>
