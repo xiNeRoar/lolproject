@@ -6,15 +6,6 @@ Format: one section per request.
 ---
 
 
-## Request: profileVisibility null fallback must be "private" not "public"
-
-**Needed for:** PRD §7 compliance (privacy-by-default)
-**Endpoint:** GET /api/players/:riotId, GET /api/players (list)
-**Why:** `formatPlayer()` line 31 uses `p.profileVisibility ?? "public"` and privacy gate line 394 uses `(player.profileVisibility ?? "public") === "private"`. Schema default is "private" per PRD v3.1, but if the column is ever null, the formatter/gate treats it as "public" — exposing player data that should be hidden.
-**Fix:** Change all `?? "public"` fallbacks to `?? "private"` in `formatPlayer()` and the privacy gate in GET /:riotId.
-**File:** `artifacts/api-server/src/routes/players.ts` lines 31, 394
-
----
 
 ## Request: participants-only visibility not accepted or handled
 

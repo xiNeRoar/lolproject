@@ -28,7 +28,7 @@ function formatPlayer(p: typeof playersTable.$inferSelect) {
     primaryRole: p.primaryRole ?? null,
     secondaryRole: p.secondaryRole ?? null,
     isActive: p.isActive,
-    profileVisibility: p.profileVisibility ?? "public",
+    profileVisibility: p.profileVisibility ?? "private",
     email: p.email ?? null,
     notificationPreference: p.notificationPreference,
     registrationStatus: p.registrationStatus,
@@ -391,7 +391,7 @@ router.get("/:riotId", async (req, res) => {
     // Privacy gate: if profile is private, only the player themselves or an admin can see full data
     const isOwner = req.session.playerId === player.id;
     const isAdmin = !!req.session.adminId;
-    const isPrivate = (player.profileVisibility ?? "public") === "private";
+    const isPrivate = (player.profileVisibility ?? "private") === "private";
 
     if (isPrivate && !isOwner && !isAdmin) {
       // Return redacted profile — riotId + team affiliations only, no stats
