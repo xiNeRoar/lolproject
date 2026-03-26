@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import { db } from "@workspace/db";
 import { playersTable, authSessionsTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
@@ -17,18 +18,28 @@ const RSO_REDIRECT_URI = process.env.RSO_REDIRECT_URI || "http://localhost:3000/
 const PLATFORM_URL = process.env.PLATFORM_URL || "http://localhost:5173";
 
 // GET /auth/discord — initiate Discord OAuth flow
-router.get("/discord", (_req, res) => {
+router.get("/discord", (req, res) => {
+  const state = crypto.randomBytes(32).toString("hex");
+  req.session.oauthState = state;
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
     redirect_uri: DISCORD_REDIRECT_URI,
     response_type: "code",
     scope: "identify email",
+    state,
   });
   res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
 });
 
 // GET /auth/discord/callback — exchange code, set player session
 router.get("/discord/callback", async (req, res) => {
+  const state = req.query.state as string;
+  if (!state || state !== req.session.oauthState) {
+    res.status(403).json({ error: "Invalid OAuth state" });
+    return;
+  }
+  delete req.session.oauthState;
+
   const code = req.query.code as string;
   if (!code) {
     res.status(400).json({ error: "Missing code parameter" });
@@ -130,11 +141,14 @@ router.get("/connect/:token", async (req, res) => {
       return;
     }
 
+    const state = crypto.randomBytes(32).toString("hex");
+    req.session.oauthState = state;
     const params = new URLSearchParams({
       client_id: RSO_CLIENT_ID,
       redirect_uri: RSO_REDIRECT_URI,
       response_type: "code",
       scope: "openid offline_access",
+      state,
     });
     res.redirect(`https://auth.riotgames.com/authorize?${params}`);
   } catch (err) {
@@ -156,17 +170,27 @@ router.get("/rso", (req, res) => {
     return;
   }
 
+  const state = crypto.randomBytes(32).toString("hex");
+  req.session.oauthState = state;
   const params = new URLSearchParams({
     client_id: RSO_CLIENT_ID,
     redirect_uri: RSO_REDIRECT_URI,
     response_type: "code",
     scope: "openid offline_access",
+    state,
   });
   res.redirect(`https://auth.riotgames.com/authorize?${params}`);
 });
 
 // GET /auth/rso/callback — exchange code for PUUID, update player record
 router.get("/rso/callback", async (req, res) => {
+  const state = req.query.state as string;
+  if (!state || state !== req.session.oauthState) {
+    res.status(403).json({ error: "Invalid OAuth state" });
+    return;
+  }
+  delete req.session.oauthState;
+
   const code = req.query.code as string;
   if (!code) {
     res.redirect(`${PLATFORM_URL}/connect?error=missing_code`);
