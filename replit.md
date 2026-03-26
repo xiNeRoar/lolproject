@@ -71,6 +71,12 @@ The project utilizes a modern web stack: React 19, Vite, Wouter for routing, Tai
 ## Issues Closed by Replit
 
 - **#148** Player profile privacy: Dashboard toggle + PlayerProfile gate (frontend follow-up to #132)
+- **#201** Leaderboard — W/L record sort instead of ELO, removed ELO column, updated ranking explanation
+- **#203** Captain Hub — removed Add Member input, auto-roster info, verified/unverified labels, removed "default" visibility
+- **#205** Team profile — W/L primary stat, ELO conditional on tournament data, unlinked member labels
+- **#218** Home page — removed all ELO references per PRD v3.1
+- **#219** Register page — removed /add and /link-riot, replaced with /connect RSO flow (4 steps)
+- **#220** Dashboard — RSO CTA (/connect), updated getting started steps, added participants-only privacy option
 
 ## Profile Privacy Implementation
 

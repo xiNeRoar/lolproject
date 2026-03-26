@@ -42,7 +42,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 2. Go to /register — see bot guide + Discord invite link
 3. Add bot to their server
 
-**Current state:** ⚠️ Needs v3.1 update. /register page needs update: remove /link-riot reference, add /connect + RSO flow explanation. Step 3 adds bot → Step 3.5 run /connect to verify Riot Account.
+**Current state:** ✅ Updated for v3.1. /register page shows 4 steps: (1) Add bot, (2) /register-team, (3) /connect for RSO verification, (4) /submit replays. /link-riot and /add references removed. Auto-roster note included. Step count: 3 (visitor reads page = 1 step to understand, then 2 actions).
 
 ---
 
@@ -171,7 +171,7 @@ If a feature doesn't appear in this document, it doesn't get built.
 
 Cross-server: teammates don't need to be in same Discord server. Teammates claim their profile later via `/connect` or website RSO.
 
-**Current state:** ⚠️ Needs v3.1 update. /add command deleted (#191). .rofl auto-discovery with captain confirmation buttons is the only path. CaptainHub web "Add Member" needs removal or redesign.
+**Current state:** ✅ Updated for v3.1. CaptainHub "Add Member" input removed (#203). Roster section shows info message: "Members are automatically added when they appear in submitted match replays." Step count: 1 (automatic via .rofl submission).
 
 ---
 
@@ -195,7 +195,7 @@ Cross-server: teammates don't need to be in same Discord server. Teammates claim
 **Journey:**
 1. Captain Hub → Roster section shows RSO verification status per member (✅ verified / ⚠️ unlinked)
 
-**Current state:** ⚠️ Needs v3.1 update. Change indicator from /link-riot status to RSO verification status. ✅ = RSO verified (puuid set). ⚠️ = unverified (auto-added from .rofl).
+**Current state:** ✅ Updated for v3.1. CaptainHub roster shows "verified" (green ✅) for members with valid riotId + puuid, "unverified" (yellow ⚠️) for pending members. Uses `startsWith("pending")` check (#203). Step count: 1.
 
 ---
 
@@ -288,7 +288,7 @@ Cross-server: teammates don't need to be in same Discord server. Teammates claim
 | Journey | Max Steps | Current Steps | Gap |
 |---------|-----------|---------------|-----|
 | J-01 Match link → understand context | 1 | 1 | ⚠️ v3.1 privacy gate needed |
-| J-02 Discover → join | 3 | 3.5 | ⚠️ v3.1: add /connect step |
+| J-02 Discover → join | 3 | 3 | ✅ v3.1 updated: /connect + RSO flow |
 | J-03 Find player/team | 2 | 2 | ⚠️ v3.1: opt-in gate on player search |
 | J-04 See recent match performance | 2 | 2 | ✅ #16 + #68 done |
 | J-05 Watch match VOD | 3 | 3 | ✅ #16 done |
@@ -299,9 +299,9 @@ Cross-server: teammates don't need to be in same Discord server. Teammates claim
 | J-10 Set visibility default | 2 | 2 | ✅ #14 + #15 done |
 | J-11 Bulk set visibility | 3 | 3 | ✅ #14 + #15 done |
 | J-12 See team VODs | 1 | 1 | ✅ #17 done |
-| J-13 Add player (auto from .rofl) | 1 | 1 | ⚠️ /add deleted, .rofl auto-add built |
+| J-13 Add player (auto from .rofl) | 1 | 1 | ✅ CaptainHub Add Member removed, auto-roster only |
 | J-14 Transfer captain | 1/3 | 1/3 | ✅ #4 + #14 + #15 done |
-| J-15 Check teammate verify status | 1 | 1 | ⚠️ v3.1: RSO status not link-riot |
+| J-15 Check teammate verify status | 1 | 1 | ✅ v3.1: verified/unverified RSO status |
 | J-16 Find players by criteria | 2 | 2 | ⚠️ v3.1: opt-in gate |
 | J-17 Verify player record | 1 | 1 | ✅ |
 | J-18 Watch player VOD | 2 | 2 | ✅ |
