@@ -17,51 +17,12 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges, checkClimberBadge } from "../lib/badges";
 import { logAdminAction } from "../lib/auditLog";
+import { isMatchVisibleTo, checkMatchParticipant, redactMatchForNonParticipant, filterMatchPlayersByOptIn } from "../lib/privacyGate.js";
 
 const router = Router();
 
-// ── Helpers ──────────────────────────────────────────────────
-
-/** Returns true if the match is publicly visible at the current time. */
-function isVisible(m: typeof matchesTable.$inferSelect): boolean {
-  const mt = (m as any).matchType ?? "scrim";
-
-  // PRD v3.1 §7 Layer 3: tournament/event matches public by default
-  // Captain can override to private (visibleAfter = 9999-01-01)
-  if (mt === "ranked_tournament" || mt === "event") {
-    if (m.visibleAfter && m.visibleAfter.getFullYear() >= 9000) {
-      return false; // Captain explicitly set private
-    }
-    return true; // Public by default
-  }
-
-  // Scrim: private by default, check visibleAfter
-  if (!m.visibleAfter) {
-    return false; // No visibleAfter = private (v3.1: scrims default private)
-  }
-  return Date.now() >= m.visibleAfter.getTime();
-}
-/**
- * True if playerId is an active member of teamA or teamB.
- * Uses team_members (not match_players) — coaches/bench players can access too.
- */
-async function isMemberOfMatch(
-  playerId: number,
-  match: typeof matchesTable.$inferSelect
-): Promise<boolean> {
-  const teamIds = [match.teamAId, match.teamBId].filter((id): id is number => id !== null);
-  if (teamIds.length === 0) return false;
-  const rows = await db
-    .select({ id: teamMembersTable.id })
-    .from(teamMembersTable)
-    .where(and(
-      eq(teamMembersTable.playerId, playerId),
-      eq(teamMembersTable.status, "active"),
-      or(...teamIds.map((tid) => eq(teamMembersTable.teamId, tid)))
-    ))
-    .limit(1);
-  return rows.length > 0;
-}
+// NOTE: visibleAfter = null means PRIVATE (D-11). Not 7-day default.
+// All visibility logic uses shared privacyGate.ts helpers (D-14).
 
 // ── Formatters ───────────────────────────────────────────────
 
@@ -332,17 +293,26 @@ router.get("/", async (req, res) => {
       for (const t of teamBRows) teamBMap[t.id] = { name: t.name, tag: t.tag };
     }
 
+    // Strip sensitive fields from non-admin responses (Pitfall 5)
+    const isAdmin = !!req.session.adminId;
     res.json(
-      filtered.map((r) => ({
-        ...formatMatch(r.match, {
-          teamAName: r.teamAName?.name ?? null,
-          teamATag: r.teamAName?.tag ?? null,
-          teamBName: teamBMap[r.match.teamBId ?? -1]?.name ?? null,
-          teamBTag: teamBMap[r.match.teamBId ?? -1]?.tag ?? null,
-          eventTitle: r.eventTitle ?? null,
-        }),
-        vodCount: vodCountMap[r.match.id] ?? 0,
-      }))
+      filtered.map((r) => {
+        const formatted = {
+          ...formatMatch(r.match, {
+            teamAName: r.teamAName?.name ?? null,
+            teamATag: r.teamAName?.tag ?? null,
+            teamBName: teamBMap[r.match.teamBId ?? -1]?.name ?? null,
+            teamBTag: teamBMap[r.match.teamBId ?? -1]?.tag ?? null,
+            eventTitle: r.eventTitle ?? null,
+          }),
+          vodCount: vodCountMap[r.match.id] ?? 0,
+        };
+        if (!isAdmin) {
+          delete formatted.roflFilePath;
+          delete formatted.visibleAfter;
+        }
+        return formatted;
+      })
     );
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch matches" });
@@ -508,14 +478,11 @@ router.get("/:id", async (req, res) => {
       return;
     }
 
-    // ── Visibility gate (#8) ────────────────────────────────────────────────
-    // Private matches: redacted response (not 403). W/L visible, stats hidden.
+    // ── Visibility gate (D-01, D-03, D-05) ─────────────────────────────────
+    // Uses shared privacyGate.ts helpers — match_players for participant check (D-03).
     const isAdmin = !!req.session.adminId;
-    const visible = isVisible(match);
     const pid = req.session.playerId ? Number(req.session.playerId) : null;
-    const memberAccess = (!visible && !isAdmin && pid)
-      ? await isMemberOfMatch(pid, match) : false;
-    const canSeeStats = isAdmin || visible || memberAccess;
+    const { canSeeStats, isParticipant } = await isMatchVisibleTo(match, pid, isAdmin);
 
     // Always enrich team names (needed for basic match info)
     const teamA = match.teamAId
@@ -546,9 +513,8 @@ router.get("/:id", async (req, res) => {
     });
 
     if (!canSeeStats) {
-      // Redacted: W/L visible, per-player stats + VODs hidden
-      res.json({ ...base, matchPlayers: [], vods: [], _private: true,
-        visibleAfter: match.visibleAfter?.toISOString() ?? null });
+      // Redacted: team names + score + date + duration only (D-01, D-02)
+      res.json(redactMatchForNonParticipant(base));
       return;
     }
 
@@ -558,6 +524,18 @@ router.get("/:id", async (req, res) => {
       .leftJoin(playersTable, eq(matchPlayersTable.playerId, playersTable.id))
       .where(eq(matchPlayersTable.matchId, id))
       .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
+
+    // D-04: For public scrims viewed by non-participants, mask per-player stats
+    // for players without rsoOptIn
+    let matchPlayers = mpRows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null));
+    const isPublicScrimNonParticipant =
+      match.matchType !== "ranked_tournament" &&
+      match.matchType !== "event" &&
+      !isParticipant &&
+      !isAdmin;
+    if (isPublicScrimNonParticipant) {
+      matchPlayers = await filterMatchPlayersByOptIn(matchPlayers, isParticipant);
+    }
 
     // Join players to surface playerRiotId per VOD (#117)
     const vodRows = await db
@@ -569,7 +547,7 @@ router.get("/:id", async (req, res) => {
     res.json({
       ...base,
       bracketSize,
-      matchPlayers: mpRows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)),
+      matchPlayers,
       vods: vodRows.map(({ v, playerRiotId }) => ({
         id: v.id, matchId: v.matchId ?? null, title: v.title,
         videoUrl: v.videoUrl, champion: v.champion ?? null,
@@ -681,13 +659,10 @@ router.get("/:id/players", async (req, res) => {
       return;
     }
 
-    // Visibility gate: same logic as GET /:id
+    // Visibility gate: uses shared privacyGate.ts helpers (D-14)
     const isAdmin = !!req.session.adminId;
-    const visible = isVisible(match);
     const pid = req.session.playerId ? Number(req.session.playerId) : null;
-    const memberAccess = (!visible && !isAdmin && pid)
-      ? await isMemberOfMatch(pid, match) : false;
-    const canSeeStats = isAdmin || visible || memberAccess;
+    const { canSeeStats, isParticipant } = await isMatchVisibleTo(match, pid, isAdmin);
 
     if (!canSeeStats) {
       // Return empty array — consistent with GET /:id redacted response
@@ -705,7 +680,18 @@ router.get("/:id/players", async (req, res) => {
       .where(eq(matchPlayersTable.matchId, id))
       .orderBy(matchPlayersTable.teamSide, matchPlayersTable.id);
 
-    res.json(rows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null)));
+    // D-04: Apply per-player RSO opt-in filtering for non-participant scrim viewers
+    let matchPlayers = rows.map((r) => formatMatchPlayer(r.mp, r.playerRiotId ?? null));
+    const isPublicScrimNonParticipant =
+      match.matchType !== "ranked_tournament" &&
+      match.matchType !== "event" &&
+      !isParticipant &&
+      !isAdmin;
+    if (isPublicScrimNonParticipant) {
+      matchPlayers = await filterMatchPlayersByOptIn(matchPlayers, isParticipant);
+    }
+
+    res.json(matchPlayers);
   } catch (err) {
     console.error("[matches]", err);
     res.status(500).json({ error: "Failed to fetch match players" });
@@ -727,18 +713,13 @@ router.get("/:id/replay", async (req, res) => {
       return;
     }
 
-    if (!isVisible(match) && !req.session.adminId) {
-      const playerId = req.session.playerId;
-      if (!playerId) {
-        res.status(403).json({ error: "Match is not publicly visible yet" });
-        return;
-      }
-      // Use team_members (not match_players) — coaches/bench can download (#9)
-      const isMember = await isMemberOfMatch(Number(playerId), match);
-      if (!isMember) {
-        res.status(403).json({ error: "Match is not publicly visible yet" });
-        return;
-      }
+    // Visibility gate: uses shared privacyGate.ts helpers (D-14, D-15)
+    const isAdmin = !!req.session.adminId;
+    const pid = req.session.playerId ? Number(req.session.playerId) : null;
+    const { canSeeStats } = await isMatchVisibleTo(match, pid, isAdmin);
+    if (!canSeeStats) {
+      res.status(403).json({ error: "Match is not publicly visible yet" });
+      return;
     }
 
     const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
