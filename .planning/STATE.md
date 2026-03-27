@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-27T07:11:32.421Z"
-last_activity: 2026-03-27 -- Completed privacyGate.ts + matches.ts migration
+status: verifying
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-27T07:20:26.014Z"
+last_activity: 2026-03-27
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 80
 ---
 
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 Phase: 02 (privacy-gates) — EXECUTING
 Plan: 2 of 2
-Status: Completed Plan 02-01, executing Plan 02-02
-Last activity: 2026-03-27 -- Completed privacyGate.ts + matches.ts migration
+Status: Phase complete — ready for verification
+Last activity: 2026-03-27
 
 Progress: [████████░░] 80%
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 80%
 
 *Updated after each plan completion*
 | Phase 02 P01 | 7m | 2 tasks | 2 files |
+| Phase 02 P02 | 4m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Redacted response uses isRedacted flag not _private (D-02)
 - [Phase 02]: visibleAfter = null means PRIVATE not 7-day default (D-11)
 - [Phase 02]: Per-player RSO opt-in filtering for public scrims (D-04)
+- [Phase 02]: GET /players uses rsoOptIn filter with admin bypass via .where(undefined) Drizzle pattern
+- [Phase 02]: Private profile response returns isPrivate: true (not 403) with team memberships
+- [Phase 02]: POV VODs (player-pov/team-pov) filtered by individual player rsoOptIn in both list and detail
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T07:11:23.763Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-27T07:20:26.009Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

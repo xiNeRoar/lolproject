@@ -49,7 +49,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md -- Create privacyGate.ts shared helpers + enforce visibility on match endpoints
-- [ ] 02-02-PLAN.md -- Player list/profile rsoOptIn filter + VOD visibility bug fixes
+- [x] 02-02-PLAN.md -- Player list/profile rsoOptIn filter + VOD visibility bug fixes
 
 ### Phase 3: API Contract & Performance
 **Goal**: OpenAPI spec matches all actual routes and the players endpoint responds without N+1 queries
