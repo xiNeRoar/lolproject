@@ -45,7 +45,7 @@ Plans:
   3. GET /players omits any player whose rsoOptIn is false -- they do not appear in search results
   4. A player profile with profileVisibility=private returns 403 to non-participants and a full profile to the player themselves
   5. VOD endpoints follow match visibility -- scrims do not auto-publish after 7 days; the vods.ts time-based leak is eliminated
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
 - [x] 02-01-PLAN.md -- Create privacyGate.ts shared helpers + enforce visibility on match endpoints
@@ -59,7 +59,12 @@ Plans:
   1. GET /players with 50+ players executes a constant number of SQL queries (no per-player lookups)
   2. OpenAPI spec documents all auth endpoints (/auth/discord, /auth/rso, /auth/connect) with correct request/response schemas
   3. Running codegen after spec update produces zero type errors in generated frontend hooks
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md -- Shared formatMatch extraction + submitRofl ELO guard + matchRecorder FOR UPDATE
+- [ ] 03-02-PLAN.md -- GET /players N+1 fix with batch queries + GET /matches SQL pagination
+- [ ] 03-03-PLAN.md -- Full OpenAPI spec alignment + Orval codegen
 
 ## Progress
 
@@ -69,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Schema Sync & Auth Hardening | 3/3 | Complete | - |
-| 2. Privacy Gates | 1/2 | In Progress|  |
-| 3. API Contract & Performance | 0/0 | Not started | - |
+| 2. Privacy Gates | 2/2 | Complete |  |
+| 3. API Contract & Performance | 0/3 | Not started | - |
