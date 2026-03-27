@@ -203,46 +203,101 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
 // ── Routes ───────────────────────────────────────────────────
 
 // GET /players — list all players, enriched with team + stats (Issue #20)
+// D-01: Batch inArray queries instead of per-player loops (N+1 fix)
+// D-02: LIMIT/OFFSET pagination
 // D-06: Non-admin requests only see players with rsoOptIn = true
 router.get("/", async (req, res) => {
   try {
     const isAdmin = !!req.session?.adminId;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
+    const rsoFilter = isAdmin ? undefined : eq(playersTable.rsoOptIn, true);
+
+    // Count query
+    const [countResult] = await db.select({ total: count() }).from(playersTable).where(rsoFilter);
+    const total = Number(countResult?.total ?? 0);
+
+    if (total === 0) {
+      res.json({ data: [], total: 0, page, totalPages: 0 });
+      return;
+    }
+
+    // Paginated player query
     const players = await db
       .select()
       .from(playersTable)
-      .where(isAdmin ? undefined : eq(playersTable.rsoOptIn, true))
-      .orderBy(playersTable.riotId);
+      .where(rsoFilter)
+      .orderBy(playersTable.riotId)
+      .limit(limit)
+      .offset(offset);
 
-    const enriched = await Promise.all(players.map(async (p) => {
-      const [member] = await db
-        .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag })
-        .from(teamMembersTable)
-        .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
-        .where(and(eq(teamMembersTable.playerId, p.id), eq(teamMembersTable.status, "active")))
-        .orderBy(desc(teamMembersTable.joinedAt))
-        .limit(1);
+    const playerIds = players.map((p) => p.id);
 
-      const [stats] = await db
-        .select({
-          totalGames: count(matchPlayersTable.id),
-          wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} = true THEN 1 ELSE 0 END`),
-        })
-        .from(matchPlayersTable)
-        .where(eq(matchPlayersTable.playerId, p.id));
+    // Batch team memberships (1 query for all players)
+    const teamRows = playerIds.length > 0
+      ? await db
+          .select({
+            playerId: teamMembersTable.playerId,
+            teamId: teamMembersTable.teamId,
+            teamName: teamsTable.name,
+            teamTag: teamsTable.tag,
+            joinedAt: teamMembersTable.joinedAt,
+          })
+          .from(teamMembersTable)
+          .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+          .where(and(
+            inArray(teamMembersTable.playerId, playerIds),
+            eq(teamMembersTable.status, "active")
+          ))
+          .orderBy(desc(teamMembersTable.joinedAt))
+      : [];
 
-      const totalGames = Number(stats?.totalGames ?? 0);
-      const wins = Number(stats?.wins ?? 0);
-      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : null;
+    // Build map: playerId -> most recent active team
+    const teamMap: Record<number, { teamId: number; teamName: string; teamTag: string }> = {};
+    for (const row of teamRows) {
+      if (!teamMap[row.playerId]) {
+        teamMap[row.playerId] = { teamId: row.teamId, teamName: row.teamName, teamTag: row.teamTag };
+      }
+    }
 
+    // Batch stats (1 query for all players)
+    const statsRows = playerIds.length > 0
+      ? await db
+          .select({
+            playerId: matchPlayersTable.playerId,
+            totalGames: count(matchPlayersTable.id),
+            wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} = true THEN 1 ELSE 0 END`),
+          })
+          .from(matchPlayersTable)
+          .where(inArray(matchPlayersTable.playerId, playerIds))
+          .groupBy(matchPlayersTable.playerId)
+      : [];
+
+    const statsMap: Record<number, { totalGames: number; wins: number }> = {};
+    for (const row of statsRows) {
+      if (row.playerId != null) {
+        statsMap[row.playerId] = {
+          totalGames: Number(row.totalGames),
+          wins: Number(row.wins ?? 0),
+        };
+      }
+    }
+
+    // Merge results
+    const data = players.map((p) => {
+      const stats = statsMap[p.id] ?? { totalGames: 0, wins: 0 };
+      const winRate = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : null;
       return {
         ...formatPlayer(p),
-        primaryTeam: member ? { teamId: member.teamId, teamName: member.teamName, teamTag: member.teamTag } : null,
-        totalGames,
+        primaryTeam: teamMap[p.id] ?? null,
+        totalGames: stats.totalGames,
         winRate,
       };
-    }));
+    });
 
-    res.json(enriched);
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch players" });
   }

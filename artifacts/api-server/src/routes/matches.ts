@@ -12,7 +12,7 @@ import {
   eloHistoryTable,
   playersTable,
 } from "@workspace/db";
-import { eq, desc, and, inArray, or, count, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, or, count, sql, type SQL } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { calculateElo } from "../lib/elo";
 import { checkMatchBadges, checkClimberBadge } from "../lib/badges";
@@ -171,59 +171,95 @@ async function applyTeamElo(
 
 // ── Routes ───────────────────────────────────────────────────
 
-// GET /matches — list matches with optional filters
+// GET /matches — list matches with SQL pagination + filters (D-08)
 router.get("/", async (req, res) => {
   try {
+    // Step 1: Parse pagination + filter params
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
     const eventId = req.query.eventId ? parseInt(req.query.eventId as string) : null;
     const seasonId = req.query.seasonId ? parseInt(req.query.seasonId as string) : null;
     const teamId = req.query.teamId ? parseInt(req.query.teamId as string) : null;
-    const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null; // #110
+    const playerId = req.query.playerId ? parseInt(req.query.playerId as string) : null;
+    const format = req.query.format as string | undefined;
     const search = req.query.search as string | undefined;
 
-    let rows = await db
+    // Step 2: Build SQL WHERE conditions
+    const conditions: SQL[] = [];
+    if (eventId) conditions.push(eq(matchesTable.eventId, eventId));
+    if (seasonId) conditions.push(eq(matchesTable.seasonId, seasonId));
+    if (format) conditions.push(eq(matchesTable.format, format));
+    if (teamId) {
+      conditions.push(
+        or(eq(matchesTable.teamAId, teamId), eq(matchesTable.teamBId, teamId))!
+      );
+    }
+    if (playerId) {
+      const playerMatchIds = (await db
+        .select({ matchId: matchPlayersTable.matchId })
+        .from(matchPlayersTable)
+        .where(eq(matchPlayersTable.playerId, playerId))
+      ).map((r) => r.matchId);
+      if (playerMatchIds.length > 0) {
+        conditions.push(inArray(matchesTable.id, playerMatchIds));
+      } else {
+        res.json({ data: [], total: 0, page, totalPages: 0 });
+        return;
+      }
+    }
+    if (search) {
+      const searchPattern = `%${search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${matchesTable.matchTitle}) LIKE ${searchPattern}`,
+          sql`LOWER(${matchesTable.sideAName}) LIKE ${searchPattern}`,
+          sql`LOWER(${matchesTable.sideBName}) LIKE ${searchPattern}`,
+        )!
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Step 3: Count query
+    const [countResult] = await db.select({ total: count() }).from(matchesTable)
+      .where(whereClause);
+    const total = Number(countResult?.total ?? 0);
+
+    if (total === 0) {
+      res.json({ data: [], total: 0, page, totalPages: 0 });
+      return;
+    }
+
+    // Step 4: Paginated data query with JOIN
+    const rows = await db
       .select({
         match: matchesTable,
-        teamAName: { name: teamsTable.name, tag: teamsTable.tag },
         eventTitle: eventsTable.title,
       })
       .from(matchesTable)
-      .leftJoin(teamsTable, eq(matchesTable.teamAId, teamsTable.id))
       .leftJoin(eventsTable, eq(matchesTable.eventId, eventsTable.id))
-      .orderBy(desc(matchesTable.createdAt));
+      .where(whereClause)
+      .orderBy(desc(matchesTable.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    // In-memory filters for teamB and search (avoids complex joins)
-    let filtered = rows;
-    if (eventId) filtered = filtered.filter((r) => r.match.eventId === eventId);
-    if (seasonId) filtered = filtered.filter((r) => r.match.seasonId === seasonId);
-    if (teamId)
-      filtered = filtered.filter(
-        (r) => r.match.teamAId === teamId || r.match.teamBId === teamId
-      );
-    if (playerId) {
-      const playerMatchIds = new Set(
-        (await db
-          .select({ matchId: matchPlayersTable.matchId })
-          .from(matchPlayersTable)
-          .where(eq(matchPlayersTable.playerId, playerId))
-        ).map((r) => r.matchId)
-      );
-      filtered = filtered.filter((r) => playerMatchIds.has(r.match.id));
-    }
-    if (search) {
-      const s = search.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.match.matchTitle.toLowerCase().includes(s) ||
-          r.match.sideAName.toLowerCase().includes(s) ||
-          r.match.sideBName.toLowerCase().includes(s)
-      );
+    // Fetch Team A + B names in batch
+    const allTeamIds = [...new Set(
+      rows.flatMap((r) => [r.match.teamAId, r.match.teamBId].filter(Boolean))
+    )] as number[];
+    const teamMap: Record<number, { name: string; tag: string }> = {};
+    if (allTeamIds.length > 0) {
+      const teamRows = await db
+        .select({ id: teamsTable.id, name: teamsTable.name, tag: teamsTable.tag })
+        .from(teamsTable)
+        .where(inArray(teamsTable.id, allTeamIds));
+      for (const t of teamRows) teamMap[t.id] = { name: t.name, tag: t.tag };
     }
 
-    // Fetch Team B names separately (inArray avoids complex self-join on teams)
-    const teamBIds = [...new Set(filtered.map((r) => r.match.teamBId).filter(Boolean))] as number[];
-
-    // Fetch vodCount per match (#118)
-    const matchIds = filtered.map((r) => r.match.id);
+    // Fetch vodCount per match
+    const matchIds = rows.map((r) => r.match.id);
     const vodCountMap: Record<number, number> = {};
     if (matchIds.length > 0) {
       const vodCounts = await db
@@ -235,36 +271,28 @@ router.get("/", async (req, res) => {
         if (vc.matchId != null) vodCountMap[vc.matchId] = Number(vc.cnt);
       }
     }
-    const teamBMap: Record<number, { name: string; tag: string }> = {};
-    if (teamBIds.length > 0) {
-      const teamBRows = await db
-        .select()
-        .from(teamsTable)
-        .where(inArray(teamsTable.id, teamBIds));
-      for (const t of teamBRows) teamBMap[t.id] = { name: t.name, tag: t.tag };
-    }
 
-    // Strip sensitive fields from non-admin responses (Pitfall 5)
+    // Step 5: Format + respond with pagination wrapper
     const isAdmin = !!req.session.adminId;
-    res.json(
-      filtered.map((r) => {
-        const formatted = {
-          ...formatMatch(r.match, {
-            teamAName: r.teamAName?.name ?? null,
-            teamATag: r.teamAName?.tag ?? null,
-            teamBName: teamBMap[r.match.teamBId ?? -1]?.name ?? null,
-            teamBTag: teamBMap[r.match.teamBId ?? -1]?.tag ?? null,
-            eventTitle: r.eventTitle ?? null,
-          }),
-          vodCount: vodCountMap[r.match.id] ?? 0,
-        };
-        if (!isAdmin) {
-          delete formatted.roflFilePath;
-          delete formatted.visibleAfter;
-        }
-        return formatted;
-      })
-    );
+    const data = rows.map((r) => {
+      const formatted = {
+        ...formatMatch(r.match, {
+          teamAName: teamMap[r.match.teamAId ?? -1]?.name ?? null,
+          teamATag: teamMap[r.match.teamAId ?? -1]?.tag ?? null,
+          teamBName: teamMap[r.match.teamBId ?? -1]?.name ?? null,
+          teamBTag: teamMap[r.match.teamBId ?? -1]?.tag ?? null,
+          eventTitle: r.eventTitle ?? null,
+        }),
+        vodCount: vodCountMap[r.match.id] ?? 0,
+      };
+      if (!isAdmin) {
+        delete formatted.roflFilePath;
+        delete formatted.visibleAfter;
+      }
+      return formatted;
+    });
+
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch matches" });
   }
