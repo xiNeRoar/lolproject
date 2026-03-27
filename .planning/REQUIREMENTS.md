@@ -33,8 +33,8 @@
 
 ### API Contract
 
-- [ ] **SPEC-01**: OpenAPI spec updated for auth endpoints (/auth/discord, /auth/rso, /auth/connect actual signatures)
-- [ ] **SPEC-02**: OpenAPI codegen run after all route changes — frontend hooks updated
+- [x] **SPEC-01**: OpenAPI spec updated for auth endpoints (/auth/discord, /auth/rso, /auth/connect actual signatures)
+- [x] **SPEC-02**: OpenAPI codegen run after all route changes — frontend hooks updated
 
 ## v2 Requirements
 
@@ -81,8 +81,8 @@
 | PRIV-05 | Phase 2 | Complete |
 | PRIV-06 | Phase 2 | Complete |
 | PERF-01 | Phase 3 | Complete |
-| SPEC-01 | Phase 3 | Pending |
-| SPEC-02 | Phase 3 | Pending |
+| SPEC-01 | Phase 3 | Complete |
+| SPEC-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total

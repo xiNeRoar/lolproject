@@ -64,7 +64,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md -- Shared formatMatch extraction + submitRofl ELO guard + matchRecorder FOR UPDATE
 - [x] 03-02-PLAN.md -- GET /players N+1 fix with batch queries + GET /matches SQL pagination
-- [ ] 03-03-PLAN.md -- Full OpenAPI spec alignment + Orval codegen
+- [x] 03-03-PLAN.md -- Full OpenAPI spec alignment + Orval codegen
 
 ## Progress
 
