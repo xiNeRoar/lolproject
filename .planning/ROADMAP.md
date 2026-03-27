@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Schema Sync & Auth Hardening** - Fix missing columns and close security vulnerabilities before any production RSO traffic
 - [x] **Phase 2: Privacy Gates** - Enforce 3-layer visibility model across all match, player, and VOD endpoints
 - [x] **Phase 3: API Contract & Performance** - Eliminate N+1 queries and align OpenAPI spec with actual routes
-- [ ] **Phase 4: Spec Alignment Cleanup** - Align formatMatch output with OpenAPI spec, fix stale comments, fill missing process artifact
+- [x] **Phase 4: Spec Alignment Cleanup** - Align formatMatch output with OpenAPI spec, fix stale comments, fill missing process artifact
 
 ## Phase Details
 
@@ -81,7 +81,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md -- formatMatch/OpenAPI alignment, stale comment fix, matchRecorder explicit matchType, 01-03-SUMMARY.md
+- [x] 04-01-PLAN.md -- formatMatch/OpenAPI alignment, stale comment fix, matchRecorder explicit matchType, 01-03-SUMMARY.md
 
 ## Progress
 
@@ -93,4 +93,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Schema Sync & Auth Hardening | 3/3 | Complete | 2026-03-26 |
 | 2. Privacy Gates | 2/2 | Complete | 2026-03-27 |
 | 3. API Contract & Performance | 3/3 | Complete | 2026-03-27 |
-| 4. Spec Alignment Cleanup | 0/1 | Not started | - |
+| 4. Spec Alignment Cleanup | 1/1 | Complete | 2026-03-27 |

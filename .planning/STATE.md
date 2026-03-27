@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-03-27T12:53:42.896Z"
+status: complete
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-27T18:26:02Z"
 last_activity: 2026-03-27
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 80
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every match submitted via .rofl produces a verified, permanent competitive record that cannot be faked.
-**Current focus:** Phase 03 — api-contract-performance
+**Current focus:** Phase 04 — spec-alignment-cleanup (complete)
 
 ## Current Position
 
-Phase: 03
-Plan: Not started
-Status: Ready to execute
+Phase: 04
+Plan: 01 (complete)
+Status: All phases complete
 Last activity: 2026-03-27
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [████████░░] 80%
 | Phase 02 P02 | 4m | 2 tasks | 2 files |
 | Phase 03 P02 | 5m | 2 tasks | 2 files |
 | Phase 03 P03 | 13m | 2 tasks | 100 files |
+| Phase 04 P01 | 3m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,10 @@ Recent decisions affecting current work:
 - [Phase 03]: Matches GET / filters (eventId, seasonId, playerId, format, search) moved from JS to SQL WHERE with conditions builder pattern
 - [Phase 03]: Player schema reused as PaginatedPlayers data item (already has primaryTeam/totalGames/winRate from 03-02)
 - [Phase 03]: MatchListItem extends Match via allOf with vodCount for list endpoint
+- [Phase 04]: eventSlug moved from formatMatch base to detail endpoint (MatchDetail-only per OpenAPI)
+- [Phase 04]: vodCount defaults to 0 in formatMatch; list endpoint overrides with real count
+- [Phase 04]: MatchListItem simplified to $ref Match (vodCount duplication removed)
+- [Phase 04]: Codegen skipped (node/pnpm not available); must run manually before deploy
 
 ### Pending Todos
 
@@ -97,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T12:46:35.568Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-03-27T18:26:02Z
+Stopped at: Completed 04-01-PLAN.md (all phases complete)
 Resume file: None
