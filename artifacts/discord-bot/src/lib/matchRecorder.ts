@@ -118,10 +118,11 @@ export async function recordMatch(input: RecordMatchInput): Promise<number> {
     // Update wins/losses + lastMatchAt (v3.1: no ELO for scrims)
     if (sideA.teamId && sideB.teamId) {
       const now = new Date();
+      // FOR UPDATE: prevent lost W/L updates from concurrent submissions (D-09)
       const [teamARow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses })
-        .from(teamsTable).where(eq(teamsTable.id, sideA.teamId));
+        .from(teamsTable).where(eq(teamsTable.id, sideA.teamId)).for("update");
       const [teamBRow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses })
-        .from(teamsTable).where(eq(teamsTable.id, sideB.teamId));
+        .from(teamsTable).where(eq(teamsTable.id, sideB.teamId)).for("update");
 
       await tx.update(teamsTable).set({
         wins: blueWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),

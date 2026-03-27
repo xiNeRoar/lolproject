@@ -307,31 +307,46 @@ router.post(
           }))
         );
 
-        if (sideA.teamId && sideB.teamId && eloDeltas) {
+        // W/L counter updates always run when both teams identified
+        if (sideA.teamId && sideB.teamId) {
           const now = new Date();
-          const [teamARow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId));
-          const [teamBRow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId));
+          // FOR UPDATE: prevent lost W/L updates from concurrent submissions (D-09)
+          const [teamARow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId)).for("update");
+          const [teamBRow] = await tx.select({ wins: teamsTable.wins, losses: teamsTable.losses }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId)).for("update");
 
           await tx.update(teamsTable).set({
-            teamElo: eloDeltas.teamAAfter,
-            peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
             wins: blueWon ? (teamARow?.wins ?? 0) + 1 : (teamARow?.wins ?? 0),
             losses: !blueWon ? (teamARow?.losses ?? 0) + 1 : (teamARow?.losses ?? 0),
             lastMatchAt: now, updatedAt: now,
           }).where(eq(teamsTable.id, sideA.teamId));
 
           await tx.update(teamsTable).set({
-            teamElo: eloDeltas.teamBAfter,
-            peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
             wins: !blueWon ? (teamBRow?.wins ?? 0) + 1 : (teamBRow?.wins ?? 0),
             losses: blueWon ? (teamBRow?.losses ?? 0) + 1 : (teamBRow?.losses ?? 0),
             lastMatchAt: now, updatedAt: now,
           }).where(eq(teamsTable.id, sideB.teamId));
 
-          await tx.insert(eloHistoryTable).values([
-            { teamId: sideA.teamId, elo: eloDeltas.teamAAfter, delta: eloDeltas.teamAAfter - eloDeltas.teamABefore, reason: "match", matchId },
-            { teamId: sideB.teamId, elo: eloDeltas.teamBAfter, delta: eloDeltas.teamBAfter - eloDeltas.teamBBefore, reason: "match", matchId },
-          ]);
+          // ELO only for tournament/event matches (PRD v3.1 S8, D-06)
+          // submitRofl always creates scrims (resultSource "rofl_parse", matchType "scrim")
+          // so eloEligible is always false -- but the guard is required for correctness
+          const resolvedMatchType = "scrim"; // hardcoded -- submit-rofl is always scrim
+          const eloEligible = resolvedMatchType === "ranked_tournament" || resolvedMatchType === "event";
+          if (eloEligible && eloDeltas) {
+            await tx.update(teamsTable).set({
+              teamElo: eloDeltas.teamAAfter,
+              peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
+            }).where(eq(teamsTable.id, sideA.teamId));
+
+            await tx.update(teamsTable).set({
+              teamElo: eloDeltas.teamBAfter,
+              peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
+            }).where(eq(teamsTable.id, sideB.teamId));
+
+            await tx.insert(eloHistoryTable).values([
+              { teamId: sideA.teamId, elo: eloDeltas.teamAAfter, delta: eloDeltas.teamAAfter - eloDeltas.teamABefore, reason: "match", matchId },
+              { teamId: sideB.teamId, elo: eloDeltas.teamBAfter, delta: eloDeltas.teamBAfter - eloDeltas.teamBBefore, reason: "match", matchId },
+            ]);
+          }
         }
 
         // Notifications for known players
