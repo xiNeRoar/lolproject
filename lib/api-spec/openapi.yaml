@@ -153,6 +153,87 @@ paths:
 
   # ── Player Auth ─────────────────────────────────────────────
 
+  # ── Auth ────────────────────────────────────────────────────
+
+  /auth/discord:
+    get:
+      operationId: authDiscord
+      tags: [auth]
+      summary: Initiate Discord OAuth flow
+      responses:
+        "302":
+          description: Redirect to discord.com/api/oauth2/authorize
+
+  /auth/discord/callback:
+    get:
+      operationId: authDiscordCallback
+      tags: [auth]
+      summary: Discord OAuth callback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to /dashboard (existing player) or /register (new)
+        "403":
+          description: Invalid OAuth state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/connect/{token}:
+    get:
+      operationId: authConnectToken
+      tags: [auth]
+      summary: Bot /connect flow -- validate token and redirect to RSO
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to RSO OAuth or error page
+
+  /auth/rso:
+    get:
+      operationId: authRso
+      tags: [auth]
+      summary: Initiate RSO OAuth flow (website-only)
+      responses:
+        "302":
+          description: Redirect to auth.riotgames.com
+
+  /auth/rso/callback:
+    get:
+      operationId: authRsoCallback
+      tags: [auth]
+      summary: RSO OAuth callback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to / on success or error page on failure
+
   /auth/me:
     get:
       operationId: getAuthMe
@@ -166,72 +247,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthMeResponse"
 
-  /auth/rso/authorize:
-    get:
-      operationId: getRsoAuthorize
-      tags: [auth]
-      summary: "v3.1: Redirect to Riot RSO OAuth login"
-      description: "Initiates RSO OAuth flow. If token query param is present (from bot /connect), links discordId. Otherwise requires existing Discord OAuth session."
-      parameters:
-        - name: token
-          in: query
-          schema:
-            type: string
-          description: "One-time token from bot /connect command (optional)"
-      responses:
-        "302":
-          description: Redirect to auth.riotgames.com
-
-  /auth/rso/callback:
-    get:
-      operationId: getRsoCallback
-      tags: [auth]
-      summary: "v3.1: RSO OAuth callback"
-      description: "Riot redirects here after player authenticates. Exchanges code for PUUID, links to player record."
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: state
-          in: query
-          schema:
-            type: string
-      responses:
-        "302":
-          description: Redirect to success page
-
-  /auth/connect:
+  /auth/logout:
     post:
-      operationId: postAuthConnect
+      operationId: authLogout
       tags: [auth]
-      summary: "v3.1: Exchange bot /connect token for auth session"
-      description: "Bot generates token via /connect command. Website calls this to validate token and begin RSO flow."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [token]
-              properties:
-                token:
-                  type: string
+      summary: Destroy player session
       responses:
         "200":
-          description: Token valid, proceed with RSO
+          description: Logged out
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  discordId:
-                    type: string
-                  expiresAt:
-                    type: string
-        "400":
-          description: Token expired or invalid
+                  success:
+                    type: boolean
 
   # ── Teams ───────────────────────────────────────────────────
 
@@ -655,16 +685,27 @@ paths:
     get:
       operationId: listPlayers
       tags: [players]
-      summary: List all players (admin)
+      summary: List players with pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Items per page (max 100)
       responses:
         "200":
-          description: List of players
+          description: Paginated list of players
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Player"
+                $ref: "#/components/schemas/PaginatedPlayers"
     post:
       operationId: createPlayer
       tags: [players]
@@ -955,8 +996,20 @@ paths:
     get:
       operationId: listMatches
       tags: [matches]
-      summary: List matches
+      summary: List matches with pagination
       parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Items per page (max 100)
         - name: eventId
           in: query
           schema:
@@ -974,19 +1027,21 @@ paths:
           schema:
             type: integer
           description: Filter to matches where player participated
+        - name: format
+          in: query
+          schema:
+            type: string
         - name: search
           in: query
           schema:
             type: string
       responses:
         "200":
-          description: List of matches
+          description: Paginated list of matches
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Match"
+                $ref: "#/components/schemas/PaginatedMatches"
     post:
       operationId: createMatch
       tags: [matches]
@@ -2627,6 +2682,9 @@ components:
           type: string
         updatedAt:
           type: string
+        isPrivate:
+          type: boolean
+          description: "true when player profile is private (only id, riotId, teams returned)"
       required: [id, riotId, discordUsername, isActive, teams, aggregateStats, recentMatches, vods, createdAt, updatedAt]
 
     PlayerTeamEntry:
@@ -2848,6 +2906,9 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/VodEntry"
+            isRedacted:
+              type: boolean
+              description: "true when scrim match is redacted for non-participants"
 
     CreateMatchRequest:
       type: object
@@ -2976,6 +3037,9 @@ components:
           nullable: true
         createdAt:
           type: string
+        _masked:
+          type: boolean
+          description: "true when player has not opted in via RSO (stats hidden for non-participants)"
       required: [id, matchId, teamSide, kills, deaths, assists, cs, neutralCs, gold, damageToChampions, visionScore, win, createdAt]
 
     UpdateVisibilityRequest:
@@ -3656,3 +3720,45 @@ components:
           type: string
           nullable: true
       required: [reason]
+
+    # ── Paginated Response Wrappers ──────────────────────────
+
+    PaginatedPlayers:
+      type: object
+      required: [data, total, page, totalPages]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+
+    PaginatedMatches:
+      type: object
+      required: [data, total, page, totalPages]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchListItem"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+
+    MatchListItem:
+      description: Match list item with team names and VOD count (superset of Match fields)
+      allOf:
+        - $ref: "#/components/schemas/Match"
+        - type: object
+          properties:
+            vodCount:
+              type: integer
+              description: Number of VODs attached to this match
