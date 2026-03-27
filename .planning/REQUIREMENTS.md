@@ -20,12 +20,12 @@
 
 ### Privacy Gates (PRD §7 — 3-Layer Model)
 
-- [ ] **PRIV-01**: Match detail API returns Team A vs B + score only for non-participant scrims (Layer 1)
-- [ ] **PRIV-02**: Tournament/event matches bypass visibility gate — always public (Layer 3)
+- [x] **PRIV-01**: Match detail API returns Team A vs B + score only for non-participant scrims (Layer 1)
+- [x] **PRIV-02**: Tournament/event matches bypass visibility gate — always public (Layer 3)
 - [ ] **PRIV-03**: Player search API filters by rsoOptIn — non-opted players invisible
 - [ ] **PRIV-04**: Player profile API respects profileVisibility setting (private/public/participants-only)
 - [ ] **PRIV-05**: VOD visibility follows match visibility — fix 7-day auto-public bug in vods.ts
-- [ ] **PRIV-06**: Visibility logic consolidated into shared helper (eliminate divergent implementations)
+- [x] **PRIV-06**: Visibility logic consolidated into shared helper (eliminate divergent implementations)
 
 ### API Performance
 
@@ -74,12 +74,12 @@
 | AUTH-03 | Phase 1 | Pending |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
-| PRIV-01 | Phase 2 | Pending |
-| PRIV-02 | Phase 2 | Pending |
+| PRIV-01 | Phase 2 | Complete |
+| PRIV-02 | Phase 2 | Complete |
 | PRIV-03 | Phase 2 | Pending |
 | PRIV-04 | Phase 2 | Pending |
 | PRIV-05 | Phase 2 | Pending |
-| PRIV-06 | Phase 2 | Pending |
+| PRIV-06 | Phase 2 | Complete |
 | PERF-01 | Phase 3 | Pending |
 | SPEC-01 | Phase 3 | Pending |
 | SPEC-02 | Phase 3 | Pending |
