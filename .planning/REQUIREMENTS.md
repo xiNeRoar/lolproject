@@ -7,14 +7,14 @@
 
 ### Schema & Data Integrity
 
-- [ ] **SCHM-01**: Database schema synced with Drizzle ORM — all columns exist in production (match_type, tournament_code, etc.)
-- [ ] **SCHM-02**: eloHistory.playerId decision resolved — either restore column or update SCHEMA_CONTRACT.md
+- [x] **SCHM-01**: Database schema synced with Drizzle ORM — all columns exist in production (match_type, tournament_code, etc.)
+- [x] **SCHM-02**: eloHistory.playerId decision resolved — either restore column or update SCHEMA_CONTRACT.md
 
 ### Auth & Security
 
-- [ ] **AUTH-01**: RSO OAuth state parameter on both Discord and RSO flows (prevent account hijack)
+- [x] **AUTH-01**: RSO OAuth state parameter on both Discord and RSO flows (prevent account hijack)
 - [x] **AUTH-02**: CORS restricted to production domain (not wildcard with credentials)
-- [ ] **AUTH-03**: RSO token storage resolved — keep schema columns but don't populate tokens in auth flow (only persist PUUID). Add code comment linking to Tournament API future requirement.
+- [x] **AUTH-03**: RSO token storage resolved — keep schema columns but don't populate tokens in auth flow (only persist PUUID). Add code comment linking to Tournament API future requirement.
 - [x] **AUTH-04**: Session secret enforced as non-default in production
 - [x] **AUTH-05**: Match visibility endpoint rejects spoofed playerId in request body
 
@@ -67,11 +67,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHM-01 | Phase 1 | Pending |
-| SCHM-02 | Phase 1 | Pending |
-| AUTH-01 | Phase 1 | Pending |
+| SCHM-01 | Phase 1 | Complete (deploy confirmation pending) |
+| SCHM-02 | Phase 1 | Complete |
+| AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
 | PRIV-01 | Phase 2 | Complete |
@@ -82,7 +82,7 @@
 | PRIV-06 | Phase 2 | Complete |
 | PERF-01 | Phase 3 | Complete |
 | SPEC-01 | Phase 3 | Complete |
-| SPEC-02 | Phase 3 | Complete |
+| SPEC-02 | Phase 3 + Phase 4 | Pending (gap closure) |
 
 **Coverage:**
 - v1 requirements: 16 total

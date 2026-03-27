@@ -12,9 +12,10 @@ VCLoL's backend is functional but has security gaps, missing schema columns, and
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Schema Sync & Auth Hardening** - Fix missing columns and close security vulnerabilities before any production RSO traffic
-- [ ] **Phase 2: Privacy Gates** - Enforce 3-layer visibility model across all match, player, and VOD endpoints
-- [ ] **Phase 3: API Contract & Performance** - Eliminate N+1 queries and align OpenAPI spec with actual routes
+- [x] **Phase 1: Schema Sync & Auth Hardening** - Fix missing columns and close security vulnerabilities before any production RSO traffic
+- [x] **Phase 2: Privacy Gates** - Enforce 3-layer visibility model across all match, player, and VOD endpoints
+- [x] **Phase 3: API Contract & Performance** - Eliminate N+1 queries and align OpenAPI spec with actual routes
+- [ ] **Phase 4: Spec Alignment Cleanup** - Align formatMatch output with OpenAPI spec, fix stale comments, fill missing process artifact
 
 ## Phase Details
 
@@ -66,13 +67,30 @@ Plans:
 - [x] 03-02-PLAN.md -- GET /players N+1 fix with batch queries + GET /matches SQL pagination
 - [x] 03-03-PLAN.md -- Full OpenAPI spec alignment + Orval codegen
 
+### Phase 4: Spec Alignment Cleanup
+**Goal**: formatMatch output matches OpenAPI spec exactly, stale comments updated, missing process artifact populated
+**Depends on**: Phase 3
+**Requirements**: SPEC-02 (partial gap closure)
+**Gap Closure**: Closes gaps from v3.1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. formatMatch outputs bestOf field matching OpenAPI Match schema
+  2. OpenAPI Match schema and formatMatch agree on which fields are in base vs detail
+  3. Schema comment at matches.ts accurately reflects D-11 (null = private, not 7-day default)
+  4. Bot matchRecorder explicitly sets matchType instead of relying on schema default
+  5. 01-03-SUMMARY.md is populated with AUTH-01 and AUTH-03 work
+**Plans:** 0 plans (not yet planned)
+
+Plans:
+- (none yet)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema Sync & Auth Hardening | 3/3 | Complete | - |
-| 2. Privacy Gates | 2/2 | Complete |  |
-| 3. API Contract & Performance | 1/3 | In progress | - |
+| 1. Schema Sync & Auth Hardening | 3/3 | Complete | 2026-03-26 |
+| 2. Privacy Gates | 2/2 | Complete | 2026-03-27 |
+| 3. API Contract & Performance | 3/3 | Complete | 2026-03-27 |
+| 4. Spec Alignment Cleanup | 0/? | Not started | - |
