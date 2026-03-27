@@ -45,7 +45,11 @@ Plans:
   3. GET /players omits any player whose rsoOptIn is false -- they do not appear in search results
   4. A player profile with profileVisibility=private returns 403 to non-participants and a full profile to the player themselves
   5. VOD endpoints follow match visibility -- scrims do not auto-publish after 7 days; the vods.ts time-based leak is eliminated
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md -- Create privacyGate.ts shared helpers + enforce visibility on match endpoints
+- [ ] 02-02-PLAN.md -- Player list/profile rsoOptIn filter + VOD visibility bug fixes
 
 ### Phase 3: API Contract & Performance
 **Goal**: OpenAPI spec matches all actual routes and the players endpoint responds without N+1 queries
@@ -65,5 +69,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Schema Sync & Auth Hardening | 0/3 | Not started | - |
-| 2. Privacy Gates | 0/0 | Not started | - |
+| 2. Privacy Gates | 0/2 | Not started | - |
 | 3. API Contract & Performance | 0/0 | Not started | - |
