@@ -15,4 +15,6 @@ export type MatchDetail = Match & {
   bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
+  /** true when scrim match is redacted for non-participants */
+  isRedacted?: boolean;
 };

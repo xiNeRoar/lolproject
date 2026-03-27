@@ -22,7 +22,10 @@ import type {
   AdminLoginResponse,
   AdminMeResponse,
   AdminStats,
+  AuthDiscordCallbackParams,
+  AuthLogout200,
   AuthMeResponse,
+  AuthRsoCallbackParams,
   BulkSetMatchVisibility200,
   BulkSetMatchVisibilityBody,
   ClaimTeamForMatchBody,
@@ -43,8 +46,6 @@ import type {
   GetReplayQueueStats200,
   GetReplayStatus200,
   GetReplayStatusParams,
-  GetRsoAuthorizeParams,
-  GetRsoCallbackParams,
   GetTeamMatches200,
   GetTeamMatchesParams,
   GlobalSearch200,
@@ -54,6 +55,7 @@ import type {
   LadderSettings,
   ListAdminActions200Item,
   ListMatchesParams,
+  ListPlayersParams,
   ListRegistrationsParams,
   ListTeamsParams,
   ListVodsParams,
@@ -61,14 +63,14 @@ import type {
   MatchDetail,
   MatchPlayerEntry,
   Notification,
+  PaginatedMatches,
+  PaginatedPlayers,
   Player,
   PlayerBadge,
   PlayerBan,
   PlayerChampionStats,
   PlayerEventParticipation,
   PlayerProfile,
-  PostAuthConnect200,
-  PostAuthConnectBody,
   PostMatchesSubmitRofl201,
   RegisterPlayerRequest,
   RegisterTeamForEvent201,
@@ -561,6 +563,425 @@ export function useGetAdminStats<
 }
 
 /**
+ * @summary Initiate Discord OAuth flow
+ */
+export const getAuthDiscordUrl = () => {
+  return `/api/auth/discord`;
+};
+
+export const authDiscord = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getAuthDiscordUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthDiscordQueryKey = () => {
+  return [`/api/auth/discord`] as const;
+};
+
+export const getAuthDiscordQueryOptions = <
+  TData = Awaited<ReturnType<typeof authDiscord>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof authDiscord>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuthDiscordQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof authDiscord>>> = ({
+    signal,
+  }) => authDiscord({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof authDiscord>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthDiscordQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authDiscord>>
+>;
+export type AuthDiscordQueryError = ErrorType<void>;
+
+/**
+ * @summary Initiate Discord OAuth flow
+ */
+
+export function useAuthDiscord<
+  TData = Awaited<ReturnType<typeof authDiscord>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof authDiscord>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthDiscordQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Discord OAuth callback
+ */
+export const getAuthDiscordCallbackUrl = (
+  params: AuthDiscordCallbackParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/auth/discord/callback?${stringifiedParams}`
+    : `/api/auth/discord/callback`;
+};
+
+export const authDiscordCallback = async (
+  params: AuthDiscordCallbackParams,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getAuthDiscordCallbackUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthDiscordCallbackQueryKey = (
+  params?: AuthDiscordCallbackParams,
+) => {
+  return [`/api/auth/discord/callback`, ...(params ? [params] : [])] as const;
+};
+
+export const getAuthDiscordCallbackQueryOptions = <
+  TData = Awaited<ReturnType<typeof authDiscordCallback>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params: AuthDiscordCallbackParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authDiscordCallback>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAuthDiscordCallbackQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof authDiscordCallback>>
+  > = ({ signal }) =>
+    authDiscordCallback(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof authDiscordCallback>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthDiscordCallbackQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authDiscordCallback>>
+>;
+export type AuthDiscordCallbackQueryError = ErrorType<void | ErrorResponse>;
+
+/**
+ * @summary Discord OAuth callback
+ */
+
+export function useAuthDiscordCallback<
+  TData = Awaited<ReturnType<typeof authDiscordCallback>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params: AuthDiscordCallbackParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authDiscordCallback>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthDiscordCallbackQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Bot /connect flow -- validate token and redirect to RSO
+ */
+export const getAuthConnectTokenUrl = (token: string) => {
+  return `/api/auth/connect/${token}`;
+};
+
+export const authConnectToken = async (
+  token: string,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getAuthConnectTokenUrl(token), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthConnectTokenQueryKey = (token: string) => {
+  return [`/api/auth/connect/${token}`] as const;
+};
+
+export const getAuthConnectTokenQueryOptions = <
+  TData = Awaited<ReturnType<typeof authConnectToken>>,
+  TError = ErrorType<void>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authConnectToken>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuthConnectTokenQueryKey(token);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof authConnectToken>>
+  > = ({ signal }) => authConnectToken(token, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!token,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof authConnectToken>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthConnectTokenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authConnectToken>>
+>;
+export type AuthConnectTokenQueryError = ErrorType<void>;
+
+/**
+ * @summary Bot /connect flow -- validate token and redirect to RSO
+ */
+
+export function useAuthConnectToken<
+  TData = Awaited<ReturnType<typeof authConnectToken>>,
+  TError = ErrorType<void>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authConnectToken>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthConnectTokenQueryOptions(token, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Initiate RSO OAuth flow (website-only)
+ */
+export const getAuthRsoUrl = () => {
+  return `/api/auth/rso`;
+};
+
+export const authRso = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getAuthRsoUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthRsoQueryKey = () => {
+  return [`/api/auth/rso`] as const;
+};
+
+export const getAuthRsoQueryOptions = <
+  TData = Awaited<ReturnType<typeof authRso>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof authRso>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuthRsoQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof authRso>>> = ({
+    signal,
+  }) => authRso({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof authRso>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthRsoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authRso>>
+>;
+export type AuthRsoQueryError = ErrorType<void>;
+
+/**
+ * @summary Initiate RSO OAuth flow (website-only)
+ */
+
+export function useAuthRso<
+  TData = Awaited<ReturnType<typeof authRso>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof authRso>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthRsoQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary RSO OAuth callback
+ */
+export const getAuthRsoCallbackUrl = (params: AuthRsoCallbackParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/auth/rso/callback?${stringifiedParams}`
+    : `/api/auth/rso/callback`;
+};
+
+export const authRsoCallback = async (
+  params: AuthRsoCallbackParams,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getAuthRsoCallbackUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthRsoCallbackQueryKey = (params?: AuthRsoCallbackParams) => {
+  return [`/api/auth/rso/callback`, ...(params ? [params] : [])] as const;
+};
+
+export const getAuthRsoCallbackQueryOptions = <
+  TData = Awaited<ReturnType<typeof authRsoCallback>>,
+  TError = ErrorType<void>,
+>(
+  params: AuthRsoCallbackParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authRsoCallback>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuthRsoCallbackQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof authRsoCallback>>> = ({
+    signal,
+  }) => authRsoCallback(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof authRsoCallback>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthRsoCallbackQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authRsoCallback>>
+>;
+export type AuthRsoCallbackQueryError = ErrorType<void>;
+
+/**
+ * @summary RSO OAuth callback
+ */
+
+export function useAuthRsoCallback<
+  TData = Awaited<ReturnType<typeof authRsoCallback>>,
+  TError = ErrorType<void>,
+>(
+  params: AuthRsoCallbackParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof authRsoCallback>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthRsoCallbackQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get current player session
  */
 export const getGetAuthMeUrl = () => {
@@ -628,233 +1049,39 @@ export function useGetAuthMe<
 }
 
 /**
- * Initiates RSO OAuth flow. If token query param is present (from bot /connect), links discordId. Otherwise requires existing Discord OAuth session.
- * @summary v3.1: Redirect to Riot RSO OAuth login
+ * @summary Destroy player session
  */
-export const getGetRsoAuthorizeUrl = (params?: GetRsoAuthorizeParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/auth/rso/authorize?${stringifiedParams}`
-    : `/api/auth/rso/authorize`;
+export const getAuthLogoutUrl = () => {
+  return `/api/auth/logout`;
 };
 
-export const getRsoAuthorize = async (
-  params?: GetRsoAuthorizeParams,
+export const authLogout = async (
   options?: RequestInit,
-): Promise<unknown> => {
-  return customFetch<unknown>(getGetRsoAuthorizeUrl(params), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetRsoAuthorizeQueryKey = (params?: GetRsoAuthorizeParams) => {
-  return [`/api/auth/rso/authorize`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetRsoAuthorizeQueryOptions = <
-  TData = Awaited<ReturnType<typeof getRsoAuthorize>>,
-  TError = ErrorType<void>,
->(
-  params?: GetRsoAuthorizeParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getRsoAuthorize>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetRsoAuthorizeQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRsoAuthorize>>> = ({
-    signal,
-  }) => getRsoAuthorize(params, { signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getRsoAuthorize>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetRsoAuthorizeQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getRsoAuthorize>>
->;
-export type GetRsoAuthorizeQueryError = ErrorType<void>;
-
-/**
- * @summary v3.1: Redirect to Riot RSO OAuth login
- */
-
-export function useGetRsoAuthorize<
-  TData = Awaited<ReturnType<typeof getRsoAuthorize>>,
-  TError = ErrorType<void>,
->(
-  params?: GetRsoAuthorizeParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getRsoAuthorize>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetRsoAuthorizeQueryOptions(params, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * Riot redirects here after player authenticates. Exchanges code for PUUID, links to player record.
- * @summary v3.1: RSO OAuth callback
- */
-export const getGetRsoCallbackUrl = (params: GetRsoCallbackParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/auth/rso/callback?${stringifiedParams}`
-    : `/api/auth/rso/callback`;
-};
-
-export const getRsoCallback = async (
-  params: GetRsoCallbackParams,
-  options?: RequestInit,
-): Promise<unknown> => {
-  return customFetch<unknown>(getGetRsoCallbackUrl(params), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetRsoCallbackQueryKey = (params?: GetRsoCallbackParams) => {
-  return [`/api/auth/rso/callback`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetRsoCallbackQueryOptions = <
-  TData = Awaited<ReturnType<typeof getRsoCallback>>,
-  TError = ErrorType<void>,
->(
-  params: GetRsoCallbackParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getRsoCallback>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetRsoCallbackQueryKey(params);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getRsoCallback>>> = ({
-    signal,
-  }) => getRsoCallback(params, { signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getRsoCallback>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetRsoCallbackQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getRsoCallback>>
->;
-export type GetRsoCallbackQueryError = ErrorType<void>;
-
-/**
- * @summary v3.1: RSO OAuth callback
- */
-
-export function useGetRsoCallback<
-  TData = Awaited<ReturnType<typeof getRsoCallback>>,
-  TError = ErrorType<void>,
->(
-  params: GetRsoCallbackParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getRsoCallback>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetRsoCallbackQueryOptions(params, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * Bot generates token via /connect command. Website calls this to validate token and begin RSO flow.
- * @summary v3.1: Exchange bot /connect token for auth session
- */
-export const getPostAuthConnectUrl = () => {
-  return `/api/auth/connect`;
-};
-
-export const postAuthConnect = async (
-  postAuthConnectBody: PostAuthConnectBody,
-  options?: RequestInit,
-): Promise<PostAuthConnect200> => {
-  return customFetch<PostAuthConnect200>(getPostAuthConnectUrl(), {
+): Promise<AuthLogout200> => {
+  return customFetch<AuthLogout200>(getAuthLogoutUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(postAuthConnectBody),
   });
 };
 
-export const getPostAuthConnectMutationOptions = <
-  TError = ErrorType<void>,
+export const getAuthLogoutMutationOptions = <
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof postAuthConnect>>,
+    Awaited<ReturnType<typeof authLogout>>,
     TError,
-    { data: BodyType<PostAuthConnectBody> },
+    void,
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof postAuthConnect>>,
+  Awaited<ReturnType<typeof authLogout>>,
   TError,
-  { data: BodyType<PostAuthConnectBody> },
+  void,
   TContext
 > => {
-  const mutationKey = ["postAuthConnect"];
+  const mutationKey = ["authLogout"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -864,44 +1091,42 @@ export const getPostAuthConnectMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof postAuthConnect>>,
-    { data: BodyType<PostAuthConnectBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return postAuthConnect(data, requestOptions);
+    Awaited<ReturnType<typeof authLogout>>,
+    void
+  > = () => {
+    return authLogout(requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type PostAuthConnectMutationResult = NonNullable<
-  Awaited<ReturnType<typeof postAuthConnect>>
+export type AuthLogoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authLogout>>
 >;
-export type PostAuthConnectMutationBody = BodyType<PostAuthConnectBody>;
-export type PostAuthConnectMutationError = ErrorType<void>;
+
+export type AuthLogoutMutationError = ErrorType<unknown>;
 
 /**
- * @summary v3.1: Exchange bot /connect token for auth session
+ * @summary Destroy player session
  */
-export const usePostAuthConnect = <
-  TError = ErrorType<void>,
+export const useAuthLogout = <
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof postAuthConnect>>,
+    Awaited<ReturnType<typeof authLogout>>,
     TError,
-    { data: BodyType<PostAuthConnectBody> },
+    void,
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
-  Awaited<ReturnType<typeof postAuthConnect>>,
+  Awaited<ReturnType<typeof authLogout>>,
   TError,
-  { data: BodyType<PostAuthConnectBody> },
+  void,
   TContext
 > => {
-  return useMutation(getPostAuthConnectMutationOptions(options));
+  return useMutation(getAuthLogoutMutationOptions(options));
 };
 
 /**
@@ -2054,41 +2279,59 @@ export function useGetTeamMatches<
 }
 
 /**
- * @summary List all players (admin)
+ * @summary List players with pagination
  */
-export const getListPlayersUrl = () => {
-  return `/api/players`;
+export const getListPlayersUrl = (params?: ListPlayersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/players?${stringifiedParams}`
+    : `/api/players`;
 };
 
-export const listPlayers = async (options?: RequestInit): Promise<Player[]> => {
-  return customFetch<Player[]>(getListPlayersUrl(), {
+export const listPlayers = async (
+  params?: ListPlayersParams,
+  options?: RequestInit,
+): Promise<PaginatedPlayers> => {
+  return customFetch<PaginatedPlayers>(getListPlayersUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListPlayersQueryKey = () => {
-  return [`/api/players`] as const;
+export const getListPlayersQueryKey = (params?: ListPlayersParams) => {
+  return [`/api/players`, ...(params ? [params] : [])] as const;
 };
 
 export const getListPlayersQueryOptions = <
   TData = Awaited<ReturnType<typeof listPlayers>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listPlayers>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListPlayersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlayers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListPlayersQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListPlayersQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlayers>>> = ({
     signal,
-  }) => listPlayers({ signal, ...requestOptions });
+  }) => listPlayers(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPlayers>>,
@@ -2103,21 +2346,24 @@ export type ListPlayersQueryResult = NonNullable<
 export type ListPlayersQueryError = ErrorType<unknown>;
 
 /**
- * @summary List all players (admin)
+ * @summary List players with pagination
  */
 
 export function useListPlayers<
   TData = Awaited<ReturnType<typeof listPlayers>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listPlayers>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListPlayersQueryOptions(options);
+>(
+  params?: ListPlayersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlayers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlayersQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -2999,7 +3245,7 @@ export const usePostMatchesSubmitRofl = <
 };
 
 /**
- * @summary List matches
+ * @summary List matches with pagination
  */
 export const getListMatchesUrl = (params?: ListMatchesParams) => {
   const normalizedParams = new URLSearchParams();
@@ -3020,8 +3266,8 @@ export const getListMatchesUrl = (params?: ListMatchesParams) => {
 export const listMatches = async (
   params?: ListMatchesParams,
   options?: RequestInit,
-): Promise<Match[]> => {
-  return customFetch<Match[]>(getListMatchesUrl(params), {
+): Promise<PaginatedMatches> => {
+  return customFetch<PaginatedMatches>(getListMatchesUrl(params), {
     ...options,
     method: "GET",
   });
@@ -3066,7 +3312,7 @@ export type ListMatchesQueryResult = NonNullable<
 export type ListMatchesQueryError = ErrorType<unknown>;
 
 /**
- * @summary List matches
+ * @summary List matches with pagination
  */
 
 export function useListMatches<
