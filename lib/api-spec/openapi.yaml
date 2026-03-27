@@ -3754,11 +3754,5 @@ components:
           type: integer
 
     MatchListItem:
-      description: Match list item with team names and VOD count (superset of Match fields)
-      allOf:
-        - $ref: "#/components/schemas/Match"
-        - type: object
-          properties:
-            vodCount:
-              type: integer
-              description: Number of VODs attached to this match
+      description: Match list item (inherits all Match fields including vodCount)
+      $ref: "#/components/schemas/Match"
