@@ -62,7 +62,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Shared formatMatch extraction + submitRofl ELO guard + matchRecorder FOR UPDATE
+- [x] 03-01-PLAN.md -- Shared formatMatch extraction + submitRofl ELO guard + matchRecorder FOR UPDATE
 - [ ] 03-02-PLAN.md -- GET /players N+1 fix with batch queries + GET /matches SQL pagination
 - [ ] 03-03-PLAN.md -- Full OpenAPI spec alignment + Orval codegen
 
@@ -75,4 +75,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Schema Sync & Auth Hardening | 3/3 | Complete | - |
 | 2. Privacy Gates | 2/2 | Complete |  |
-| 3. API Contract & Performance | 0/3 | Not started | - |
+| 3. API Contract & Performance | 1/3 | In progress | - |
