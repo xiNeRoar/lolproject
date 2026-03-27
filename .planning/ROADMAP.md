@@ -78,10 +78,10 @@ Plans:
   3. Schema comment at matches.ts accurately reflects D-11 (null = private, not 7-day default)
   4. Bot matchRecorder explicitly sets matchType instead of relying on schema default
   5. 01-03-SUMMARY.md is populated with AUTH-01 and AUTH-03 work
-**Plans:** 0 plans (not yet planned)
+**Plans:** 1 plan
 
 Plans:
-- (none yet)
+- [ ] 04-01-PLAN.md -- formatMatch/OpenAPI alignment, stale comment fix, matchRecorder explicit matchType, 01-03-SUMMARY.md
 
 ## Progress
 
@@ -93,4 +93,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Schema Sync & Auth Hardening | 3/3 | Complete | 2026-03-26 |
 | 2. Privacy Gates | 2/2 | Complete | 2026-03-27 |
 | 3. API Contract & Performance | 3/3 | Complete | 2026-03-27 |
-| 4. Spec Alignment Cleanup | 0/? | Not started | - |
+| 4. Spec Alignment Cleanup | 0/1 | Not started | - |
