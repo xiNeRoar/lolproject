@@ -34,8 +34,8 @@ export const matchesTable = pgTable("matches", {
   tournamentCode: text("tournament_code"), // Riot Tournament API code, nullable
   roflFilePath: text("rofl_file_path"),
 
-  // Visibility: private for 7 days, then auto-public. Captain can override.
-  // NULL = use default (createdAt + 7 days). Far-future = permanent private. Past = immediate public.
+  // Visibility: NULL = private permanently (D-11). Captain sets via /visibility.
+  // Far-future date (9999-01-01) = private. Past date or epoch = public.
   visibleAfter: timestamp("visible_after"),
 
   // Season + Event links

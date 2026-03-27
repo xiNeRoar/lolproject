@@ -488,7 +488,7 @@ router.get("/:id", async (req, res) => {
     const base = formatMatch(match, {
       teamAName: teamA?.name ?? null, teamATag: teamA?.tag ?? null,
       teamBName: teamB?.name ?? null, teamBTag: teamB?.tag ?? null,
-      eventTitle: event?.title ?? null, eventSlug: event?.slug ?? null,
+      eventTitle: event?.title ?? null,
     });
 
     if (!canSeeStats) {
@@ -525,6 +525,7 @@ router.get("/:id", async (req, res) => {
 
     res.json({
       ...base,
+      eventSlug: event?.slug ?? null,
       bracketSize,
       matchPlayers,
       vods: vodRows.map(({ v, playerRiotId }) => ({

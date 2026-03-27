@@ -18,7 +18,6 @@ export function formatMatch(
     teamATag?: string | null;
     teamBTag?: string | null;
     eventTitle?: string | null;
-    eventSlug?: string | null;
   } = {}
 ) {
   return {
@@ -34,7 +33,9 @@ export function formatMatch(
     matchTitle: m.matchTitle,
     winnerName: m.winnerName,
     score: m.score ?? null,
+    vodCount: 0,
     format: m.format ?? null,
+    bestOf: m.bestOf ?? null,
     teamAEloBefore: m.teamAEloBefore ?? null,
     teamAEloAfter: m.teamAEloAfter ?? null,
     teamBEloBefore: m.teamBEloBefore ?? null,
@@ -48,7 +49,6 @@ export function formatMatch(
     seasonId: m.seasonId ?? null,
     eventId: m.eventId ?? null,
     eventTitle: extra.eventTitle ?? null,
-    eventSlug: extra.eventSlug ?? null,
     isPlayoff: m.isPlayoff,
     round: m.round ?? null,
     bracketSlot: m.bracketSlot ?? null,

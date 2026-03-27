@@ -69,6 +69,7 @@ export async function recordMatch(input: RecordMatchInput): Promise<number> {
         gameId: match.gameId,
         gameDuration: match.gameLength,
         gameVersion: match.gameVersion,
+        matchType: "scrim",
         resultSource: "rofl_parse",
         roflFilePath: roflFilePath ?? null,
         visibleAfter,
