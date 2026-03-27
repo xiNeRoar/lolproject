@@ -70,6 +70,29 @@ export const GetAdminStatsResponse = zod.object({
 });
 
 /**
+ * @summary Discord OAuth callback
+ */
+export const AuthDiscordCallbackQueryParams = zod.object({
+  code: zod.coerce.string(),
+  state: zod.coerce.string(),
+});
+
+/**
+ * @summary Bot /connect flow -- validate token and redirect to RSO
+ */
+export const AuthConnectTokenParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+/**
+ * @summary RSO OAuth callback
+ */
+export const AuthRsoCallbackQueryParams = zod.object({
+  code: zod.coerce.string(),
+  state: zod.coerce.string(),
+});
+
+/**
  * @summary Get current player session
  */
 export const GetAuthMeResponse = zod.object({
@@ -80,36 +103,10 @@ export const GetAuthMeResponse = zod.object({
 });
 
 /**
- * Initiates RSO OAuth flow. If token query param is present (from bot /connect), links discordId. Otherwise requires existing Discord OAuth session.
- * @summary v3.1: Redirect to Riot RSO OAuth login
+ * @summary Destroy player session
  */
-export const GetRsoAuthorizeQueryParams = zod.object({
-  token: zod.coerce
-    .string()
-    .optional()
-    .describe("One-time token from bot \/connect command (optional)"),
-});
-
-/**
- * Riot redirects here after player authenticates. Exchanges code for PUUID, links to player record.
- * @summary v3.1: RSO OAuth callback
- */
-export const GetRsoCallbackQueryParams = zod.object({
-  code: zod.coerce.string(),
-  state: zod.coerce.string().optional(),
-});
-
-/**
- * Bot generates token via /connect command. Website calls this to validate token and begin RSO flow.
- * @summary v3.1: Exchange bot /connect token for auth session
- */
-export const PostAuthConnectBody = zod.object({
-  token: zod.string(),
-});
-
-export const PostAuthConnectResponse = zod.object({
-  discordId: zod.string().optional(),
-  expiresAt: zod.string().optional(),
+export const AuthLogoutResponse = zod.object({
+  success: zod.boolean().optional(),
 });
 
 /**
@@ -486,44 +483,66 @@ export const GetTeamMatchesResponse = zod.object({
 });
 
 /**
- * @summary List all players (admin)
+ * @summary List players with pagination
  */
-export const ListPlayersResponseItem = zod.object({
-  id: zod.number(),
-  riotId: zod.string(),
-  discordUsername: zod.string(),
-  primaryTeam: zod
-    .object({
-      teamId: zod.number().optional(),
-      teamName: zod.string().optional(),
-      teamTag: zod.string().optional(),
-    })
-    .nullish(),
-  totalGames: zod.number().optional(),
-  winRate: zod.number().nullish(),
-  discordId: zod.string().nullish(),
-  puuid: zod.string().nullish(),
-  primaryRole: zod.string().nullish(),
-  secondaryRole: zod.string().nullish(),
-  isActive: zod.boolean(),
-  profileVisibility: zod
-    .string()
-    .optional()
-    .describe("private | public | participants-only (v3.1: default PRIVATE)"),
-  rsoOptIn: zod
-    .boolean()
-    .optional()
-    .describe(
-      "v3.1: true after RSO verified + player consents to public display",
-    ),
-  rsoLinkedAt: zod.string().nullish().describe("When RSO was linked"),
-  email: zod.string().nullish(),
-  notificationPreference: zod.string().nullish(),
-  registrationStatus: zod.string().nullish(),
-  createdAt: zod.string(),
-  updatedAt: zod.string(),
+export const listPlayersQueryPageDefault = 1;
+export const listPlayersQueryLimitDefault = 20;
+
+export const ListPlayersQueryParams = zod.object({
+  page: zod.coerce
+    .number()
+    .default(listPlayersQueryPageDefault)
+    .describe("Page number (1-based)"),
+  limit: zod.coerce
+    .number()
+    .default(listPlayersQueryLimitDefault)
+    .describe("Items per page (max 100)"),
 });
-export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
+
+export const ListPlayersResponse = zod.object({
+  data: zod.array(
+    zod.object({
+      id: zod.number(),
+      riotId: zod.string(),
+      discordUsername: zod.string(),
+      primaryTeam: zod
+        .object({
+          teamId: zod.number().optional(),
+          teamName: zod.string().optional(),
+          teamTag: zod.string().optional(),
+        })
+        .nullish(),
+      totalGames: zod.number().optional(),
+      winRate: zod.number().nullish(),
+      discordId: zod.string().nullish(),
+      puuid: zod.string().nullish(),
+      primaryRole: zod.string().nullish(),
+      secondaryRole: zod.string().nullish(),
+      isActive: zod.boolean(),
+      profileVisibility: zod
+        .string()
+        .optional()
+        .describe(
+          "private | public | participants-only (v3.1: default PRIVATE)",
+        ),
+      rsoOptIn: zod
+        .boolean()
+        .optional()
+        .describe(
+          "v3.1: true after RSO verified + player consents to public display",
+        ),
+      rsoLinkedAt: zod.string().nullish().describe("When RSO was linked"),
+      email: zod.string().nullish(),
+      notificationPreference: zod.string().nullish(),
+      registrationStatus: zod.string().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  totalPages: zod.number(),
+});
 
 /**
  * @summary Create a player (admin)
@@ -704,6 +723,12 @@ export const GetPlayerByIdResponse = zod.object({
   ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPrivate: zod
+    .boolean()
+    .optional()
+    .describe(
+      "true when player profile is private (only id, riotId, teams returned)",
+    ),
 });
 
 /**
@@ -864,6 +889,12 @@ export const GetPlayerResponse = zod.object({
   ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPrivate: zod
+    .boolean()
+    .optional()
+    .describe(
+      "true when player profile is private (only id, riotId, teams returned)",
+    ),
 });
 
 /**
@@ -1035,9 +1066,20 @@ export const PostMatchesSubmitRoflHeader = zod.object({
 });
 
 /**
- * @summary List matches
+ * @summary List matches with pagination
  */
+export const listMatchesQueryPageDefault = 1;
+export const listMatchesQueryLimitDefault = 20;
+
 export const ListMatchesQueryParams = zod.object({
+  page: zod.coerce
+    .number()
+    .default(listMatchesQueryPageDefault)
+    .describe("Page number (1-based)"),
+  limit: zod.coerce
+    .number()
+    .default(listMatchesQueryLimitDefault)
+    .describe("Items per page (max 100)"),
   eventId: zod.coerce.number().optional(),
   seasonId: zod.coerce.number().optional(),
   teamId: zod.coerce.number().optional(),
@@ -1045,64 +1087,93 @@ export const ListMatchesQueryParams = zod.object({
     .number()
     .optional()
     .describe("Filter to matches where player participated"),
+  format: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
 });
 
-export const ListMatchesResponseItem = zod.object({
-  id: zod.number(),
-  teamAId: zod.number().nullish(),
-  teamBId: zod.number().nullish(),
-  teamAName: zod.string().nullish(),
-  teamBName: zod.string().nullish(),
-  teamATag: zod.string().nullish(),
-  teamBTag: zod.string().nullish(),
-  sideAName: zod.string(),
-  sideBName: zod.string(),
-  matchTitle: zod.string(),
-  winnerName: zod.string(),
-  score: zod.string().nullish(),
-  vodCount: zod
-    .number()
-    .optional()
-    .describe("Number of VODs attached to this match (0 if none)"),
-  format: zod.string().nullish(),
-  teamAEloBefore: zod.number().nullish(),
-  teamAEloAfter: zod.number().nullish(),
-  teamBEloBefore: zod.number().nullish(),
-  teamBEloAfter: zod.number().nullish(),
-  gameId: zod.string().nullish(),
-  gameDuration: zod.number().nullish(),
-  gameVersion: zod.string().nullish(),
-  resultSource: zod.enum(["rofl_parse", "tournament_api", "admin_manual"]),
-  matchType: zod
-    .enum(["scrim", "ranked_tournament", "event"])
-    .describe("v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted."),
-  tournamentCode: zod
-    .string()
-    .nullish()
-    .describe("Riot Tournament API code. Set for ranked_tournament matches."),
-  visibleAfter: zod.string().nullish(),
-  seasonId: zod.number().nullish(),
-  eventId: zod.number().nullish(),
-  eventTitle: zod.string().nullish(),
-  isPlayoff: zod.boolean(),
-  round: zod.number().nullish(),
-  bestOf: zod
-    .number()
-    .nullish()
-    .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
-  bracketSize: zod
-    .number()
-    .nullish()
-    .describe("Bracket size (4,8,16) derived from event registration count"),
-  bracketSlot: zod.number().nullish(),
-  nextMatchId: zod.number().nullish(),
-  isLosersBracket: zod.boolean().nullish(),
-  groupId: zod.number().nullish(),
-  createdAt: zod.string(),
-  updatedAt: zod.string(),
+export const ListMatchesResponse = zod.object({
+  data: zod.array(
+    zod
+      .object({
+        id: zod.number(),
+        teamAId: zod.number().nullish(),
+        teamBId: zod.number().nullish(),
+        teamAName: zod.string().nullish(),
+        teamBName: zod.string().nullish(),
+        teamATag: zod.string().nullish(),
+        teamBTag: zod.string().nullish(),
+        sideAName: zod.string(),
+        sideBName: zod.string(),
+        matchTitle: zod.string(),
+        winnerName: zod.string(),
+        score: zod.string().nullish(),
+        vodCount: zod
+          .number()
+          .optional()
+          .describe("Number of VODs attached to this match (0 if none)"),
+        format: zod.string().nullish(),
+        teamAEloBefore: zod.number().nullish(),
+        teamAEloAfter: zod.number().nullish(),
+        teamBEloBefore: zod.number().nullish(),
+        teamBEloAfter: zod.number().nullish(),
+        gameId: zod.string().nullish(),
+        gameDuration: zod.number().nullish(),
+        gameVersion: zod.string().nullish(),
+        resultSource: zod.enum([
+          "rofl_parse",
+          "tournament_api",
+          "admin_manual",
+        ]),
+        matchType: zod
+          .enum(["scrim", "ranked_tournament", "event"])
+          .describe(
+            "v3.1: scrim = no ELO. ranked_tournament\/event = ELO counted.",
+          ),
+        tournamentCode: zod
+          .string()
+          .nullish()
+          .describe(
+            "Riot Tournament API code. Set for ranked_tournament matches.",
+          ),
+        visibleAfter: zod.string().nullish(),
+        seasonId: zod.number().nullish(),
+        eventId: zod.number().nullish(),
+        eventTitle: zod.string().nullish(),
+        isPlayoff: zod.boolean(),
+        round: zod.number().nullish(),
+        bestOf: zod
+          .number()
+          .nullish()
+          .describe("Series format (1=BO1, 3=BO3, 5=BO5)"),
+        bracketSize: zod
+          .number()
+          .nullish()
+          .describe(
+            "Bracket size (4,8,16) derived from event registration count",
+          ),
+        bracketSlot: zod.number().nullish(),
+        nextMatchId: zod.number().nullish(),
+        isLosersBracket: zod.boolean().nullish(),
+        groupId: zod.number().nullish(),
+        createdAt: zod.string(),
+        updatedAt: zod.string(),
+      })
+      .and(
+        zod.object({
+          vodCount: zod
+            .number()
+            .optional()
+            .describe("Number of VODs attached to this match"),
+        }),
+      )
+      .describe(
+        "Match list item with team names and VOD count (superset of Match fields)",
+      ),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  totalPages: zod.number(),
 });
-export const ListMatchesResponse = zod.array(ListMatchesResponseItem);
 
 /**
  * @summary Create match manually (admin)
@@ -1239,6 +1310,12 @@ export const GetMatchResponse = zod
             summonerSpell1: zod.number().nullish(),
             summonerSpell2: zod.number().nullish(),
             createdAt: zod.string(),
+            _masked: zod
+              .boolean()
+              .optional()
+              .describe(
+                "true when player has not opted in via RSO (stats hidden for non-participants)",
+              ),
           }),
         )
         .optional(),
@@ -1276,6 +1353,10 @@ export const GetMatchResponse = zod
           }),
         )
         .optional(),
+      isRedacted: zod
+        .boolean()
+        .optional()
+        .describe("true when scrim match is redacted for non-participants"),
     }),
   );
 
@@ -1419,6 +1500,12 @@ export const GetMatchPlayersResponseItem = zod.object({
   summonerSpell1: zod.number().nullish(),
   summonerSpell2: zod.number().nullish(),
   createdAt: zod.string(),
+  _masked: zod
+    .boolean()
+    .optional()
+    .describe(
+      "true when player has not opted in via RSO (stats hidden for non-participants)",
+    ),
 });
 export const GetMatchPlayersResponse = zod.array(GetMatchPlayersResponseItem);
 

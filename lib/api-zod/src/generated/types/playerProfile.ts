@@ -24,4 +24,6 @@ export interface PlayerProfile {
   vods: VodEntry[];
   createdAt: string;
   updatedAt: string;
+  /** true when player profile is private (only id, riotId, teams returned) */
+  isPrivate?: boolean;
 }

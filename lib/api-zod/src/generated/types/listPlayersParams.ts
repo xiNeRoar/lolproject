@@ -6,7 +6,13 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export type GetRsoCallbackParams = {
-  code: string;
-  state?: string;
+export type ListPlayersParams = {
+  /**
+   * Page number (1-based)
+   */
+  page?: number;
+  /**
+   * Items per page (max 100)
+   */
+  limit?: number;
 };

@@ -34,4 +34,6 @@ export interface MatchPlayerEntry {
   summonerSpell1?: number | null;
   summonerSpell2?: number | null;
   createdAt: string;
+  /** true when player has not opted in via RSO (stats hidden for non-participants) */
+  _masked?: boolean;
 }

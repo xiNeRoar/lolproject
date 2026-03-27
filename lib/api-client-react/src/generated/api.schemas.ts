@@ -310,6 +310,8 @@ export interface PlayerProfile {
   vods: VodEntry[];
   createdAt: string;
   updatedAt: string;
+  /** true when player profile is private (only id, riotId, teams returned) */
+  isPrivate?: boolean;
 }
 
 export interface PlayerEventParticipation {
@@ -351,6 +353,8 @@ export interface MatchPlayerEntry {
   summonerSpell1?: number | null;
   summonerSpell2?: number | null;
   createdAt: string;
+  /** true when player has not opted in via RSO (stats hidden for non-participants) */
+  _masked?: boolean;
 }
 
 export type MatchDetail = Match & {
@@ -359,6 +363,8 @@ export type MatchDetail = Match & {
   bracketSize?: number | null;
   matchPlayers?: MatchPlayerEntry[];
   vods?: VodEntry[];
+  /** true when scrim match is redacted for non-participants */
+  isRedacted?: boolean;
 };
 
 export interface CreateMatchRequest {
@@ -667,6 +673,28 @@ export interface CreateBanRequest {
   expiresAt?: string | null;
 }
 
+export interface PaginatedPlayers {
+  data: Player[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+/**
+ * Match list item with team names and VOD count (superset of Match fields)
+ */
+export type MatchListItem = Match & {
+  /** Number of VODs attached to this match */
+  vodCount?: number;
+};
+
+export interface PaginatedMatches {
+  data: MatchListItem[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export type ListAdminActions200Item = {
   id: number;
   adminId: number;
@@ -677,25 +705,18 @@ export type ListAdminActions200Item = {
   createdAt: string;
 };
 
-export type GetRsoAuthorizeParams = {
-  /**
-   * One-time token from bot /connect command (optional)
-   */
-  token?: string;
-};
-
-export type GetRsoCallbackParams = {
+export type AuthDiscordCallbackParams = {
   code: string;
-  state?: string;
+  state: string;
 };
 
-export type PostAuthConnectBody = {
-  token: string;
+export type AuthRsoCallbackParams = {
+  code: string;
+  state: string;
 };
 
-export type PostAuthConnect200 = {
-  discordId?: string;
-  expiresAt?: string;
+export type AuthLogout200 = {
+  success?: boolean;
 };
 
 export type ListTeamsParams = {
@@ -769,6 +790,17 @@ export type GetTeamMatches200 = {
   totalPages?: number;
 };
 
+export type ListPlayersParams = {
+  /**
+   * Page number (1-based)
+   */
+  page?: number;
+  /**
+   * Items per page (max 100)
+   */
+  limit?: number;
+};
+
 /**
  * v3.1: always null for scrim matches. Only populated for tournament/event matches.
  */
@@ -787,6 +819,14 @@ export type PostMatchesSubmitRofl201 = {
 };
 
 export type ListMatchesParams = {
+  /**
+   * Page number (1-based)
+   */
+  page?: number;
+  /**
+   * Items per page (max 100)
+   */
+  limit?: number;
   eventId?: number;
   seasonId?: number;
   teamId?: number;
@@ -794,6 +834,7 @@ export type ListMatchesParams = {
    * Filter to matches where player participated
    */
   playerId?: number;
+  format?: string;
   search?: string;
 };
 

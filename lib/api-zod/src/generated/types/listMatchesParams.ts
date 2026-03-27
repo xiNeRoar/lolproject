@@ -7,6 +7,14 @@
  */
 
 export type ListMatchesParams = {
+  /**
+   * Page number (1-based)
+   */
+  page?: number;
+  /**
+   * Items per page (max 100)
+   */
+  limit?: number;
   eventId?: number;
   seasonId?: number;
   teamId?: number;
@@ -14,5 +22,6 @@ export type ListMatchesParams = {
    * Filter to matches where player participated
    */
   playerId?: number;
+  format?: string;
   search?: string;
 };
