@@ -29,7 +29,7 @@
 
 ### API Performance
 
-- [ ] **PERF-01**: GET /players N+1 query eliminated — batch JOINs or subqueries instead of per-player lookups
+- [x] **PERF-01**: GET /players N+1 query eliminated — batch JOINs or subqueries instead of per-player lookups
 
 ### API Contract
 
@@ -80,7 +80,7 @@
 | PRIV-04 | Phase 2 | Complete |
 | PRIV-05 | Phase 2 | Complete |
 | PRIV-06 | Phase 2 | Complete |
-| PERF-01 | Phase 3 | Pending |
+| PERF-01 | Phase 3 | Complete |
 | SPEC-01 | Phase 3 | Pending |
 | SPEC-02 | Phase 3 | Pending |
 
