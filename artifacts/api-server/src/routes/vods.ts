@@ -13,21 +13,9 @@ import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { getRelatedVods } from "../lib/vodRecommendations";
 import { logAdminAction } from "../lib/auditLog";
+import { isMatchVisibleTo } from "../lib/privacyGate.js";
 
 const router = Router();
-
-// ── Helpers ──────────────────────────────────────────────────
-
-/** Returns true if the match linked to this VOD is currently public. */
-async function isMatchPublic(matchId: number | null): Promise<boolean> {
-  if (!matchId) return true; // unlinked VODs are always public
-  const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, matchId));
-  if (!match) return false;
-  if (!match.visibleAfter) {
-    return Date.now() >= match.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000;
-  }
-  return Date.now() >= match.visibleAfter.getTime();
-}
 
 // ── Formatters ───────────────────────────────────────────────
 
@@ -160,30 +148,51 @@ router.get("/", async (req, res) => {
       }
     }
 
-    // Visibility filter: exclude VODs whose match is still private
+    // Visibility filter: exclude VODs whose match is still private (D-10, D-11, D-12)
     // Admin sees all; public sees only visible matches
     const isAdmin = !!req.session?.adminId;
     if (!isAdmin) {
-      const now = Date.now();
+      const pid = req.session?.playerId ? Number(req.session.playerId) : null;
       const matchIdSet = new Set(rows.map((r) => r.vod.matchId).filter(Boolean) as number[]);
-      const matchVisibility: Record<number, boolean> = {};
+
       if (matchIdSet.size > 0) {
         const matchRows = await db
           .select()
           .from(matchesTable)
           .where(inArray(matchesTable.id, [...matchIdSet]));
+
+        const matchVisibility: Record<number, boolean> = {};
         for (const m of matchRows) {
-          if (!m.visibleAfter) {
-            matchVisibility[m.id] = now >= m.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000;
-          } else {
-            matchVisibility[m.id] = now >= m.visibleAfter.getTime();
-          }
+          const { canSeeStats } = await isMatchVisibleTo(m, pid, false);
+          matchVisibility[m.id] = canSeeStats;
         }
+
+        rows = rows.filter((r) => {
+          if (!r.vod.matchId) return true; // unlinked VODs always visible
+          return matchVisibility[r.vod.matchId] !== false;
+        });
       }
-      rows = rows.filter((r) => {
-        if (!r.vod.matchId) return true;
-        return matchVisibility[r.vod.matchId] !== false;
-      });
+
+      // D-12: POV VODs require individual player rsoOptIn
+      const povVods = rows.filter((r) =>
+        r.vod.playerId != null && (r.vod.vodType === "player-pov" || r.vod.vodType === "team-pov")
+      );
+      if (povVods.length > 0) {
+        const povPlayerIds = [...new Set(povVods.map((r) => r.vod.playerId!))];
+        const playerRows = await db
+          .select({ id: playersTable.id, rsoOptIn: playersTable.rsoOptIn })
+          .from(playersTable)
+          .where(inArray(playersTable.id, povPlayerIds));
+        const optInMap = new Map(playerRows.map((p) => [p.id, p.rsoOptIn]));
+
+        rows = rows.filter((r) => {
+          // Non-POV VODs pass through
+          if (r.vod.vodType !== "player-pov" && r.vod.vodType !== "team-pov") return true;
+          if (!r.vod.playerId) return true;
+          // POV VOD: only show if player opted in
+          return optInMap.get(r.vod.playerId) === true;
+        });
+      }
     }
 
     res.json(
@@ -212,6 +221,29 @@ router.get("/:id", async (req, res) => {
     if (!vod) {
       res.status(404).json({ error: "VOD not found" });
       return;
+    }
+
+    // Visibility gate: VOD follows match visibility (D-10)
+    const isAdmin = !!req.session?.adminId;
+    if (!isAdmin && vod.matchId) {
+      const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, vod.matchId));
+      if (match) {
+        const pid = req.session?.playerId ? Number(req.session.playerId) : null;
+        const { canSeeStats } = await isMatchVisibleTo(match, pid, false);
+        if (!canSeeStats) {
+          res.status(403).json({ error: "This VOD is not publicly visible" });
+          return;
+        }
+      }
+    }
+
+    // D-12: POV VOD requires individual player rsoOptIn
+    if (!isAdmin && vod.playerId && (vod.vodType === "player-pov" || vod.vodType === "team-pov")) {
+      const [vodPlayer] = await db.select({ rsoOptIn: playersTable.rsoOptIn }).from(playersTable).where(eq(playersTable.id, vod.playerId));
+      if (vodPlayer && !vodPlayer.rsoOptIn) {
+        res.status(403).json({ error: "This POV VOD requires player consent" });
+        return;
+      }
     }
 
     const event = vod.eventId
