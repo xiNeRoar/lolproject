@@ -12,37 +12,49 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 
 ### Validated
 
-- ✓ Discord bot with 11 slash commands (register-team, submit, stats, roster, connect, visibility, transfer-captain, leave, remove, register-event, claim-match) — existing
+- ✓ Discord bot with 11 slash commands — existing
 - ✓ .rofl parsing with ROFL2 validation, game mode check, duplicate detection — existing
-- ✓ Team management (create, roster auto-add from .rofl, captain transfer, leave/remove) — existing
+- ✓ Team management (create, roster auto-add, captain transfer, leave/remove) — existing
 - ✓ Match recording with identity resolution (PUUID → RiotId → new player) — existing
-- ✓ Scoreboard image rendering for Discord embeds with canvas fallback — existing
+- ✓ Scoreboard image rendering for Discord embeds — existing
 - ✓ Team ELO system (tournament/event only, not scrims) — existing
 - ✓ Season broadcast + team inactivity scheduler — existing
 - ✓ Notification poller with retry/backoff — existing
 - ✓ Ban system (player + team level) — existing
-- ✓ Admin panel (manage players, teams, events, seasons, bans, action log) — existing
+- ✓ Admin panel — existing
 - ✓ Discord OAuth login for website — existing
 - ✓ Bot /connect command generating RSO auth session tokens — existing
 - ✓ Player profile privacy toggle (public/private) — existing
-- ✓ Leaderboard with W/L sort (ELO removed for scrims) — existing
-- ✓ Captain Hub (visibility toggles, roster management, team settings) — existing
-- ✓ VOD system (watch page, vod detail, replay submissions) — existing
-- ✓ Drizzle schema aligned with SCHEMA_CONTRACT.md (21 tables) — existing
-- ✓ Docker deployment via Portainer (bot + web stacks) — existing
+- ✓ Leaderboard with W/L sort — existing
+- ✓ Captain Hub — existing
+- ✓ VOD system — existing
+- ✓ Drizzle schema aligned with SCHEMA_CONTRACT.md — existing
+- ✓ Docker deployment via Portainer — existing
+- ✓ DB schema sync (match_type, tournament_code columns) — v3.1
+- ✓ OAuth CSRF state parameters on all auth flows — v3.1
+- ✓ CORS restricted to production domain — v3.1
+- ✓ RSO token non-persistence (only PUUID saved) — v3.1
+- ✓ Session secret enforced in production — v3.1
+- ✓ Match visibility endpoint session-only auth — v3.1
+- ✓ 3-layer privacy model (privacyGate.ts) — v3.1
+- ✓ Match detail scrim privacy gate — v3.1
+- ✓ Tournament/event match public bypass — v3.1
+- ✓ Player search rsoOptIn filter — v3.1
+- ✓ Player profile visibility gates — v3.1
+- ✓ VOD 7-day auto-public bug fixed — v3.1
+- ✓ GET /players N+1 query eliminated — v3.1
+- ✓ OpenAPI spec aligned with all auth endpoints — v3.1
+- ✓ Codegen regenerated with privacy + pagination types — v3.1
+- ✓ eloHistory schema resolved (team-only, no playerId) — v3.1
 
 ### Active
 
 - [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
-- ✓ Match detail scrim privacy gate (non-participants see Team A vs B + score only) — Validated in Phase 02: Privacy Gates
-- ✓ Player search filter by rsoOptIn (hide non-opted players) — Validated in Phase 02: Privacy Gates
 - [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory)
 - [ ] Login flow RSO connect step
-- [ ] DB schema sync (match_type column missing — #221 P0)
-- [ ] GET /players N+1 query optimization (#217)
-- [ ] OpenAPI spec alignment (auth endpoints mismatch actual routes)
-- [ ] eloHistory schema — playerId removed but docs say keep for backward compat
-- ✓ Tournament/event match visibility bypass (Layer 3 — public by design) — Validated in Phase 02: Privacy Gates
+- [ ] /auth/me needs hasPuuid field for frontend login flow check
+- [ ] Per-team W/L + KDA stats in player profile API (backend gap for #200)
+- [ ] Update GitHub issue #198 with correct API endpoint paths (GET /auth/connect/:token, not POST)
 
 ### Out of Scope
 
@@ -60,10 +72,10 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - **Two AI agents:** Claude owns backend/bot/docs, Replit owns frontend (`artifacts/vclol/src/`)
 - **Branch:** `variant` (not main)
 - **Deploy:** Portainer on Oracle Cloud ARM64 VPS, no SSH
-- **Pre-launch state:** Bot fully functional, website mostly functional, RSO pending Riot approval
-- **Open issues:** 7 (2 Claude backend, 5 Replit frontend)
-- **REQUESTS.md:** 2 backend requests from Replit (N+1 query + schema sync)
-- **Key gap:** Website RSO flow is the critical missing piece for launch
+- **Current state:** v3.1 shipped — backend security, privacy, and API contract complete
+- **Open issues:** 5 (all Replit frontend: #198, #199, #200, #202, #204)
+- **Key gap:** Website RSO flow (#198) and frontend privacy gates (#199) are launch blockers
+- **Backend gaps for frontend:** /auth/me needs hasPuuid, player profile needs per-team stats
 
 ## Constraints
 
@@ -81,9 +93,12 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 | Bot direct DB access (not HTTP API) | Lower latency, transaction safety, simpler for solo dev | ✓ Good |
 | .rofl submission bot-only | Preserves viral loop in Discord scrim servers | ✓ Good |
 | RSO as launch requirement | Zero impersonation tolerance per Riot policy | — Pending (awaiting Riot approval) |
-| 3-layer privacy model | Riot compliance + user trust | ✓ Backend gates complete (Phase 02) |
-| Default visibility = private | Conservative default per PRD v3.1 | ✓ Good |
-| RSO tokens: keep columns, don't populate now | VCLoL only needs PUUID today. Columns stay for Tournament API (confirmed future requirement). When Tournament API milestone starts → add AES-256-GCM encryption + refresh logic. | — Pending (trigger: Tournament API milestone) |
+| 3-layer privacy model | Riot compliance + user trust | ✓ Good — privacyGate.ts shipped (v3.1) |
+| Default visibility = private | Conservative default per PRD v3.1; null = private permanently (D-11) | ✓ Good |
+| RSO tokens: keep columns, don't populate now | VCLoL only needs PUUID today. Columns stay for Tournament API. | — Pending (trigger: Tournament API milestone) |
+| Shared formatMatch pattern | Single source of truth for match response shape | ✓ Good — formatters.ts shipped (v3.1) |
+| Participant check via match_players | More accurate than team_members for visibility | ✓ Good (D-03, v3.1) |
+| visibleAfter null = private | Conservative default, captain controls via /visibility | ✓ Good (D-11, v3.1) |
 
 ## Evolution
 
@@ -103,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 02 (Privacy Gates) completion*
+*Last updated: 2026-03-27 after v3.1 milestone completion*
