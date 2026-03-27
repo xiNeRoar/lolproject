@@ -34,15 +34,15 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 ### Active
 
 - [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
-- [ ] Match detail scrim privacy gate (non-participants see Team A vs B + score only) — launch blocker
-- [ ] Player search filter by rsoOptIn (hide non-opted players) — launch blocker
+- ✓ Match detail scrim privacy gate (non-participants see Team A vs B + score only) — Validated in Phase 02: Privacy Gates
+- ✓ Player search filter by rsoOptIn (hide non-opted players) — Validated in Phase 02: Privacy Gates
 - [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory)
 - [ ] Login flow RSO connect step
 - [ ] DB schema sync (match_type column missing — #221 P0)
 - [ ] GET /players N+1 query optimization (#217)
 - [ ] OpenAPI spec alignment (auth endpoints mismatch actual routes)
 - [ ] eloHistory schema — playerId removed but docs say keep for backward compat
-- [ ] Tournament/event match visibility bypass (Layer 3 — public by design)
+- ✓ Tournament/event match visibility bypass (Layer 3 — public by design) — Validated in Phase 02: Privacy Gates
 
 ### Out of Scope
 
@@ -81,7 +81,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 | Bot direct DB access (not HTTP API) | Lower latency, transaction safety, simpler for solo dev | ✓ Good |
 | .rofl submission bot-only | Preserves viral loop in Discord scrim servers | ✓ Good |
 | RSO as launch requirement | Zero impersonation tolerance per Riot policy | — Pending (awaiting Riot approval) |
-| 3-layer privacy model | Riot compliance + user trust | — Pending (frontend gates not complete) |
+| 3-layer privacy model | Riot compliance + user trust | ✓ Backend gates complete (Phase 02) |
 | Default visibility = private | Conservative default per PRD v3.1 | ✓ Good |
 | RSO tokens: keep columns, don't populate now | VCLoL only needs PUUID today. Columns stay for Tournament API (confirmed future requirement). When Tournament API milestone starts → add AES-256-GCM encryption + refresh logic. | — Pending (trigger: Tournament API milestone) |
 
@@ -103,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 after initialization*
+*Last updated: 2026-03-27 after Phase 02 (Privacy Gates) completion*
