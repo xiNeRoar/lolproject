@@ -35,21 +35,21 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-06 | TBD | Pending |
-| AUTH-07 | TBD | Pending |
-| STAT-01 | TBD | Pending |
-| STAT-02 | TBD | Pending |
-| STAT-03 | TBD | Pending |
-| ISSUE-01 | TBD | Pending |
-| ISSUE-02 | TBD | Pending |
-| ISSUE-03 | TBD | Pending |
-| ISSUE-04 | TBD | Pending |
+| AUTH-06 | Phase 5 | Pending |
+| AUTH-07 | Phase 5 | Pending |
+| STAT-01 | Phase 5 | Pending |
+| STAT-02 | Phase 5 | Pending |
+| STAT-03 | Phase 6 | Pending |
+| ISSUE-01 | Phase 7 | Pending |
+| ISSUE-02 | Phase 7 | Pending |
+| ISSUE-03 | Phase 7 | Pending |
+| ISSUE-04 | Phase 7 | Pending |
 
 **Coverage:**
 - v3.2 requirements: 9 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 9
+- Mapped to phases: 9
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-27 -- phase mappings added*
