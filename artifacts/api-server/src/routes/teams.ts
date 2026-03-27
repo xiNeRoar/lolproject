@@ -4,6 +4,7 @@ import { teamsTable, teamMembersTable, playersTable, matchesTable, eloHistoryTab
 import { eq, desc, and, inArray, or, ilike, count, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
+import { formatMatch } from "../lib/formatters.js";
 
 const router = Router();
 
@@ -41,32 +42,6 @@ function formatMember(
     role: m.role ?? null,
     status: m.status,
     joinedAt: m.joinedAt.toISOString(),
-  };
-}
-
-function formatMatch(m: typeof matchesTable.$inferSelect) {
-  return {
-    id: m.id,
-    teamAId: m.teamAId ?? null,
-    teamBId: m.teamBId ?? null,
-    sideAName: m.sideAName,
-    sideBName: m.sideBName,
-    matchTitle: m.matchTitle,
-    winnerName: m.winnerName,
-    score: m.score ?? null,
-    format: m.format ?? null,
-    teamAEloBefore: m.teamAEloBefore ?? null,
-    teamAEloAfter: m.teamAEloAfter ?? null,
-    teamBEloBefore: m.teamBEloBefore ?? null,
-    teamBEloAfter: m.teamBEloAfter ?? null,
-    gameId: m.gameId ?? null,
-    gameDuration: m.gameDuration ?? null,
-    resultSource: m.resultSource,
-    seasonId: m.seasonId ?? null,
-    eventId: m.eventId ?? null,
-    isPlayoff: m.isPlayoff,
-    createdAt: m.createdAt.toISOString(),
-    updatedAt: m.updatedAt.toISOString(),
   };
 }
 
