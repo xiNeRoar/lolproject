@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.1
-milestone_name: Launch Preparation
-status: milestone_complete
-stopped_at: Milestone v3.1 archived
+milestone: v3.2
+milestone_name: Frontend Readiness
+status: executing
+stopped_at: Defining requirements
 last_updated: "2026-03-27T18:26:02Z"
 last_activity: 2026-03-27
 progress:
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Every match submitted via .rofl produces a verified, permanent competitive record that cannot be faked.
-**Current focus:** Planning next milestone
+**Current focus:** v3.2 Frontend Readiness
 
 ## Current Position
 
-Phase: Complete (v3.1 shipped)
-Plan: All plans executed
-Status: Between milestones
-Last activity: 2026-03-27
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v3.2 started
 
 Progress: [██████████] 100%
 

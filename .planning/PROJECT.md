@@ -49,12 +49,22 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 
 ### Active
 
-- [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
-- [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory)
-- [ ] Login flow RSO connect step
-- [ ] /auth/me needs hasPuuid field for frontend login flow check
-- [ ] Per-team W/L + KDA stats in player profile API (backend gap for #200)
-- [ ] Update GitHub issue #198 with correct API endpoint paths (GET /auth/connect/:token, not POST)
+- [ ] /auth/me needs hasPuuid field for frontend login flow check — v3.2
+- [ ] Per-team W/L + KDA stats in player profile API (backend gap for #200) — v3.2
+- [ ] Update GitHub issue #198 with correct API endpoint paths (GET /auth/connect/:token, not POST) — v3.2
+- [ ] Open missing frontend issues (paginated response, VOD privacy gate, profile sub-routes) — v3.2
+- [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker (Replit)
+- [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory) — (Replit, depends on v3.2 backend)
+- [ ] Login flow RSO connect step — (Replit, depends on v3.2 /auth/me)
+
+## Current Milestone: v3.2 Frontend Readiness
+
+**Goal:** Deliver all backend API gaps needed for frontend launch, fix incorrect GitHub issues, and open missing issues for frontend work.
+
+**Target features:**
+- /auth/me hasPuuid field for login flow
+- Per-team player stats endpoint for career resume
+- GitHub issue hygiene (fix #198 paths, open new issues for gaps)
 
 ### Out of Scope
 
@@ -72,10 +82,10 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - **Two AI agents:** Claude owns backend/bot/docs, Replit owns frontend (`artifacts/vclol/src/`)
 - **Branch:** `variant` (not main)
 - **Deploy:** Portainer on Oracle Cloud ARM64 VPS, no SSH
-- **Current state:** v3.1 shipped — backend security, privacy, and API contract complete
-- **Open issues:** 5 (all Replit frontend: #198, #199, #200, #202, #204)
-- **Key gap:** Website RSO flow (#198) and frontend privacy gates (#199) are launch blockers
-- **Backend gaps for frontend:** /auth/me needs hasPuuid, player profile needs per-team stats
+- **Current state:** v3.2 in progress — closing backend gaps for frontend launch
+- **Open issues:** 5 frontend (#198, #199, #200, #202, #204) + backend gaps being addressed
+- **Key gap:** /auth/me hasPuuid + per-team stats endpoint needed before frontend can ship
+- **Issue hygiene:** #198 has wrong API paths, missing issues for pagination/VOD/profile sub-routes
 
 ## Constraints
 
@@ -118,4 +128,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v3.1 milestone completion*
+*Last updated: 2026-03-27 after v3.2 milestone start*
