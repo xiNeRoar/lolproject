@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v3.1 Launch Preparation** — Phases 1-4 (shipped 2026-03-27) — [archive](milestones/v3.1-ROADMAP.md)
-- **v3.2 Frontend Readiness** — Phases 5-7 (in progress)
+- **v3.2 Frontend Readiness** — Phases 5-8 (in progress)
 
 ## Phases
 
@@ -19,8 +19,9 @@
 
 ### v3.2 Frontend Readiness (In Progress)
 
-**Milestone Goal:** Deliver all backend API gaps needed for frontend launch, fix incorrect GitHub issues, and open missing issues for frontend work.
+**Milestone Goal:** Deliver all backend API gaps needed for frontend launch, establish design system documentation, update ownership model, fix incorrect GitHub issues.
 
+- [ ] **Phase 8: Design System & Ownership Docs** - Document design tokens, component patterns, and update CLAUDE.md for full-stack Claude ownership
 - [ ] **Phase 5: Auth & Stats API** - Add hasPuuid to /auth/me and build per-team player stats endpoint with OpenAPI specs
 - [ ] **Phase 6: Codegen Sync** - Regenerate frontend hooks after all spec changes land
 - [ ] **Phase 7: Issue Hygiene** - Fix incorrect issue paths and open missing frontend issues
@@ -48,8 +49,19 @@
   3. No TypeScript compilation errors in generated output
 **Plans**: TBD
 
+### Phase 8: Design System & Ownership Docs
+**Goal**: Formalize the implicit design system into docs/DESIGN_GUIDE.md, update CLAUDE.md for full-stack Claude ownership, and update PROJECT.md to reflect new ownership model
+**Depends on**: Nothing (documentation only, no code dependencies)
+**Requirements**: DOC-01, DOC-02, DOC-03
+**Success Criteria** (what must be TRUE):
+  1. docs/DESIGN_GUIDE.md exists with actual color tokens, typography rules, component patterns, and layout conventions extracted from codebase
+  2. CLAUDE.md ownership section updated: Claude owns artifacts/vclol/src/ (was Replit), with design guide referenced as canonical
+  3. PROJECT.md reflects full-stack Claude ownership with updated constraints and active requirements
+  4. Design Guide covers: color tokens, typography, component variants, layout patterns, bot-web alignment, and new patterns (per-team career cards, activity heatmap, shareable cards)
+**Plans**: TBD
+
 ### Phase 7: Issue Hygiene
-**Goal**: GitHub issues accurately reflect backend API reality so Replit builds against correct contracts
+**Goal**: GitHub issues accurately reflect backend API reality and correct ownership labels
 **Depends on**: Nothing (parallel with Phases 5-6)
 **Requirements**: ISSUE-01, ISSUE-02, ISSUE-03, ISSUE-04
 **Success Criteria** (what must be TRUE):
@@ -57,12 +69,13 @@
   2. A new issue exists documenting that GET /players and GET /matches now return paginated response shape { data, total, page, totalPages }
   3. A new issue exists describing frontend handling for restricted VODs (graceful degradation when VOD is privacy-gated)
   4. A new issue exists describing frontend 403 handling for private player profile sub-routes
+  5. All Replit-labelled issues updated to Claude ownership
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases 5 and 7 can execute in parallel. Phase 6 must follow Phase 5.
+Phase 8 executes FIRST (no dependencies, foundation for all other phases). Then Phases 5 and 7 in parallel. Phase 6 follows Phase 5.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -73,3 +86,4 @@ Phases 5 and 7 can execute in parallel. Phase 6 must follow Phase 5.
 | 5. Auth & Stats API | v3.2 | 0/? | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/? | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
+| 8. Design System & Ownership Docs | v3.2 | 0/? | Not started | - |
