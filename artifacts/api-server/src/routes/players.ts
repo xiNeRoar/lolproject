@@ -13,6 +13,7 @@ import {
 import { eq, desc, and, count, avg, sum, sql, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
+import { isPlayerProfileVisibleTo } from "../lib/privacyGate.js";
 
 const router = Router();
 
@@ -202,11 +203,14 @@ async function buildPlayerProfile(player: typeof playersTable.$inferSelect) {
 // ── Routes ───────────────────────────────────────────────────
 
 // GET /players — list all players, enriched with team + stats (Issue #20)
-router.get("/", async (_req, res) => {
+// D-06: Non-admin requests only see players with rsoOptIn = true
+router.get("/", async (req, res) => {
   try {
+    const isAdmin = !!req.session?.adminId;
     const players = await db
       .select()
       .from(playersTable)
+      .where(isAdmin ? undefined : eq(playersTable.rsoOptIn, true))
       .orderBy(playersTable.riotId);
 
     const enriched = await Promise.all(players.map(async (p) => {
@@ -369,6 +373,34 @@ router.get("/by-id/:id", async (req, res) => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
+
+    // Privacy gate: check profile visibility (D-07, D-08, D-09)
+    const viewerId = req.session.playerId ? Number(req.session.playerId) : null;
+    const isAdmin = !!req.session.adminId;
+    const { canSeeProfile } = await isPlayerProfileVisibleTo(player, viewerId, isAdmin);
+
+    if (!canSeeProfile) {
+      // Return minimal response per D-07
+      const memberRows = await db
+        .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag, status: teamMembersTable.status })
+        .from(teamMembersTable)
+        .leftJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+        .where(eq(teamMembersTable.playerId, player.id));
+
+      res.json({
+        id: player.id,
+        riotId: player.riotId,
+        isPrivate: true,
+        teams: memberRows.map((r) => ({
+          teamId: r.teamId,
+          teamName: r.teamName ?? "",
+          teamTag: r.teamTag ?? "",
+          status: r.status,
+        })),
+      });
+      return;
+    }
+
     res.json(await buildPlayerProfile(player));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch player" });
@@ -388,32 +420,13 @@ router.get("/:riotId", async (req, res) => {
       return;
     }
 
-    // Privacy gate (PRD v3.1 §7 Layer 2): public | private | participants-only
-    const isOwner = req.session.playerId === player.id;
+    // Privacy gate: use shared helper (D-14 — no inline visibility logic)
+    const viewerId = req.session.playerId ? Number(req.session.playerId) : null;
     const isAdmin = !!req.session.adminId;
-    const visibility = player.profileVisibility ?? "private";
+    const { canSeeProfile } = await isPlayerProfileVisibleTo(player, viewerId, isAdmin);
 
-    if (visibility !== "public" && !isOwner && !isAdmin) {
-      // For participants-only: check if requester shares any match with target
-      if (visibility === "participants-only" && req.session.playerId) {
-        const [shared] = await db
-          .select({ id: matchPlayersTable.id })
-          .from(matchPlayersTable)
-          .where(eq(matchPlayersTable.playerId, player.id))
-          .innerJoin(
-            sql`(SELECT DISTINCT match_id FROM match_players WHERE player_id = ${req.session.playerId}) AS requester_matches`,
-            sql`${matchPlayersTable.matchId} = requester_matches.match_id`
-          )
-          .limit(1);
-
-        if (shared) {
-          // Co-participant — allow full profile
-          res.json(await buildPlayerProfile(player));
-          return;
-        }
-      }
-
-      // Private or participants-only without shared match — return redacted
+    if (!canSeeProfile) {
+      // Return minimal response per D-07
       const memberRows = await db
         .select({ teamId: teamMembersTable.teamId, teamName: teamsTable.name, teamTag: teamsTable.tag, status: teamMembersTable.status })
         .from(teamMembersTable)
@@ -563,6 +576,21 @@ router.get("/:id/events", async (req, res) => {
       return;
     }
 
+    // Privacy gate: profile sub-route follows profile visibility
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, id));
+    if (!player) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+
+    const viewerId = req.session.playerId ? Number(req.session.playerId) : null;
+    const isAdmin = !!req.session.adminId;
+    const { canSeeProfile } = await isPlayerProfileVisibleTo(player, viewerId, isAdmin);
+    if (!canSeeProfile) {
+      res.status(403).json({ error: "Player profile is private" });
+      return;
+    }
+
     // Registrations this player has
     const regRows = await db
       .select({
@@ -620,6 +648,21 @@ router.get("/:id/champions", async (req, res) => {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    // Privacy gate: profile sub-route follows profile visibility
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, id));
+    if (!player) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+
+    const viewerId = req.session.playerId ? Number(req.session.playerId) : null;
+    const isAdmin = !!req.session.adminId;
+    const { canSeeProfile } = await isPlayerProfileVisibleTo(player, viewerId, isAdmin);
+    if (!canSeeProfile) {
+      res.status(403).json({ error: "Player profile is private" });
       return;
     }
 
