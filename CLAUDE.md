@@ -185,7 +185,7 @@ pnpm monorepo
 ├── lib/api-spec/openapi.yaml ← API contract (source of truth)
 ├── lib/api-client-react/     ← Generated hooks (never edit directly)
 ├── artifacts/api-server/     ← Express routes
-├── artifacts/vclol/          ← React frontend (Replit owns)
+├── artifacts/vclol/          ← React frontend
 └── artifacts/discord-bot/    ← Bot (Claude owns)
 ```
 
@@ -240,11 +240,10 @@ VOD: follows match visibility. POV: requires individual player RSO opt-in consen
 
 ## Ownership
 
-**Claude owns (Replit never edits):**
-`lib/db/src/schema/` · `lib/api-spec/openapi.yaml` · `artifacts/api-server/` · `artifacts/discord-bot/` · `docs/` (except replit.md) · `CLAUDE.md`
+**Claude owns:**
+`lib/db/src/schema/` · `lib/api-spec/openapi.yaml` · `artifacts/api-server/` · `artifacts/discord-bot/` · `artifacts/vclol/src/` · `docs/` · `CLAUDE.md`
 
-**Replit owns (Claude never edits):**
-`artifacts/vclol/src/` · `replit.md`
+Design guide: `docs/DESIGN_GUIDE.md` is the canonical design reference for all frontend work.
 
 ---
 
@@ -288,7 +287,7 @@ VCLoL is the missing infrastructure between solo queue and organized competitive
 
 - **Riot Policy:** Custom game data private by default; 3-layer privacy model required
 - **RSO Dependency:** Production key requires Riot approval; build with placeholder, swap on approval
-- **Ownership Boundary:** Claude never edits `artifacts/vclol/src/`, Replit never edits backend/bot/docs
+- **Ownership:** Claude owns full stack (backend, bot, frontend, docs). See `docs/DESIGN_GUIDE.md` for frontend conventions.
 - **No SSH:** All deployment via Portainer Web editor only
 - **ARM64:** Docker BuildKit broken on ARM64, use stock images + Web editor paste
 <!-- GSD:project-end -->
@@ -496,7 +495,7 @@ VCLoL is the missing infrastructure between solo queue and organized competitive
 - Contract-first API: OpenAPI spec (`lib/api-spec/openapi.yaml`) drives codegen for frontend hooks (`lib/api-client-react/`) and Zod validators (`lib/api-zod/`)
 - Both bot and API server share the same `@workspace/db` package and connect directly to PostgreSQL via Drizzle ORM (no HTTP intermediary between bot and DB)
 - The bot is the primary match data producer; the API server is for display, admin, and auth
-- Code ownership split: Claude owns backend/bot/schema/docs, Replit owns frontend (`artifacts/vclol/src/`)
+- Claude owns full stack (backend, bot, frontend, docs)
 ## Layers
 - Purpose: Drizzle ORM schema definitions, connection pool, and type exports
 - Location: `lib/db/src/`
