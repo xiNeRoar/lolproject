@@ -59,7 +59,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Update /auth/me with hasPuuid + rsoOptIn fields (route + OpenAPI spec)
-- [ ] 05-02-PLAN.md — Create GET /players/:id/team-stats endpoint (route + OpenAPI spec)
+- [x] 05-02-PLAN.md — Create GET /players/:id/team-stats endpoint (route + OpenAPI spec)
 
 ### Phase 6: Codegen Sync
 **Goal**: Frontend React Query hooks and Zod validators reflect all v3.2 spec changes so Replit can consume them immediately

@@ -12,8 +12,8 @@
 
 ### Player Stats API
 
-- [ ] **STAT-01**: New endpoint returns per-team W/L record and KDA averages for a given player (grouped by team membership)
-- [ ] **STAT-02**: OpenAPI spec documents the per-team stats endpoint with correct request/response schemas
+- [x] **STAT-01**: New endpoint returns per-team W/L record and KDA averages for a given player (grouped by team membership)
+- [x] **STAT-02**: OpenAPI spec documents the per-team stats endpoint with correct request/response schemas
 - [ ] **STAT-03**: Codegen regenerated after spec changes — frontend hooks updated
 
 ### Design System & Ownership
@@ -43,8 +43,8 @@
 |-------------|-------|--------|
 | AUTH-06 | Phase 5 | Complete |
 | AUTH-07 | Phase 5 | Complete |
-| STAT-01 | Phase 5 | Pending |
-| STAT-02 | Phase 5 | Pending |
+| STAT-01 | Phase 5 | Complete |
+| STAT-02 | Phase 5 | Complete |
 | STAT-03 | Phase 6 | Pending |
 | ISSUE-01 | Phase 7 | Pending |
 | ISSUE-02 | Phase 7 | Pending |

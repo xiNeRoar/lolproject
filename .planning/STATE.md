@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Frontend Readiness
-status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-28T19:41:59.696Z"
+status: verifying
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-28T19:52:25.004Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 Phase: 05 (auth-stats-api) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-28
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 08 P01 | 4min | 1 tasks | 1 files |
 | Phase 08 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P01 | 4min | 2 tasks | 3 files |
+| Phase 05 P02 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 08]: Full-stack Claude ownership: CLAUDE.md and PROJECT.md updated from split model to single agent full-stack
 - [Phase 05]: Added puuid and rsoOptIn columns to players schema (required by auth/me plan, missing from codebase)
 - [Phase 05]: AuthMeResponse created as named schema in OpenAPI spec (did not exist, created following AdminMeResponse pattern)
+- [Phase 05]: 2-phase query pattern for team-stats: memberships first, match aggregation second, merge with null-safe Map
+- [Phase 05]: Privacy gate returns 403 (not 404) for private profiles -- consistent across /champions, /events, /team-stats
 
 ### Roadmap Evolution
 
@@ -92,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T19:41:59.692Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-28T19:52:25.000Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
