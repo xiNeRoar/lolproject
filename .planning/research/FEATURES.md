@@ -1,112 +1,239 @@
 # Feature Landscape
 
-**Domain:** Competitive amateur LoL scrim recording platform with identity verification and privacy compliance
-**Researched:** 2026-03-26
+**Domain:** VCLoL v3.3 Frontend Launch — RSO connect flow, player career resume, frontend error handling
+**Researched:** 2026-03-28
+**Scope:** Narrowed to NEW work only. Existing features (bot, team management, admin panel, Discord OAuth, basic website) are out of scope.
+
+---
+
+## Context: What Is Already Built
+
+Before listing new features, the baseline must be clear:
+
+- `/api/auth/discord` + `/api/auth/discord/callback` — Discord OAuth working, sets `req.session.playerId`
+- `/api/auth/me` — returns `{ authenticated, playerId, riotId, discordUsername, hasPuuid, rsoOptIn }`
+- `/api/auth/connect/{token}` — in OpenAPI spec, NOT implemented in `auth.ts` (134 lines, only Discord)
+- `/api/auth/rso` + `/api/auth/rso/callback` — in OpenAPI spec, NOT implemented in `auth.ts`
+- `useAuth()` — returns `playerId, isLoggedIn, riotId, discordUsername` but MISSING `hasPuuid` and `rsoOptIn` (known tech debt)
+- `PlayerProfile.tsx` — full page exists with champion pool, events, ELO trajectory, recent matches; private-state UI exists; per-team career cards NOT present
+- `Matches.tsx` — uses `useListMatches()` which returns `PaginatedMatches` (`{ data, total, page, totalPages }`) but treats it as flat array (bug)
+- `Players.tsx` — same pagination bug: uses `useListPlayers()` which returns `PaginatedPlayers` but treats as flat array
+- `PlayerDashboard.tsx` — has "Riot Account not verified" banner pointing users to Discord `/connect`; no website-native RSO connect button
+- `/connect` route — does NOT exist in `App.tsx` routing
+
+---
 
 ## Table Stakes
 
-Features users expect. Missing = product feels incomplete or non-compliant.
+Features users expect. Missing = product feels broken or launches incorrectly.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| RSO identity verification (one-time OAuth) | Riot policy requires opt-in for custom game data display. FACEIT, OP.GG, and all approved Riot third-party apps use OAuth-based identity. Users expect "Login with Riot" the same way they expect "Login with Google." Without this, no custom match history can be shown publicly. | Medium | Launch blocker. Riot confirmed (July 2024 tweet) that custom lobby match history requires RSO clients, NOT API keys. Build with placeholder, swap credentials on approval. |
-| Player opt-in privacy controls | Riot developer policy explicitly states: "all players must first sign up for their service to display their stats/gameplay data." OP.GG offers public/private/only-me. FACEIT profiles are public by default but platform-scoped (you signed up). VCLoL's 3-layer model exceeds industry standard. | Medium | Already designed in PRD v3.1. The conservative default-private approach is correct and Riot-compliant. |
-| Match result recording with verified data | ScrimStats.gg, Games of Legends, and every serious competitive tracker uses authoritative data sources (API or replay files), not self-reported results. .rofl parsing is the integrity foundation. | Already built | Core differentiator that VCLoL already has. |
-| Team profiles with W/L record | Every competitive platform (FACEIT, ESEA, PlayVS) shows team aggregate stats publicly. This is expected by captains and scouts. Team name, tag, roster, win/loss record. | Low | Already built. Ensure it works well without ELO (W/L is the primary metric for scrims). |
-| Player career stats (aggregate KDA, champion pool, match count) | FACEIT shows K/D, headshot %, per-map stats. OP.GG shows champion pool, win rates, KDA. Players expect to see their performance summary. VCLoL's "resume model" (per-team stats) is the right framing. | Medium | PRD v3.1 specifies this. Needs implementation: career resume layout with per-team W/L + KDA. |
-| Match detail page with 10-player scoreboard | Standard in every match tracker. OP.GG, FACEIT, and the LoL client itself show full 10-player stats for matches you participated in. The privacy gate (participants-only for scrims) is VCLoL-specific and correct. | Medium | Partially built. Needs v3.1 privacy gate: non-participants see Team A vs B + score only for scrims. Tournament matches fully public. |
-| Search (teams and opt-in players) | FACEIT, OP.GG all have global search. Users expect to find teams and players. Player search must respect opt-in (Riot policy). | Low | Exists but needs opt-in filter for players. Team search unaffected. |
-| Discord bot match submission | VCLoL's viral loop depends on Discord. 40,000+ players active in LoL scrim Discord servers. Bot submission is where users already are. | Already built | Core architecture decision, already validated. |
-| Leaderboard (W/L based) | Every competitive platform has rankings. FACEIT has global/regional ELO leaderboards. For VCLoL scrims, W/L record is the appropriate metric. ELO leaderboard activates only with tournament data. | Low | Already built. Ensure empty state for ELO leaderboard is well-designed. |
+| Feature | Why Expected | Complexity | Dependencies |
+|---------|--------------|------------|--------------|
+| RSO Connect page (`/connect`) | Players arrive here from bot `/connect` command URL. Without it, identity verification is impossible. Launch blocker. | Medium | Needs: `/api/auth/connect/{token}` backend route + `/api/auth/rso` + `/api/auth/rso/callback` implemented in `auth.ts`. Route must exist in `App.tsx`. |
+| `hasPuuid` + `rsoOptIn` in `useAuth()` | Dashboard shows stale banner ("Riot Account not verified") even for verified players because `useAuth()` doesn't forward these fields from `/api/auth/me`. Every part of the UI that needs to know "is this player RSO-verified?" depends on this. | Low | `auth.ts` server already returns these fields. `useAuth()` just needs to forward them from `data`. |
+| Login flow RSO connect step | After Discord OAuth login, players without RSO (`hasPuuid=false`) should see a call-to-action to complete RSO verification. Currently the dashboard shows a yellow warning pointing to Discord, but there should be a website-native RSO connect path. | Low-Medium | Depends on `useAuth()` fix (hasPuuid forwarding) + RSO routes existing |
+| Paginated response adaptation (`Matches.tsx`, `Players.tsx`) | Both hooks return `{ data: [], total, page, totalPages }` but the pages destructure them as if they're arrays. This is a runtime crash for any user who visits `/matches` or `/players`. Fix = unwrap `.data` before filtering/sorting. | Low | No backend changes needed. Generated client already returns correct type. |
+| VOD privacy graceful degradation | `VodDetail.tsx` and `Vods.tsx` likely reference undefined properties when a VOD is access-gated (403). Need null/undefined guard + user-facing "this VOD is private" message. Issue #226. | Low | No backend changes needed. |
+| Private profile 403 handling | `PlayerProfile.tsx` currently checks `player?.isPrivate` via a type cast `(player as any)?.isPrivate`. The actual API returns HTTP 403 with `{ error: "Player profile is private" }` for non-opted players. The existing private-state UI exists but it triggers on a field cast, not on the actual 403. Need `isError` + error status code check. Issue #227. | Low | The private-state UI already exists in `PlayerProfile.tsx` (line 162-206). Just needs correct trigger. |
+
+---
 
 ## Differentiators
 
-Features that set VCLoL apart. Not expected, but valued.
+Features that make VCLoL's website worth visiting, not just the Discord bot.
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| "Team play resume" (per-team career history) | No platform provides this. OP.GG = solo queue. FACEIT = individual ELO. VCLoL uniquely shows "played for Team X: 32W/18L, 3.2 KDA as mid" across multiple teams. This is the shareable URL scouts actually want. | Medium | Core differentiator. PRD section 4.2 nails this. Implementation priority should be high. |
-| .rofl-parsed verified results (no self-reporting) | ScrimStats.gg tracks custom games but relies on API. VCLoL's .rofl parsing provides match data that cannot be fabricated -- champion, KDA, duration, winner extracted from Riot's own replay format. | Already built | Unique integrity guarantee. Marketing angle: "verified, not self-reported." |
-| 3-layer privacy model | Most platforms are binary (public/private). VCLoL's scrim-private/opt-in-public/tournament-public model is more nuanced and Riot-compliant. Exceeds what FACEIT or OP.GG offer for privacy granularity. | Medium | Already designed. Needs frontend implementation of gates. |
-| Automatic roster building from .rofl | No other platform auto-discovers teammates from replay files. Captain submits replay, teammates auto-identified via PUUID. Zero manual roster maintenance. | Already built | Huge UX advantage. Cross-server works automatically. |
-| VOD archive linked to match records | Professional tools (Games of Legends) have VODs for pro matches. Having VODs for amateur scrims is rare and valuable for improvement. | High | VOD pipeline requires separate Windows PC infrastructure. Defer rendering pipeline, but the VOD display pages are already built. |
-| Captain visibility controls (per-match, bulk, default) | Granular control over which matches are public. FACEIT has no equivalent because all ranked matches are inherently public. Scrim context requires this. | Low | Already built in Captain Hub. |
-| Badges (win streak, veteran, season champion) | Gamification that FACEIT has (levels, achievements). Lightweight but motivating. VCLoL badges are scrim-appropriate (veteran=50 matches, win streak=5). | Low | Schema exists. Display implementation needed. |
+| Feature | Value Proposition | Complexity | Dependencies |
+|---------|-------------------|------------|--------------|
+| Per-team career resume cards on player profile | Core VCLoL pitch: "team play resume OP.GG cannot provide." Backend is done (`GET /players/:id/team-stats` returns `PlayerTeamStats[]`). Generated hook `useGetPlayerTeamStats(id)` exists. Design spec in `docs/DESIGN_GUIDE.md` is complete. Just needs to be rendered in `PlayerProfile.tsx`. | Low | `useGetPlayerTeamStats` already generated. `PlayerTeamStats` schema fully defined. `PlayerProfile.tsx` already has team section (ELO trajectory, team links) — career cards slot in there. |
+| RSO connect page as standalone URL | Players share `/connect?token=XYZ` URLs from the bot. Having a polished landing page (vs a bare redirect) builds trust. Shows "Verifying your Riot identity..." during the OAuth redirect, and a success/error state on return. | Low-Medium | Depends on backend RSO routes being implemented. |
+| Post-RSO profile unlock message | After successful RSO connect, show "Your profile is now public-ready. Go to Settings to control visibility." One-time onboarding moment. | Low | Depends on RSO connect success redirect. |
+| Dashboard RSO connect CTA (website-native) | Currently dashboard says "use /connect in Discord." After RSO routes are built, replace or supplement this with a direct "Verify with Riot" button that starts the website RSO flow. More user-friendly than requiring Discord. | Low | Depends on `useAuth()` fix + RSO routes |
+
+---
 
 ## Anti-Features
 
-Features to explicitly NOT build.
+Explicitly out of scope for v3.3.
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Player individual ELO/rating | PRD is clear: team ELO only. Player ELO creates toxicity, discourages experimentation in scrims, and doesn't match VCLoL's "resume" philosophy. FACEIT does individual ELO because they match individuals; VCLoL is team-based. | Career resume model: per-team W/L + KDA + champion pool. |
-| Scrim matchmaking / LFG | Discord handles scheduling. 40,000+ players already use scrim Discord servers for finding opponents. Building matchmaking duplicates existing infrastructure and fragments the community. PRD section 17 explicitly excludes this. | Link to existing scrim Discord servers. Bot presence in those servers IS the distribution channel. |
-| Scrim ELO (rating scrims) | Practice should not penalize experimentation. Opponents may not be in system. Can be gamed by choosing weak opponents. Industry standard (FACEIT, ESEA): practice never counts toward ranking. | W/L record for scrims. ELO only for tournament code + event matches. |
-| Real-time chat | Discord handles all communication. Building chat duplicates Discord, adds moderation burden, and splits where conversations happen. | Keep Discord as the communication layer. Bot announcements in Discord channels. |
-| Mobile app | Web-first. Target demographic uses desktop for LoL. Discord mobile handles notifications. Building a mobile app before the web platform is stable is premature. | Responsive web design for viewing stats on mobile. Submission stays bot-only (desktop). |
-| Government ID verification | FACEIT requires passport/selfie because they handle cash prizes and need anti-smurf for ranked matchmaking. VCLoL uses RSO (Riot's own identity) which is sufficient for the use case. Adding ID verification adds friction, legal liability, and data storage burden. | RSO verification is the right level. PUUID is cryptographically verified by Riot. |
-| Player-to-player messaging | Creates harassment vector. VCLoL is a record-keeping platform, not a social network. | Discord handles all player communication. |
-| Automated opponent scouting / draft analysis | Tempting feature but violates the privacy-first philosophy. Showing opponent tendencies from private scrims would undermine trust. | Let scouts view opted-in profiles manually. |
+| Pagination UI (page numbers, next/prev buttons) | The immediate bug is that pages destructure the paginated response incorrectly (treating `PaginatedMatches` as array). The fix is to unwrap `.data`. Adding full pagination UI (prev/next, page select) is a separate enhancement that belongs in a later issue. | Unwrap `.data`, render all results from page 1. Mark full pagination UI as future work. |
+| RSO token storage | Backend already decided: store PUUID only, never persist RSO access/refresh tokens. This is correct per Riot policy and VCLoL's needs (only PUUID needed for identity). | Keep existing decision. |
+| Activity heatmap | Design guide specifies this pattern but it's not in the active milestone. Adds complexity without unlocking anything blocked. | Defer to a polish milestone. |
+| Shareable card / screenshot export | Design guide specifies this pattern but it is explicitly marked "deferred to future phase." | Leave in design guide as future work. |
+| Player-facing match submission through website | Bot is the match data producer. Website is display-only. The `.rofl` submission endpoint exists for fallback but should not be exposed as a primary UI feature. | Keep submission bot-only. |
 
-## Feature Dependencies
+---
+
+## Feature Implementation Details
+
+### RSO Connect Flow — How It Works
+
+The flow has two entry points, both of which the backend needs to support:
+
+**Entry Point A: Bot-initiated (`/connect` command)**
+1. Player runs `/connect` in Discord
+2. Bot generates a short-lived token, stores it in `auth_sessions` table, sends player a URL: `https://vclol.gg/connect?token=TOKEN`
+3. Player clicks URL, lands on `/connect` page on the website
+4. `/connect` page calls `GET /api/auth/connect/{token}` — backend validates token, associates the Discord session, then redirects to `GET /api/auth/rso` to start the RSO OAuth dance
+5. RSO OAuth: `auth.riotgames.com` → `/api/auth/rso/callback?code=CODE&state=STATE`
+6. Backend exchanges code for PUUID, saves to `players.puuid`, sets `hasPuuid=true`
+7. Redirect to `/dashboard` with success signal
+
+**Entry Point B: Website-initiated (dashboard CTA)**
+1. Authenticated player (has session, no PUUID) clicks "Verify with Riot" button
+2. Button navigates to `GET /api/auth/rso` directly (no token needed, already has session)
+3. Same RSO callback flow as above
+
+**Frontend `/connect` page responsibilities:**
+- Display "Connecting your Riot account..." skeleton during the token validation redirect
+- Handle error states: expired token (`?error=expired`), already linked (`?error=already_linked`)
+- On success redirect from callback, show success state with link to dashboard
+
+**Backend `auth.ts` needs (currently missing):**
+- `GET /auth/connect/:token` — validate token, start RSO redirect
+- `GET /auth/rso` — build Riot OAuth URL with `state` (CSRF), redirect
+- `GET /auth/rso/callback` — exchange code for access token, fetch PUUID via RSO `/userinfo`, save PUUID to DB, destroy RSO tokens, redirect
+
+### Per-Team Career Resume — Expected UI
+
+Based on `docs/DESIGN_GUIDE.md` "Per-Team Career Card" specification:
 
 ```
-RSO OAuth handler (website) --> Player opt-in toggle
-RSO OAuth handler (website) --> Player search filter (only show opted-in)
-RSO OAuth handler (website) --> Match detail privacy gate (participant check)
-
-Match detail privacy gate --> Scrim match: participants-only stats
-Match detail privacy gate --> Tournament match: public stats
-
-Player opt-in toggle --> Player career resume (public visibility)
-Player opt-in toggle --> Player search results
-
-matches.matchType column (#221) --> Tournament vs scrim distinction
-matches.matchType column (#221) --> ELO calculation (tournament only)
-matches.matchType column (#221) --> Layer 3 visibility (tournament = public)
-
-Team profile (W/L) --> Leaderboard (W/L sort)
-Badge schema --> Badge display on profiles
+┌─────────────────────────────────────────────┐
+│  Team Alpha [TA]           Mid   Active     │
+│  32W / 18L                 3.2 / 2.1 / 8.4  │
+└─────────────────────────────────────────────┘
 ```
 
-## MVP Recommendation (v3.1 Launch)
+- Card per team the player has ever been on
+- Inactive teams get muted treatment (`text-muted-foreground`, lower visual weight)
+- Teams with 0 games played show the membership without stats
+- Sorted by `gamesPlayed` descending (backend already does this)
+- Each team name links to the team's profile page (`/teams/:id`)
+- Role Badge shown if `role` is non-null
 
-Prioritize (launch blockers):
-1. **RSO OAuth handler on website** -- Without this, no identity verification, no opt-in, no privacy compliance. Everything downstream depends on it.
-2. **Match detail scrim privacy gate** -- Non-participants see Team A vs B + score only. Riot policy compliance.
-3. **Player search opt-in filter** -- Hide non-opted players from search. Riot policy compliance.
-4. **matches.matchType column sync** (#221) -- Tournament vs scrim distinction needed for Layer 3 visibility.
+Insert location in `PlayerProfile.tsx`: Between the header card and the ELO trajectory section. This is the "career history" anchor — all other stats (champion pool, recent matches) flow naturally after it.
 
-Prioritize (high value, post-blocker):
-5. **Player career resume layout** -- Per-team W/L + KDA. The core differentiator that scouts want.
-6. **Login flow RSO connect step** -- Smooth onboarding: Discord OAuth then RSO link in one flow.
-7. **Badge display** -- Low effort, high engagement. Schema already exists.
+The hook `useGetPlayerTeamStats(player.id)` is available. Enable condition: `!!player?.id && !isPrivate`.
 
-Defer:
-- **VOD rendering pipeline** -- Separate infrastructure (Windows PC). Display pages already built; rendering is independent milestone.
-- **Tournament API integration** -- Depends on Riot production key. Build ELO system ready, activate when tournament codes are available.
-- **Advanced analytics (per-champion win rates, role performance)** -- Nice to have, not launch requirement.
+### Pagination Bug — Expected Fix
 
-## Competitive Landscape Summary
+Both `useListMatches()` and `useListPlayers()` now return `PaginatedMatches` and `PaginatedPlayers` (response shape: `{ data: T[], total, page, totalPages }`).
 
-| Platform | Identity | Privacy Model | Career Data | Match Data Source |
-|----------|----------|---------------|-------------|-------------------|
-| **FACEIT** | ID verification (passport/selfie) + Steam/game link | Profiles public by default (you opted in by signing up). Limited hide options. | Individual ELO, K/D, per-map stats, match history | Platform-hosted matches |
-| **ESEA** | Steam account link, ID for payments | Public stats, minimal privacy controls | Individual stats, team history | Platform-hosted matches |
-| **OP.GG** | Riot API (public data) + RSO for opt-in | Public/private/only-me via Riot settings | Solo queue stats, champion pool, match history | Riot API (ranked/normal) |
-| **PlayVS** | School-based verification | School-scoped visibility | Season stats within school league | Platform-hosted matches |
-| **ScrimStats.gg** | Riot API/RSO | Unclear (alpha product) | Team-focused scrim analytics | Custom game API + RSO |
-| **VCLoL** | RSO (Riot Sign On) | 3-layer: scrim-private / opt-in-public / tournament-public | Per-team career resume (W/L + KDA + champions) | .rofl replay parsing (cannot be faked) |
+Current broken code pattern in `Matches.tsx`:
+```typescript
+const { data: matches } = useListMatches(apiParams);
+// then: matches?.length, [...matches], matches.filter(...)
+// all wrong — matches is { data: [], total, page, totalPages }
+```
 
-**VCLoL's unique position:** The only platform combining .rofl-verified scrim records with a team-play career resume and Riot-compliant privacy. ScrimStats.gg is the closest competitor but targets professional/semi-pro coaches, not the amateur "missing middle" that VCLoL serves.
+Correct fix:
+```typescript
+const { data: matchesPage } = useListMatches(apiParams);
+const matches = matchesPage?.data ?? [];
+// then use matches normally
+```
+
+Same pattern for `Players.tsx` with `useListPlayers()`.
+
+No backend changes. No pagination UI needed now. Just unwrap the `.data` property everywhere.
+
+### Private Profile 403 — Expected Fix
+
+Current code in `PlayerProfile.tsx` (line 127):
+```typescript
+const isPrivate = !!(player as any)?.isPrivate;
+```
+
+This relies on a field that may not exist. The actual API returns HTTP 403 with body `{ error: "Player profile is private" }`.
+
+TanStack Query behavior: When a request returns 403, `isError` becomes `true`. The `error` object contains the response details.
+
+Correct approach — check error status:
+```typescript
+const { data: player, isLoading, isError, error } = useGetPlayer(riotId ?? "");
+const isPrivate = isError && (error as any)?.status === 403;
+```
+
+The private-state UI already exists in the file (lines 162-206). The only change is the condition that triggers it.
+
+### VOD Privacy Graceful Degradation
+
+Expected behavior when a VOD is access-gated (403):
+- VOD list: skip or show locked indicator for gated VODs
+- VOD detail: "This VOD is private. The captain has restricted access to this replay." with back link
+- Do not crash with undefined property access
+
+---
+
+## Feature Dependencies (v3.3 Specific)
+
+```
+useAuth() hasPuuid/rsoOptIn fix
+  → Dashboard RSO connect CTA shows correctly
+  → Login flow RSO step shows/hides correctly
+
+Backend RSO routes (auth.ts: /auth/connect/:token, /auth/rso, /auth/rso/callback)
+  → /connect page can function
+  → RSO OAuth dance completes
+  → players.puuid gets set
+  → hasPuuid=true in /auth/me response
+
+/connect page (new route in App.tsx + new component)
+  → RSO verification entry point works for bot-initiated flow
+
+Pagination unwrap fix (Matches.tsx, Players.tsx)
+  → No runtime crash on /matches and /players pages
+
+useGetPlayerTeamStats(player.id) added to PlayerProfile.tsx
+  → Per-team career resume cards visible on profile
+
+isError 403 check in PlayerProfile.tsx
+  → Private profiles show correct state instead of relying on type cast
+```
+
+---
+
+## Complexity Breakdown
+
+| Feature | Effort | Risk | Blocker For |
+|---------|--------|------|-------------|
+| `useAuth()` hasPuuid/rsoOptIn fix | 15 min | None — just forward two fields | Dashboard CTA, login flow |
+| Pagination unwrap fix (2 files) | 30 min | None — mechanical change | /matches and /players working |
+| Private profile 403 fix | 30 min | Low — UI already exists | Profile page correctness |
+| VOD privacy graceful degradation | 1-2 hr | Low — null guard + message | VOD pages not crashing |
+| Per-team career resume in PlayerProfile | 2-3 hr | Low — hook + design spec both exist | Core differentiator visible |
+| Backend RSO routes (auth.ts) | 3-4 hr | Medium — Riot OAuth integration, CSRF state | RSO connect flow |
+| `/connect` page (frontend) | 1-2 hr | Low — mostly loading/error states | Bot-initiated RSO flow |
+| Dashboard RSO connect CTA | 1 hr | None | Website-native RSO path |
+
+**Total estimated effort:** 10-14 hours. Feasible in one focused execution phase.
+
+---
+
+## Ordering Rationale
+
+Build order should be:
+
+1. **Tech debt first** (`useAuth()` fix, pagination fix, 403 fix, VOD graceful degradation) — zero risk, unblocks everything else, fixes existing broken pages
+2. **Backend RSO routes** — needed before any RSO frontend can work; self-contained in `auth.ts`
+3. **Per-team career resume** — backend done, hook generated, design spec complete; highest-value visible feature
+4. **RSO connect page + dashboard CTA** — depends on backend RSO routes; completes the launch requirement
+
+---
 
 ## Sources
 
-- [Riot Games DevRel: Custom lobby match history via RSO clients](https://x.com/RiotGamesDevRel/status/1813983125376016853) -- HIGH confidence, primary source
-- [RSO (Riot Sign On) Developer Relations](https://support-developer.riotgames.com/hc/en-us/articles/22801670382739-RSO-Riot-Sign-On) -- HIGH confidence
-- [Riot General Policies for Developers](https://support-developer.riotgames.com/hc/en-us/articles/22698591841939-General-Policies) -- HIGH confidence
-- [FACEIT Verification FAQ](https://support.faceit.com/hc/en-us/articles/8650124346780-Verification-FAQ) -- MEDIUM confidence
-- [FACEIT Player Profiles features](https://faceitsync.com/en/features/player-profiles) -- MEDIUM confidence (third-party description)
-- [OP.GG profile privacy settings](https://help.op.gg/hc/en-us/articles/31092128317721-How-to-set-profile-to-public-or-private) -- MEDIUM confidence
-- [ScrimStats.gg](https://scrimstats.gg/) -- LOW confidence (alpha product, limited public info)
-- [Esports Insider: The space between pro and amateur](https://esportsinsider.com/2021/04/why-esports-needs-competitive-gaming-platforms) -- MEDIUM confidence
+All findings are HIGH confidence (derived from direct codebase inspection, not external research):
+
+- `artifacts/vclol/src/hooks/use-auth.ts` — confirmed hasPuuid/rsoOptIn not forwarded
+- `artifacts/api-server/src/routes/auth.ts` (134 lines) — confirmed RSO routes not implemented
+- `lib/api-spec/openapi.yaml` lines 193-235 — RSO routes specified but not yet backed by implementation
+- `lib/api-client-react/src/generated/api.ts` lines 2902-2963 — `useGetPlayerTeamStats` confirmed generated
+- `artifacts/vclol/src/pages/public/PlayerProfile.tsx` lines 127-128 — confirmed `(player as any)?.isPrivate` type cast
+- `artifacts/vclol/src/pages/public/Matches.tsx` lines 17-18 — confirmed flat array usage of paginated response
+- `artifacts/vclol/src/pages/public/Players.tsx` lines 38-39 — confirmed flat array usage of paginated response
+- `artifacts/vclol/src/App.tsx` lines 43-84 — confirmed no `/connect` route exists
+- `docs/DESIGN_GUIDE.md` lines 177-228 — confirmed Per-Team Career Card and Shareable Card specs
+- `lib/api-spec/openapi.yaml` lines 3550-3585 — confirmed PlayerTeamStats schema shape
