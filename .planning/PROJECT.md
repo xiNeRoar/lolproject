@@ -65,9 +65,16 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - [ ] Frontend private profile 403 handling (#227)
 - [ ] useAuth() wrapper needs hasPuuid/rsoOptIn forwarding (tech debt from v3.2)
 
-## Current Milestone: Planning next milestone
+## Current Milestone: v3.3 Frontend Launch
 
-**Previous:** v3.2 Frontend Readiness — shipped 2026-03-28 (12/12 requirements satisfied)
+**Goal:** Ship the website frontend so players can use it — RSO identity verification, player profiles with career stats, and proper error handling.
+
+**Target features:**
+- Tech debt cleanup (useAuth() fix, vods.ts TS errors)
+- RSO Connect page (#198) — launch blocker
+- Player profile career resume (#200) — per-team W/L + KDA cards
+- Frontend error handling (#225, #226, #227)
+- Login flow with RSO connect step
 
 ### Out of Scope
 
@@ -132,4 +139,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after v3.2 milestone completion*
+*Last updated: 2026-03-28 after v3.3 milestone start*
