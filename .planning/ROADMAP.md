@@ -76,7 +76,11 @@ Plans:
   2. CLAUDE.md ownership section updated: Claude owns artifacts/vclol/src/ (was Replit), with design guide referenced as canonical
   3. PROJECT.md reflects full-stack Claude ownership with updated constraints and active requirements
   4. Design Guide covers: color tokens, typography, component variants, layout patterns, bot-web alignment, and new patterns (per-team career cards, activity heatmap, shareable cards)
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Create docs/DESIGN_GUIDE.md with design tokens, typography, layout patterns, do/don't rules, new pattern specs, bot-web alignment
+- [ ] 08-02-PLAN.md — Update CLAUDE.md and PROJECT.md for full-stack Claude ownership
 
 ### Phase 7: Issue Hygiene
 **Goal**: GitHub issues accurately reflect backend API reality and correct ownership labels
@@ -105,4 +109,4 @@ Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foun
 | 5. Auth & Stats API | v3.2 | 0/? | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/? | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
-| 8. Design System & Ownership Docs | v3.2 | 0/? | Not started | - |
+| 8. Design System & Ownership Docs | v3.2 | 0/2 | Not started | - |
