@@ -24,10 +24,10 @@
 
 ### Issue Hygiene
 
-- [ ] **ISSUE-01**: GitHub issue #198 updated with correct API paths (GET /auth/connect/:token, GET /auth/rso, GET /auth/rso/callback)
+- [x] **ISSUE-01**: GitHub issue #198 updated with correct API paths (GET /auth/connect/:token, GET /auth/rso, GET /auth/rso/callback)
 - [ ] **ISSUE-02**: New GitHub issue opened for frontend paginated response adaptation (GET /players and GET /matches now return { data, total, page, totalPages })
 - [ ] **ISSUE-03**: New GitHub issue opened for frontend VOD privacy gate UI (handle restricted VODs gracefully)
-- [ ] **ISSUE-04**: New GitHub issue opened for frontend player profile sub-route 403 handling
+- [x] **ISSUE-04**: New GitHub issue opened for frontend player profile sub-route 403 handling
 
 ## Out of Scope
 
@@ -46,10 +46,10 @@
 | STAT-01 | Phase 5 | Complete |
 | STAT-02 | Phase 5 | Complete |
 | STAT-03 | Phase 6 | Complete |
-| ISSUE-01 | Phase 7 | Pending |
+| ISSUE-01 | Phase 7 | Complete |
 | ISSUE-02 | Phase 7 | Pending |
 | ISSUE-03 | Phase 7 | Pending |
-| ISSUE-04 | Phase 7 | Pending |
+| ISSUE-04 | Phase 7 | Complete |
 | DOC-01 | Phase 8 | Complete |
 | DOC-02 | Phase 8 | Complete |
 | DOC-03 | Phase 8 | Complete |
