@@ -79,7 +79,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Create docs/DESIGN_GUIDE.md with design tokens, typography, layout patterns, do/don't rules, new pattern specs, bot-web alignment
+- [x] 08-01-PLAN.md — Create docs/DESIGN_GUIDE.md with design tokens, typography, layout patterns, do/don't rules, new pattern specs, bot-web alignment
 - [ ] 08-02-PLAN.md — Update CLAUDE.md and PROJECT.md for full-stack Claude ownership
 
 ### Phase 7: Issue Hygiene

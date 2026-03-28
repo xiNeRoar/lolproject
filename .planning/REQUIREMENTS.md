@@ -18,7 +18,7 @@
 
 ### Design System & Ownership
 
-- [ ] **DOC-01**: docs/DESIGN_GUIDE.md created with actual design tokens, typography, component patterns, layout conventions, and new pattern specs (per-team career cards, activity heatmap, shareable cards)
+- [x] **DOC-01**: docs/DESIGN_GUIDE.md created with actual design tokens, typography, component patterns, layout conventions, and new pattern specs (per-team career cards, activity heatmap, shareable cards)
 - [ ] **DOC-02**: CLAUDE.md updated — Claude owns artifacts/vclol/src/ (full-stack), design guide referenced as canonical
 - [ ] **DOC-03**: PROJECT.md updated — full-stack ownership model, updated constraints, active requirements reflect frontend scope
 
@@ -50,7 +50,7 @@
 | ISSUE-02 | Phase 7 | Pending |
 | ISSUE-03 | Phase 7 | Pending |
 | ISSUE-04 | Phase 7 | Pending |
-| DOC-01 | Phase 8 | Pending |
+| DOC-01 | Phase 8 | Complete |
 | DOC-02 | Phase 8 | Pending |
 | DOC-03 | Phase 8 | Pending |
 
