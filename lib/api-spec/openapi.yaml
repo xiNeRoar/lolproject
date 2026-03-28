@@ -29,6 +29,8 @@ tags:
     description: Public ELO ladder
   - name: vodTimestamps
     description: VOD timestamp markers
+  - name: auth
+    description: Player authentication
 
 paths:
   /healthz:
@@ -1489,6 +1491,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /auth/me:
+    get:
+      operationId: authMe
+      tags: [auth]
+      summary: Get current player session
+      responses:
+        "200":
+          description: Current session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -2812,3 +2827,23 @@ components:
           type: string
       required:
         - message
+
+    AuthMeResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        playerId:
+          type: integer
+          nullable: true
+        riotId:
+          type: string
+          nullable: true
+        discordUsername:
+          type: string
+          nullable: true
+        hasPuuid:
+          type: boolean
+        rsoOptIn:
+          type: boolean
+      required: [authenticated, hasPuuid, rsoOptIn]
