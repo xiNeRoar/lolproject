@@ -411,6 +411,9 @@ router.put("/:id", requireAdmin, async (req, res) => {
       position?: string | null;
       patch?: string | null;
       teamEloAtTime?: number | null;
+      gameNumber?: number | null;
+      vodType?: string | null;
+      teamId?: number | null;
     };
 
     const updates: Partial<typeof vodEntriesTable.$inferInsert> = { updatedAt: new Date() };
