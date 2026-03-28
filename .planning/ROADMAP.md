@@ -72,7 +72,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Run Orval codegen and verify generated output includes all Phase 5 additions
+- [x] 06-01-PLAN.md — Run Orval codegen and verify generated output includes all Phase 5 additions
 
 ### Phase 8: Design System & Ownership Docs
 **Goal**: Formalize the implicit design system into docs/DESIGN_GUIDE.md, update CLAUDE.md for full-stack Claude ownership, and update PROJECT.md to reflect new ownership model

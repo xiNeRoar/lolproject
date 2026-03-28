@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Frontend Readiness
 status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-28T20:26:38.958Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-28T20:52:35.577Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 8
-  completed_phases: 7
-  total_plans: 14
-  completed_plans: 14
+  completed_phases: 8
+  total_plans: 15
+  completed_plans: 15
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Every match submitted via .rofl produces a verified, permanent competitive record that cannot be faked.
-**Current focus:** Phase 05 — auth-stats-api
+**Current focus:** Phase 06 — codegen-sync
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
+Phase: 06 (codegen-sync) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
 Last activity: 2026-03-28
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 08 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P01 | 4min | 2 tasks | 3 files |
 | Phase 05 P02 | 6min | 2 tasks | 2 files |
+| Phase 06-codegen-sync P01 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 05]: AuthMeResponse created as named schema in OpenAPI spec (did not exist, created following AdminMeResponse pattern)
 - [Phase 05]: 2-phase query pattern for team-stats: memberships first, match aggregation second, merge with null-safe Map
 - [Phase 05]: Privacy gate returns 403 (not 404) for private profiles -- consistent across /champions, /events, /team-stats
+- [Phase 06-codegen-sync]: Removed 14 duplicate keys from openapi.yaml (3 paths, 11 schemas) -- first occurrences authoritative
+- [Phase 06-codegen-sync]: api-zod barrel exports only from generated/api.ts (not types/) to avoid TS2308 duplicate export collisions
 
 ### Roadmap Evolution
 
@@ -95,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T20:26:38.953Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-codegen-sync/06-CONTEXT.md
+Last session: 2026-03-28T20:52:35.573Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None
