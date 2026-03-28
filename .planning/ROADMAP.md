@@ -103,7 +103,7 @@ Plans:
 
 Plans:
 - [x] 07-01-PLAN.md — Fix #198 API paths and relabel all open Replit issues to Claude ownership
-- [ ] 07-02-PLAN.md — Create 3 new frontend issues (paginated responses, VOD privacy, profile 403s)
+- [x] 07-02-PLAN.md — Create 3 new frontend issues (paginated responses, VOD privacy, profile 403s)
 
 ## Progress
 
