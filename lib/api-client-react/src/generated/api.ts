@@ -50,6 +50,7 @@ import type {
   GetTeamMatchesParams,
   GlobalSearch200,
   GlobalSearchParams,
+  H2HRecord,
   HealthStatus,
   LadderResponse,
   LadderSettings,
@@ -71,6 +72,7 @@ import type {
   PlayerChampionStats,
   PlayerEventParticipation,
   PlayerProfile,
+  PlayerTeamStats,
   PostMatchesSubmitRofl201,
   RegisterPlayerRequest,
   RegisterTeamForEvent201,
@@ -2632,6 +2634,446 @@ export function useGetPlayerById<
 }
 
 /**
+ * @summary Player self-update (own account only)
+ */
+export const getUpdatePlayerProfileUrl = (id: number) => {
+  return `/api/players/${id}/profile`;
+};
+
+export const updatePlayerProfile = async (
+  id: number,
+  updatePlayerProfileRequest: UpdatePlayerProfileRequest,
+  options?: RequestInit,
+): Promise<Player> => {
+  return customFetch<Player>(getUpdatePlayerProfileUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updatePlayerProfileRequest),
+  });
+};
+
+export const getUpdatePlayerProfileMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    TError,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePlayerProfile>>,
+  TError,
+  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+  TContext
+> => {
+  const mutationKey = ["updatePlayerProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePlayerProfile(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePlayerProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePlayerProfile>>
+>;
+export type UpdatePlayerProfileMutationBody =
+  BodyType<UpdatePlayerProfileRequest>;
+export type UpdatePlayerProfileMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Player self-update (own account only)
+ */
+export const useUpdatePlayerProfile = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePlayerProfile>>,
+    TError,
+    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePlayerProfile>>,
+  TError,
+  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
+  TContext
+> => {
+  return useMutation(getUpdatePlayerProfileMutationOptions(options));
+};
+
+/**
+ * @summary Get events a player participated in
+ */
+export const getGetPlayerEventsUrl = (id: number) => {
+  return `/api/players/${id}/events`;
+};
+
+export const getPlayerEvents = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerEventParticipation[]> => {
+  return customFetch<PlayerEventParticipation[]>(getGetPlayerEventsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerEventsQueryKey = (id: number) => {
+  return [`/api/players/${id}/events`] as const;
+};
+
+export const getGetPlayerEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerEventsQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerEvents>>> = ({
+    signal,
+  }) => getPlayerEvents(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerEvents>>
+>;
+export type GetPlayerEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get events a player participated in
+ */
+
+export function useGetPlayerEvents<
+  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerEventsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get player champion pool from VOD metadata
+ */
+export const getGetPlayerChampionsUrl = (id: number) => {
+  return `/api/players/${id}/champions`;
+};
+
+export const getPlayerChampions = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerChampionStats[]> => {
+  return customFetch<PlayerChampionStats[]>(getGetPlayerChampionsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerChampionsQueryKey = (id: number) => {
+  return [`/api/players/${id}/champions`] as const;
+};
+
+export const getGetPlayerChampionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerChampions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerChampionsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPlayerChampions>>
+  > = ({ signal }) => getPlayerChampions(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerChampions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerChampionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerChampions>>
+>;
+export type GetPlayerChampionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get player champion pool from VOD metadata
+ */
+
+export function useGetPlayerChampions<
+  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerChampions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerChampionsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all teams the player has been a member of (active, inactive, and pending) with per-team W/L record and KDA averages. Teams with no match data show zeroed stats.
+ * @summary Per-team career stats for a player
+ */
+export const getGetPlayerTeamStatsUrl = (id: number) => {
+  return `/api/players/${id}/team-stats`;
+};
+
+export const getPlayerTeamStats = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerTeamStats[]> => {
+  return customFetch<PlayerTeamStats[]>(getGetPlayerTeamStatsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerTeamStatsQueryKey = (id: number) => {
+  return [`/api/players/${id}/team-stats`] as const;
+};
+
+export const getGetPlayerTeamStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerTeamStats>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerTeamStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerTeamStatsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPlayerTeamStats>>
+  > = ({ signal }) => getPlayerTeamStats(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerTeamStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerTeamStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerTeamStats>>
+>;
+export type GetPlayerTeamStatsQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Per-team career stats for a player
+ */
+
+export function useGetPlayerTeamStats<
+  TData = Awaited<ReturnType<typeof getPlayerTeamStats>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerTeamStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerTeamStatsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Head-to-head record between two players
+ */
+export const getGetPlayerH2HUrl = (idA: number, idB: number) => {
+  return `/api/players/${idA}/h2h/${idB}`;
+};
+
+export const getPlayerH2H = async (
+  idA: number,
+  idB: number,
+  options?: RequestInit,
+): Promise<H2HRecord> => {
+  return customFetch<H2HRecord>(getGetPlayerH2HUrl(idA, idB), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlayerH2HQueryKey = (idA: number, idB: number) => {
+  return [`/api/players/${idA}/h2h/${idB}`] as const;
+};
+
+export const getGetPlayerH2HQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlayerH2H>>,
+  TError = ErrorType<unknown>,
+>(
+  idA: number,
+  idB: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerH2H>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlayerH2HQueryKey(idA, idB);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerH2H>>> = ({
+    signal,
+  }) => getPlayerH2H(idA, idB, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(idA && idB),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlayerH2H>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlayerH2HQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlayerH2H>>
+>;
+export type GetPlayerH2HQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Head-to-head record between two players
+ */
+
+export function useGetPlayerH2H<
+  TData = Awaited<ReturnType<typeof getPlayerH2H>>,
+  TError = ErrorType<unknown>,
+>(
+  idA: number,
+  idB: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlayerH2H>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlayerH2HQueryOptions(idA, idB, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * v3.1 visibility gate: only returns full profile if player has rsoOptIn=true.
 Non-opted players return limited data (id only) or 404 for public access.
 The player themselves (authenticated) always see their own full profile.
@@ -2890,268 +3332,6 @@ export const useDeletePlayer = <
 > => {
   return useMutation(getDeletePlayerMutationOptions(options));
 };
-
-/**
- * @summary Player self-update
- */
-export const getUpdatePlayerProfileUrl = (id: number) => {
-  return `/api/players/${id}/profile`;
-};
-
-export const updatePlayerProfile = async (
-  id: number,
-  updatePlayerProfileRequest: UpdatePlayerProfileRequest,
-  options?: RequestInit,
-): Promise<Player> => {
-  return customFetch<Player>(getUpdatePlayerProfileUrl(id), {
-    ...options,
-    method: "PUT",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(updatePlayerProfileRequest),
-  });
-};
-
-export const getUpdatePlayerProfileMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePlayerProfile>>,
-    TError,
-    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updatePlayerProfile>>,
-  TError,
-  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
-  TContext
-> => {
-  const mutationKey = ["updatePlayerProfile"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updatePlayerProfile>>,
-    { id: number; data: BodyType<UpdatePlayerProfileRequest> }
-  > = (props) => {
-    const { id, data } = props ?? {};
-
-    return updatePlayerProfile(id, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdatePlayerProfileMutationResult = NonNullable<
-  Awaited<ReturnType<typeof updatePlayerProfile>>
->;
-export type UpdatePlayerProfileMutationBody =
-  BodyType<UpdatePlayerProfileRequest>;
-export type UpdatePlayerProfileMutationError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Player self-update
- */
-export const useUpdatePlayerProfile = <
-  TError = ErrorType<ErrorResponse>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePlayerProfile>>,
-    TError,
-    { id: number; data: BodyType<UpdatePlayerProfileRequest> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updatePlayerProfile>>,
-  TError,
-  { id: number; data: BodyType<UpdatePlayerProfileRequest> },
-  TContext
-> => {
-  return useMutation(getUpdatePlayerProfileMutationOptions(options));
-};
-
-/**
- * @summary Events a player participated in
- */
-export const getGetPlayerEventsUrl = (id: number) => {
-  return `/api/players/${id}/events`;
-};
-
-export const getPlayerEvents = async (
-  id: number,
-  options?: RequestInit,
-): Promise<PlayerEventParticipation[]> => {
-  return customFetch<PlayerEventParticipation[]>(getGetPlayerEventsUrl(id), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetPlayerEventsQueryKey = (id: number) => {
-  return [`/api/players/${id}/events`] as const;
-};
-
-export const getGetPlayerEventsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
-  TError = ErrorType<unknown>,
->(
-  id: number,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayerEvents>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetPlayerEventsQueryKey(id);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerEvents>>> = ({
-    signal,
-  }) => getPlayerEvents(id, { signal, ...requestOptions });
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!id,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<typeof getPlayerEvents>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetPlayerEventsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getPlayerEvents>>
->;
-export type GetPlayerEventsQueryError = ErrorType<unknown>;
-
-/**
- * @summary Events a player participated in
- */
-
-export function useGetPlayerEvents<
-  TData = Awaited<ReturnType<typeof getPlayerEvents>>,
-  TError = ErrorType<unknown>,
->(
-  id: number,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayerEvents>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPlayerEventsQueryOptions(id, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * @summary Player champion pool from match_players
- */
-export const getGetPlayerChampionsUrl = (id: number) => {
-  return `/api/players/${id}/champions`;
-};
-
-export const getPlayerChampions = async (
-  id: number,
-  options?: RequestInit,
-): Promise<PlayerChampionStats[]> => {
-  return customFetch<PlayerChampionStats[]>(getGetPlayerChampionsUrl(id), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetPlayerChampionsQueryKey = (id: number) => {
-  return [`/api/players/${id}/champions`] as const;
-};
-
-export const getGetPlayerChampionsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
-  TError = ErrorType<unknown>,
->(
-  id: number,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayerChampions>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetPlayerChampionsQueryKey(id);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getPlayerChampions>>
-  > = ({ signal }) => getPlayerChampions(id, { signal, ...requestOptions });
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!id,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<typeof getPlayerChampions>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetPlayerChampionsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getPlayerChampions>>
->;
-export type GetPlayerChampionsQueryError = ErrorType<unknown>;
-
-/**
- * @summary Player champion pool from match_players
- */
-
-export function useGetPlayerChampions<
-  TData = Awaited<ReturnType<typeof getPlayerChampions>>,
-  TError = ErrorType<unknown>,
->(
-  id: number,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getPlayerChampions>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetPlayerChampionsQueryOptions(id, options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
 
 /**
  * Accepts raw application/octet-stream binary. Runs the same parse + team-match pipeline as the Discord bot /submit command. v3.1: scrim matches record W/L only (no ELO). ELO only for tournament/event matches. Use when the .rofl file exceeds Discord's 8MB default attachment limit.

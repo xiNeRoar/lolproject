@@ -11,4 +11,6 @@ export interface AuthMeResponse {
   playerId?: number | null;
   riotId?: string | null;
   discordUsername?: string | null;
+  hasPuuid: boolean;
+  rsoOptIn: boolean;
 }

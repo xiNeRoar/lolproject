@@ -5,10 +5,10 @@
  * VCLoL — 5v5 Team Scrim Recording Platform API
  * OpenAPI spec version: 2.0.0
  */
-import type { MatchListItem } from "./matchListItem";
+import type { Match } from "./match";
 
 export interface PaginatedMatches {
-  data: MatchListItem[];
+  data: Match[];
   total: number;
   page: number;
   totalPages: number;

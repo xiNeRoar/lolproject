@@ -9,12 +9,12 @@
 export interface CreateVodRequest {
   eventId?: number | null;
   matchId?: number | null;
-  title: string;
+  title?: string;
   format?: string | null;
   playerNames?: string | null;
   roleTag?: string | null;
   notes?: string | null;
-  videoUrl: string;
+  videoUrl?: string;
   playerId?: number | null;
   champion?: string | null;
   opponentChampion?: string | null;
@@ -27,4 +27,13 @@ export interface CreateVodRequest {
   /** Team for team-pov VODs */
   teamId?: number | null;
   teamEloAtTime?: number | null;
+  roflFilePath?: string | null;
+  fileSizeBytes?: number | null;
+  status: string;
+  renderMode: string;
+  youtubeUrlA?: string | null;
+  youtubeUrlB?: string | null;
+  errorMessage?: string | null;
+  submittedAt: string;
+  processedAt?: string | null;
 }

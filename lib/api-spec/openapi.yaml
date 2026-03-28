@@ -1002,79 +1002,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
-  /players/{id}/profile:
-    put:
-      operationId: updatePlayerProfile
-      tags: [players]
-      summary: Player self-update
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdatePlayerProfileRequest"
-      responses:
-        "200":
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Player"
-        "403":
-          description: Not authorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /players/{id}/events:
-    get:
-      operationId: getPlayerEvents
-      tags: [players]
-      summary: Events a player participated in
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Event participations
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PlayerEventParticipation"
-
-  /players/{id}/champions:
-    get:
-      operationId: getPlayerChampions
-      tags: [players]
-      summary: Player champion pool from match_players
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Champion stats
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PlayerChampionStats"
-
   # ── Matches ─────────────────────────────────────────────────
 
   /matches/submit-rofl:
@@ -3464,9 +3391,6 @@ components:
         teamEloAtTime:
           type: integer
           nullable: true
-        playerId:
-          type: integer
-          nullable: true
         roflFilePath:
           type: string
           nullable: true
@@ -3533,60 +3457,6 @@ components:
           nullable: true
       required:
         - status
-
-    PlayerProfile:
-      type: object
-      properties:
-        id:
-          type: integer
-        riotId:
-          type: string
-        discordUsername:
-          type: string
-        currentElo:
-          type: integer
-        peakElo:
-          type: integer
-        wins:
-          type: integer
-        losses:
-          type: integer
-        isActive:
-          type: boolean
-        email:
-          type: string
-          nullable: true
-        notificationPreference:
-          type: string
-          nullable: true
-        discordId:
-          type: string
-          nullable: true
-        recentMatches:
-          type: array
-          items:
-            $ref: "#/components/schemas/MatchDetail"
-        vods:
-          type: array
-          items:
-            $ref: "#/components/schemas/VodEntry"
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required:
-        - id
-        - riotId
-        - discordUsername
-        - currentElo
-        - peakElo
-        - wins
-        - losses
-        - isActive
-        - recentMatches
-        - vods
-        - createdAt
-        - updatedAt
 
     Season:
       type: object
@@ -3676,49 +3546,6 @@ components:
         - peakElo
         - wins
         - losses
-
-    PlayerEventParticipation:
-      type: object
-      properties:
-        eventId:
-          type: integer
-        eventTitle:
-          type: string
-          nullable: true
-        eventSlug:
-          type: string
-          nullable: true
-        eventDate:
-          type: string
-          nullable: true
-        eventFormat:
-          type: string
-          nullable: true
-        registrationStatus:
-          type: string
-          nullable: true
-        matchesPlayed:
-          type: integer
-        wins:
-          type: integer
-        losses:
-          type: integer
-      required:
-        - eventId
-        - matchesPlayed
-        - wins
-        - losses
-
-    PlayerChampionStats:
-      type: object
-      properties:
-        champion:
-          type: string
-        games:
-          type: integer
-      required:
-        - champion
-        - games
 
     PlayerTeamStats:
       type: object
@@ -3926,114 +3753,6 @@ components:
           type: string
       required: [id, title, videoUrl, timestamps, relatedVods, createdAt, updatedAt]
 
-    VodTimestamp:
-      type: object
-      properties:
-        id:
-          type: integer
-        vodId:
-          type: integer
-        label:
-          type: string
-        seconds:
-          type: integer
-        type:
-          type: string
-        createdAt:
-          type: string
-      required: [id, vodId, label, seconds, type, createdAt]
-
-    CreateVodTimestampRequest:
-      type: object
-      properties:
-        label:
-          type: string
-        seconds:
-          type: integer
-        type:
-          type: string
-          nullable: true
-      required: [label, seconds]
-
-    Season:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        status:
-          type: string
-        startDate:
-          type: string
-        endDate:
-          type: string
-        eloResetFactor:
-          type: string
-        defaultMatchFormat:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required: [id, name, status, startDate, endDate, eloResetFactor, createdAt, updatedAt]
-
-    CreateSeasonRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        status:
-          type: string
-          nullable: true
-        startDate:
-          type: string
-        endDate:
-          type: string
-        eloResetFactor:
-          type: string
-          nullable: true
-        defaultMatchFormat:
-          type: string
-          nullable: true
-      required: [name, startDate, endDate]
-
-    LadderEntry:
-      type: object
-      properties:
-        rank:
-          type: integer
-        id:
-          type: integer
-        name:
-          type: string
-        tag:
-          type: string
-        teamElo:
-          type: integer
-        peakElo:
-          type: integer
-        wins:
-          type: integer
-        losses:
-          type: integer
-        winRate:
-          type: number
-      required: [rank, id, name, tag, teamElo, peakElo, wins, losses]
-
-    LadderResponse:
-      type: object
-      properties:
-        season:
-          $ref: "#/components/schemas/Season"
-          nullable: true
-        entries:
-          type: array
-          items:
-            $ref: "#/components/schemas/LadderEntry"
-      required: [entries]
-
     LadderSettings:
       type: object
       properties:
@@ -4143,40 +3862,6 @@ components:
           type: string
           nullable: true
       required: [id, status, renderMode, submittedAt]
-
-    SubmitReplayRequest:
-      type: object
-      properties:
-        matchId:
-          type: integer
-        playerId:
-          type: integer
-          nullable: true
-        roflFilePath:
-          type: string
-          nullable: true
-        fileSizeBytes:
-          type: integer
-          nullable: true
-        renderMode:
-          type: string
-      required: [matchId, renderMode]
-
-    UpdateReplayStatusRequest:
-      type: object
-      properties:
-        status:
-          type: string
-        youtubeUrlA:
-          type: string
-          nullable: true
-        youtubeUrlB:
-          type: string
-          nullable: true
-        errorMessage:
-          type: string
-          nullable: true
-      required: [status]
 
     Notification:
       type: object

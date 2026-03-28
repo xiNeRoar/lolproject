@@ -9,11 +9,12 @@
 export interface LadderEntry {
   rank: number;
   id: number;
-  name: string;
-  tag: string;
-  teamElo: number;
+  riotId: string;
+  discordUsername: string;
+  currentElo: number;
   peakElo: number;
   wins: number;
   losses: number;
   winRate?: number;
+  topChampion?: string | null;
 }

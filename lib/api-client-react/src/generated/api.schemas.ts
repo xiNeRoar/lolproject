@@ -47,6 +47,8 @@ export interface AuthMeResponse {
   playerId?: number | null;
   riotId?: string | null;
   discordUsername?: string | null;
+  hasPuuid: boolean;
+  rsoOptIn: boolean;
 }
 
 export interface Team {
@@ -470,12 +472,12 @@ export interface EventRegistration {
 export interface CreateVodRequest {
   eventId?: number | null;
   matchId?: number | null;
-  title: string;
+  title?: string;
   format?: string | null;
   playerNames?: string | null;
   roleTag?: string | null;
   notes?: string | null;
-  videoUrl: string;
+  videoUrl?: string;
   playerId?: number | null;
   champion?: string | null;
   opponentChampion?: string | null;
@@ -488,6 +490,111 @@ export interface CreateVodRequest {
   /** Team for team-pov VODs */
   teamId?: number | null;
   teamEloAtTime?: number | null;
+  roflFilePath?: string | null;
+  fileSizeBytes?: number | null;
+  status: string;
+  renderMode: string;
+  youtubeUrlA?: string | null;
+  youtubeUrlB?: string | null;
+  errorMessage?: string | null;
+  submittedAt: string;
+  processedAt?: string | null;
+}
+
+export interface SubmitReplayRequest {
+  matchId: number;
+  playerId?: number | null;
+  roflFilePath?: string | null;
+  fileSizeBytes?: number | null;
+  renderMode: string;
+}
+
+export interface UpdateReplayStatusRequest {
+  status: string;
+  youtubeUrlA?: string | null;
+  youtubeUrlB?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface Season {
+  id: number;
+  name: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  eloResetFactor: string;
+  defaultMatchFormat?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSeasonRequest {
+  name: string;
+  status?: string | null;
+  startDate: string;
+  endDate: string;
+  eloResetFactor?: string | null;
+  defaultMatchFormat?: string | null;
+}
+
+export interface LadderEntry {
+  rank: number;
+  id: number;
+  riotId: string;
+  discordUsername: string;
+  currentElo: number;
+  peakElo: number;
+  wins: number;
+  losses: number;
+  winRate?: number;
+  topChampion?: string | null;
+}
+
+/**
+ * Per-team career stats. Averages (avgKills, avgDeaths, avgAssists) are per-game for that team. Zero-game teams return 0 for all numeric fields.
+ */
+export interface PlayerTeamStats {
+  teamId: number;
+  teamName: string;
+  teamTag: string;
+  /** Player role from team_members (may be null if not assigned) */
+  role?: string | null;
+  /** Team membership status -- active, inactive, or pending */
+  status: string;
+  wins: number;
+  losses: number;
+  /** Average kills per game with this team (0 if no games) */
+  avgKills: number;
+  /** Average deaths per game with this team (0 if no games) */
+  avgDeaths: number;
+  /** Average assists per game with this team (0 if no games) */
+  avgAssists: number;
+  gamesPlayed: number;
+  joinedAt: string;
+}
+
+export type H2HRecordMatchesItem = {
+  id?: number;
+  matchTitle?: string;
+  sideAName?: string;
+  sideBName?: string;
+  winnerName?: string;
+  score?: string | null;
+  createdAt?: string;
+};
+
+export interface H2HRecord {
+  playerAId: number;
+  playerBId: number;
+  totalMatches: number;
+  playerAWins: number;
+  playerBWins: number;
+  matches: H2HRecordMatchesItem[];
+}
+
+export interface LadderResponse {
+  season?: Season | null;
+  entries: LadderEntry[];
 }
 
 export interface VodTimestamp {
@@ -497,6 +604,12 @@ export interface VodTimestamp {
   seconds: number;
   type: string;
   createdAt: string;
+}
+
+export interface CreateVodTimestampRequest {
+  label: string;
+  seconds: number;
+  type?: string | null;
 }
 
 export interface VodDetail {
@@ -527,50 +640,6 @@ export interface VodDetail {
   relatedVods: VodEntry[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CreateVodTimestampRequest {
-  label: string;
-  seconds: number;
-  type?: string | null;
-}
-
-export interface Season {
-  id: number;
-  name: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  eloResetFactor: string;
-  defaultMatchFormat?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateSeasonRequest {
-  name: string;
-  status?: string | null;
-  startDate: string;
-  endDate: string;
-  eloResetFactor?: string | null;
-  defaultMatchFormat?: string | null;
-}
-
-export interface LadderEntry {
-  rank: number;
-  id: number;
-  name: string;
-  tag: string;
-  teamElo: number;
-  peakElo: number;
-  wins: number;
-  losses: number;
-  winRate?: number;
-}
-
-export interface LadderResponse {
-  season?: Season | null;
-  entries: LadderEntry[];
 }
 
 export interface LadderSettings {
@@ -625,21 +694,6 @@ export interface ReplaySubmission {
   processedAt?: string | null;
 }
 
-export interface SubmitReplayRequest {
-  matchId: number;
-  playerId?: number | null;
-  roflFilePath?: string | null;
-  fileSizeBytes?: number | null;
-  renderMode: string;
-}
-
-export interface UpdateReplayStatusRequest {
-  status: string;
-  youtubeUrlA?: string | null;
-  youtubeUrlB?: string | null;
-  errorMessage?: string | null;
-}
-
 export interface Notification {
   id: number;
   type: string;
@@ -680,20 +734,17 @@ export interface PaginatedPlayers {
   totalPages: number;
 }
 
-/**
- * Match list item with team names and VOD count (superset of Match fields)
- */
-export type MatchListItem = Match & {
-  /** Number of VODs attached to this match */
-  vodCount?: number;
-};
-
 export interface PaginatedMatches {
-  data: MatchListItem[];
+  data: Match[];
   total: number;
   page: number;
   totalPages: number;
 }
+
+/**
+ * Match list item (inherits all Match fields including vodCount)
+ */
+export type MatchListItem = Match;
 
 export type ListAdminActions200Item = {
   id: number;

@@ -8,9 +8,6 @@
 import type { Match } from "./match";
 
 /**
- * Match list item with team names and VOD count (superset of Match fields)
+ * Match list item (inherits all Match fields including vodCount)
  */
-export type MatchListItem = Match & {
-  /** Number of VODs attached to this match */
-  vodCount?: number;
-};
+export type MatchListItem = Match;
