@@ -55,7 +55,11 @@ Plans:
   2. A new stats endpoint returns W/L record and KDA averages grouped by team for a given player
   3. OpenAPI spec documents both the updated /auth/me response and the new stats endpoint with correct schemas
   4. Both endpoints return appropriate error responses (401 for unauthenticated /auth/me, 404 for unknown player stats)
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Update /auth/me with hasPuuid + rsoOptIn fields (route + OpenAPI spec)
+- [ ] 05-02-PLAN.md — Create GET /players/:id/team-stats endpoint (route + OpenAPI spec)
 
 ### Phase 6: Codegen Sync
 **Goal**: Frontend React Query hooks and Zod validators reflect all v3.2 spec changes so Replit can consume them immediately
@@ -106,7 +110,7 @@ Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foun
 | 3. API Contract & Performance | v3.1 | 3/3 | Complete | 2026-03-27 |
 | 4. Spec Alignment Cleanup | v3.1 | 1/1 | Complete | 2026-03-27 |
 | 4.1. v3.1 Bug Fixes | v3.2 | 0/1 | Not started | - |
-| 5. Auth & Stats API | v3.2 | 0/? | Not started | - |
+| 5. Auth & Stats API | v3.2 | 0/2 | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/? | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
 | 8. Design System & Ownership Docs | v3.2 | 0/2 | Not started | - |
