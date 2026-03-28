@@ -69,7 +69,10 @@ Plans:
   1. Running codegen produces updated hooks in lib/api-client-react with hasPuuid in auth/me types
   2. Generated hooks include the new per-team stats endpoint with correct request/response types
   3. No TypeScript compilation errors in generated output
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md — Run Orval codegen and verify generated output includes all Phase 5 additions
 
 ### Phase 8: Design System & Ownership Docs
 **Goal**: Formalize the implicit design system into docs/DESIGN_GUIDE.md, update CLAUDE.md for full-stack Claude ownership, and update PROJECT.md to reflect new ownership model
@@ -111,6 +114,6 @@ Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foun
 | 4. Spec Alignment Cleanup | v3.1 | 1/1 | Complete | 2026-03-27 |
 | 4.1. v3.1 Bug Fixes | v3.2 | 0/1 | Not started | - |
 | 5. Auth & Stats API | v3.2 | 0/2 | Not started | - |
-| 6. Codegen Sync | v3.2 | 0/? | Not started | - |
+| 6. Codegen Sync | v3.2 | 0/1 | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
 | 8. Design System & Ownership Docs | v3.2 | 0/2 | Not started | - |
