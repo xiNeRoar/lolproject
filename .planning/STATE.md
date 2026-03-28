@@ -67,6 +67,10 @@ Recent decisions affecting current work:
 - [Ownership]: Claude takes full-stack ownership (was backend-only). Replit no longer owns artifacts/vclol/src/
 - [Roadmap v3.2]: Milestone goal expanded to include design system documentation
 
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: v3.1 Bug Fixes (URGENT) — fixes #222, #223, #224 from code review
+
 ### Pending Todos
 
 None yet.

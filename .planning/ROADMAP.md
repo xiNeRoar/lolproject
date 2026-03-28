@@ -3,7 +3,7 @@
 ## Milestones
 
 - **v3.1 Launch Preparation** — Phases 1-4 (shipped 2026-03-27) — [archive](milestones/v3.1-ROADMAP.md)
-- **v3.2 Frontend Readiness** — Phases 5-8 (in progress)
+- **v3.2 Frontend Readiness** — Phases 4.1, 5-8 (in progress)
 
 ## Phases
 
@@ -21,12 +21,27 @@
 
 **Milestone Goal:** Deliver all backend API gaps needed for frontend launch, establish design system documentation, update ownership model, fix incorrect GitHub issues.
 
+- [ ] **Phase 4.1: v3.1 Bug Fixes** - Fix submitRofl visibility fallback, TypeScript compile errors, dead code, stale docs (INSERTED)
 - [ ] **Phase 8: Design System & Ownership Docs** - Document design tokens, component patterns, and update CLAUDE.md for full-stack Claude ownership
 - [ ] **Phase 5: Auth & Stats API** - Add hasPuuid to /auth/me and build per-team player stats endpoint with OpenAPI specs
 - [ ] **Phase 6: Codegen Sync** - Regenerate frontend hooks after all spec changes land
 - [ ] **Phase 7: Issue Hygiene** - Fix incorrect issue paths and open missing frontend issues
 
 ## Phase Details
+
+### Phase 4.1: v3.1 Bug Fixes (INSERTED)
+**Goal**: Fix all bugs discovered during v3.1 code review — visibility fallback, TypeScript errors, dead code, stale docs
+**Depends on**: Nothing (bug fixes on shipped code)
+**Requirements**: Closes #222, #223, #224
+**Success Criteria** (what must be TRUE):
+  1. submitRofl.ts visibility fallback is "private" (matches bot matchRecorder behavior)
+  2. submitRofl.ts INSERT includes explicit matchType: "scrim"
+  3. Dead eloEligible code removed — scrims skip ELO without conditional
+  4. vods.ts has zero implicit-any TypeScript errors
+  5. RSO token schema comments say "reserved for Tournament API, always null" (not "encrypted")
+  6. REQUESTS.md has no stale entries for completed work
+  7. `pnpm --filter @workspace/api-server exec tsc --noEmit` produces zero new errors in files modified by v3.1
+**Plans**: TBD
 
 ### Phase 5: Auth & Stats API
 **Goal**: Frontend can query login status (hasPuuid) and player career stats (per-team W/L + KDA) through documented, spec-compliant endpoints
@@ -75,7 +90,7 @@
 ## Progress
 
 **Execution Order:**
-Phase 8 executes FIRST (no dependencies, foundation for all other phases). Then Phases 5 and 7 in parallel. Phase 6 follows Phase 5.
+Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foundation). Then Phases 5 and 7 in parallel. Phase 6 follows Phase 5.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -83,6 +98,7 @@ Phase 8 executes FIRST (no dependencies, foundation for all other phases). Then 
 | 2. Privacy Gates | v3.1 | 2/2 | Complete | 2026-03-27 |
 | 3. API Contract & Performance | v3.1 | 3/3 | Complete | 2026-03-27 |
 | 4. Spec Alignment Cleanup | v3.1 | 1/1 | Complete | 2026-03-27 |
+| 4.1. v3.1 Bug Fixes | v3.2 | 0/? | Not started | - |
 | 5. Auth & Stats API | v3.2 | 0/? | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/? | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
