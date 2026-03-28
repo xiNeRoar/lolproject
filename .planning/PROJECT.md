@@ -53,9 +53,9 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - [ ] Per-team W/L + KDA stats in player profile API (backend gap for #200) — v3.2
 - [ ] Update GitHub issue #198 with correct API endpoint paths (GET /auth/connect/:token, not POST) — v3.2
 - [ ] Open missing frontend issues (paginated response, VOD privacy gate, profile sub-routes) — v3.2
-- [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker (Replit)
-- [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory) — (Replit, depends on v3.2 backend)
-- [ ] Login flow RSO connect step — (Replit, depends on v3.2 /auth/me)
+- [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
+- [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory) — depends on v3.2 backend
+- [ ] Login flow RSO connect step — depends on v3.2 /auth/me
 
 ## Current Milestone: v3.2 Frontend Readiness
 
@@ -79,7 +79,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 ## Context
 
 - **Brownfield project:** ~25k+ lines of TypeScript across pnpm monorepo
-- **Two AI agents:** Claude owns backend/bot/docs, Replit owns frontend (`artifacts/vclol/src/`)
+- **Single AI agent:** Claude owns full stack (backend, bot, frontend, docs)
 - **Branch:** `variant` (not main)
 - **Deploy:** Portainer on Oracle Cloud ARM64 VPS, no SSH
 - **Current state:** v3.2 in progress — closing backend gaps for frontend launch
@@ -91,7 +91,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 
 - **Riot Policy:** Custom game data private by default; 3-layer privacy model required
 - **RSO Dependency:** Production key requires Riot approval; build with placeholder, swap on approval
-- **Ownership Boundary:** Claude never edits `artifacts/vclol/src/`, Replit never edits backend/bot/docs
+- **Ownership:** Claude owns full stack. Frontend follows `docs/DESIGN_GUIDE.md` conventions.
 - **No SSH:** All deployment via Portainer Web editor only
 - **ARM64:** Docker BuildKit broken on ARM64, use stock images + Web editor paste
 
@@ -109,6 +109,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 | Shared formatMatch pattern | Single source of truth for match response shape | ✓ Good — formatters.ts shipped (v3.1) |
 | Participant check via match_players | More accurate than team_members for visibility | ✓ Good (D-03, v3.1) |
 | visibleAfter null = private | Conservative default, captain controls via /visibility | ✓ Good (D-11, v3.1) |
+| Full-stack Claude ownership | Replit no longer active on project; Claude takes frontend ownership with design guide as canonical reference | -- Transition (v3.2) |
 
 ## Evolution
 
@@ -128,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v3.2 milestone start*
+*Last updated: 2026-03-28 after Phase 08 ownership transition*
