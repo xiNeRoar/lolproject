@@ -830,6 +830,46 @@ paths:
                 items:
                   $ref: "#/components/schemas/PlayerChampionStats"
 
+  /players/{id}/team-stats:
+    get:
+      operationId: getPlayerTeamStats
+      tags: [players]
+      summary: Per-team career stats for a player
+      description: Returns all teams the player has been a member of (active, inactive, and pending) with per-team W/L record and KDA averages. Teams with no match data show zeroed stats.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Per-team stats array sorted by gamesPlayed descending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerTeamStats"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Player profile is private
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /players/{idA}/h2h/{idB}:
     get:
       operationId: getPlayerH2H
@@ -2446,6 +2486,43 @@ components:
       required:
         - champion
         - games
+
+    PlayerTeamStats:
+      type: object
+      description: Per-team career stats. Averages (avgKills, avgDeaths, avgAssists) are per-game for that team. Zero-game teams return 0 for all numeric fields.
+      properties:
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamTag:
+          type: string
+        role:
+          type: string
+          nullable: true
+          description: Player role from team_members (may be null if not assigned)
+        status:
+          type: string
+          description: Team membership status -- active, inactive, or pending
+        wins:
+          type: integer
+        losses:
+          type: integer
+        avgKills:
+          type: number
+          description: Average kills per game with this team (0 if no games)
+        avgDeaths:
+          type: number
+          description: Average deaths per game with this team (0 if no games)
+        avgAssists:
+          type: number
+          description: Average assists per game with this team (0 if no games)
+        gamesPlayed:
+          type: integer
+        joinedAt:
+          type: string
+          format: date-time
+      required: [teamId, teamName, teamTag, status, wins, losses, avgKills, avgDeaths, avgAssists, gamesPlayed, joinedAt]
 
     H2HRecord:
       type: object
