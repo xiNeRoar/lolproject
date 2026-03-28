@@ -77,7 +77,8 @@ router.get("/", async (req, res) => {
     const vodType = req.query.type as string | undefined; // spectator | pov | all (#109)
 
     // Fetch all VODs with joins
-    let rows = await db
+    type VodRow = { vod: typeof vodEntriesTable.$inferSelect; eventTitle: string | null; playerRiotId: string | null };
+    let rows: VodRow[] = await db
       .select({
         vod: vodEntriesTable,
         eventTitle: eventsTable.title,
@@ -183,7 +184,7 @@ router.get("/", async (req, res) => {
           .select({ id: playersTable.id, rsoOptIn: playersTable.rsoOptIn })
           .from(playersTable)
           .where(inArray(playersTable.id, povPlayerIds));
-        const optInMap = new Map(playerRows.map((p) => [p.id, p.rsoOptIn]));
+        const optInMap = new Map(playerRows.map((p: { id: number; rsoOptIn: boolean }) => [p.id, p.rsoOptIn]));
 
         rows = rows.filter((r) => {
           // Non-POV VODs pass through
@@ -273,7 +274,7 @@ router.get("/:id", async (req, res) => {
         playerRiotId: player?.riotId ?? null,
       }),
       timestamps: timestamps.map(formatTimestamp),
-      relatedVods: relatedRaw.map((v) => formatVodEntry(v)),
+      relatedVods: relatedRaw.map((v: typeof vodEntriesTable.$inferSelect) => formatVodEntry(v)),
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch VOD" });
