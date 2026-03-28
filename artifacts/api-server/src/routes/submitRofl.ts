@@ -22,14 +22,11 @@ import {
   teamMembersTable,
   playersTable,
   playerBansTable,
-  eloHistoryTable,
   notificationsTable,
-  ladderSettingsTable,
 } from "@workspace/db";
 import { eq, and, inArray, or, isNull, gt } from "drizzle-orm";
 import { parseRofl, RoflParseError } from "@workspace/rofl-parse";
 import { matchTeams } from "@workspace/rofl-parse";
-import { calculateElo } from "@workspace/rofl-parse";
 import { buildSideName } from "@workspace/rofl-parse";
 
 const router = Router();
@@ -211,41 +208,22 @@ router.post(
       const winnerName = blueWon ? sideAName : sideBName;
 
       // ── 8. Record match in transaction ──────────────────────────────────────
-      const [settings] = await db.select().from(ladderSettingsTable).limit(1);
-      const kFactor = settings?.kFactor ?? 32;
-
+      // Scrims never compute ELO (PRD v3.1 S8) — only tournament/event matches do
       let matchId!: number;
-      let eloDeltas: { teamABefore: number; teamAAfter: number; teamBBefore: number; teamBAfter: number } | null = null;
 
       await db.transaction(async (tx) => {
-        let teamAEloBefore: number | null = null;
-        let teamAEloAfter: number | null = null;
-        let teamBEloBefore: number | null = null;
-        let teamBEloAfter: number | null = null;
-
         const [teamA] = sideA.teamId
-          ? await tx.select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
+          ? await tx.select({ defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideA.teamId))
           : [undefined];
         const [teamB] = sideB.teamId
-          ? await tx.select({ teamElo: teamsTable.teamElo, peakElo: teamsTable.peakElo, defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
+          ? await tx.select({ defaultMatchVisibility: teamsTable.defaultMatchVisibility }).from(teamsTable).where(eq(teamsTable.id, sideB.teamId))
           : [undefined];
 
-        if (sideA.teamId && sideB.teamId) {
-          const eloA = teamA?.teamElo ?? 1000;
-          const eloB = teamB?.teamElo ?? 1000;
-          teamAEloBefore = eloA;
-          teamBEloBefore = eloB;
-          teamAEloAfter = calculateElo(eloA, eloB, blueWon, kFactor);
-          teamBEloAfter = calculateElo(eloB, eloA, !blueWon, kFactor);
-          eloDeltas = { teamABefore: eloA, teamAAfter: teamAEloAfter, teamBBefore: eloB, teamBAfter: teamBEloAfter };
-        }
-
-        const resolvedVis = teamA?.defaultMatchVisibility ?? teamB?.defaultMatchVisibility ?? "default";
+        // Derive visibleAfter (v3.1: public or private only, default private)
+        const resolvedVis = teamA?.defaultMatchVisibility ?? teamB?.defaultMatchVisibility ?? "private";
         const visibleAfter = resolvedVis === "public"
           ? new Date(0)
-          : resolvedVis === "private"
-            ? new Date("9999-01-01T00:00:00Z")
-            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          : new Date("9999-01-01T00:00:00Z");
 
         const [createdMatch] = await tx.insert(matchesTable).values({
           teamAId: sideA.teamId,
@@ -259,13 +237,10 @@ router.post(
           gameId: match.gameId,
           gameDuration: match.gameLength,
           gameVersion: match.gameVersion,
+          matchType: "scrim",
           resultSource: "rofl_parse",
           roflFilePath: roflFilePath ?? null,
           visibleAfter,
-          teamAEloBefore,
-          teamAEloAfter,
-          teamBEloBefore,
-          teamBEloAfter,
         }).returning({ id: matchesTable.id });
 
         matchId = createdMatch!.id;
@@ -326,27 +301,6 @@ router.post(
             lastMatchAt: now, updatedAt: now,
           }).where(eq(teamsTable.id, sideB.teamId));
 
-          // ELO only for tournament/event matches (PRD v3.1 S8, D-06)
-          // submitRofl always creates scrims (resultSource "rofl_parse", matchType "scrim")
-          // so eloEligible is always false -- but the guard is required for correctness
-          const resolvedMatchType = "scrim"; // hardcoded -- submit-rofl is always scrim
-          const eloEligible = resolvedMatchType === "ranked_tournament" || resolvedMatchType === "event";
-          if (eloEligible && eloDeltas) {
-            await tx.update(teamsTable).set({
-              teamElo: eloDeltas.teamAAfter,
-              peakElo: Math.max(eloDeltas.teamAAfter, teamA?.peakElo ?? 1000),
-            }).where(eq(teamsTable.id, sideA.teamId));
-
-            await tx.update(teamsTable).set({
-              teamElo: eloDeltas.teamBAfter,
-              peakElo: Math.max(eloDeltas.teamBAfter, teamB?.peakElo ?? 1000),
-            }).where(eq(teamsTable.id, sideB.teamId));
-
-            await tx.insert(eloHistoryTable).values([
-              { teamId: sideA.teamId, elo: eloDeltas.teamAAfter, delta: eloDeltas.teamAAfter - eloDeltas.teamABefore, reason: "match", matchId },
-              { teamId: sideB.teamId, elo: eloDeltas.teamBAfter, delta: eloDeltas.teamBAfter - eloDeltas.teamBBefore, reason: "match", matchId },
-            ]);
-          }
         }
 
         // Notifications for known players
@@ -375,7 +329,6 @@ router.post(
         sideAName,
         sideBName,
         winnerName,
-        eloDeltas,
         bothTeamsIdentified: !!(sideA.teamId && sideB.teamId),
       });
     } catch (err) {
