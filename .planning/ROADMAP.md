@@ -80,7 +80,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Create docs/DESIGN_GUIDE.md with design tokens, typography, layout patterns, do/don't rules, new pattern specs, bot-web alignment
-- [ ] 08-02-PLAN.md — Update CLAUDE.md and PROJECT.md for full-stack Claude ownership
+- [x] 08-02-PLAN.md — Update CLAUDE.md and PROJECT.md for full-stack Claude ownership
 
 ### Phase 7: Issue Hygiene
 **Goal**: GitHub issues accurately reflect backend API reality and correct ownership labels
