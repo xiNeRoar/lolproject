@@ -21,11 +21,11 @@
 
 **Milestone Goal:** Deliver all backend API gaps needed for frontend launch, establish design system documentation, update ownership model, fix incorrect GitHub issues.
 
-- [ ] **Phase 4.1: v3.1 Bug Fixes** - Fix submitRofl visibility fallback, TypeScript compile errors, dead code, stale docs (INSERTED)
-- [ ] **Phase 8: Design System & Ownership Docs** - Document design tokens, component patterns, and update CLAUDE.md for full-stack Claude ownership
-- [ ] **Phase 5: Auth & Stats API** - Add hasPuuid to /auth/me and build per-team player stats endpoint with OpenAPI specs
-- [ ] **Phase 6: Codegen Sync** - Regenerate frontend hooks after all spec changes land
-- [ ] **Phase 7: Issue Hygiene** - Fix incorrect issue paths and open missing frontend issues
+- [x] **Phase 4.1: v3.1 Bug Fixes** - Fix submitRofl visibility fallback, TypeScript compile errors, dead code, stale docs (INSERTED)
+- [x] **Phase 8: Design System & Ownership Docs** - Document design tokens, component patterns, and update CLAUDE.md for full-stack Claude ownership
+- [x] **Phase 5: Auth & Stats API** - Add hasPuuid to /auth/me and build per-team player stats endpoint with OpenAPI specs
+- [x] **Phase 6: Codegen Sync** - Regenerate frontend hooks after all spec changes land
+- [x] **Phase 7: Issue Hygiene** - Fix incorrect issue paths and open missing frontend issues
 
 ## Phase Details
 
