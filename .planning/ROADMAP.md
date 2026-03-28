@@ -44,7 +44,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 04.1-01-PLAN.md — Fix submitRofl bugs, vods.ts TypeScript errors, schema comments, stale docs
+- [x] 04.1-01-PLAN.md — Fix submitRofl bugs, vods.ts TypeScript errors, schema comments, stale docs
 
 ### Phase 5: Auth & Stats API
 **Goal**: Frontend can query login status (hasPuuid) and player career stats (per-team W/L + KDA) through documented, spec-compliant endpoints
