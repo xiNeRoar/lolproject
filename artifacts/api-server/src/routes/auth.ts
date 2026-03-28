@@ -84,16 +84,43 @@ router.get("/discord/callback", async (req, res) => {
   }
 });
 
-// GET /auth/me — get current player session
-router.get("/me", (req, res) => {
-  if (req.session.playerId) {
+// GET /auth/me — current player session info
+router.get("/me", async (req, res) => {
+  try {
+    if (req.session.playerId) {
+      const [player] = await db
+        .select({ puuid: playersTable.puuid, rsoOptIn: playersTable.rsoOptIn })
+        .from(playersTable)
+        .where(eq(playersTable.id, req.session.playerId));
+
+      res.json({
+        authenticated: true,
+        playerId: req.session.playerId,
+        riotId: req.session.playerRiotId ?? null,
+        discordUsername: req.session.discordUsername ?? null,
+        hasPuuid: !!player?.puuid,
+        rsoOptIn: player?.rsoOptIn ?? false,
+      });
+    } else {
+      res.json({
+        authenticated: false,
+        playerId: null,
+        riotId: null,
+        discordUsername: null,
+        hasPuuid: false,
+        rsoOptIn: false,
+      });
+    }
+  } catch (err) {
+    console.error("[auth]", err);
     res.json({
-      authenticated: true,
-      playerId: req.session.playerId,
-      playerRiotId: req.session.playerRiotId,
+      authenticated: false,
+      playerId: null,
+      riotId: null,
+      discordUsername: null,
+      hasPuuid: false,
+      rsoOptIn: false,
     });
-  } else {
-    res.status(401).json({ authenticated: false });
   }
 });
 

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,8 @@ export const playersTable = pgTable("players", {
   losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   discordId: text("discord_id"),
+  puuid: varchar("puuid", { length: 78 }),
+  rsoOptIn: boolean("rso_opt_in").notNull().default(false),
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),
