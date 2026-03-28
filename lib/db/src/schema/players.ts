@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -6,16 +6,14 @@ export const playersTable = pgTable("players", {
   id: serial("id").primaryKey(),
   riotId: text("riot_id").notNull().unique(),
   discordUsername: text("discord_username").notNull(),
-  discordId: text("discord_id"),
-  puuid: text("puuid"), // from .rofl PUUID field, nullable until verified
-  primaryRole: text("primary_role"), // top, jg, mid, adc, sup
-  secondaryRole: text("secondary_role"),
+  currentElo: integer("current_elo").notNull().default(1000),
+  peakElo: integer("peak_elo").notNull().default(1000),
+  wins: integer("wins").notNull().default(0),
+  losses: integer("losses").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  profileVisibility: text("profile_visibility").notNull().default("private"), // private | public | participants-only (v3.1: default PRIVATE)
-  rsoOptIn: boolean("rso_opt_in").notNull().default(false), // v3.1: true after RSO verified + player consents
-  rsoAccessToken: text("rso_access_token"), // reserved for Tournament API, always null (AUTH-03)
-  rsoRefreshToken: text("rso_refresh_token"), // reserved for Tournament API, always null (AUTH-03)
-  rsoLinkedAt: timestamp("rso_linked_at"), // v3.1: when RSO was linked
+  discordId: text("discord_id"),
+  puuid: varchar("puuid", { length: 78 }),
+  rsoOptIn: boolean("rso_opt_in").notNull().default(false),
   email: text("email"),
   notificationPreference: text("notification_preference").notNull().default("web"),
   registrationStatus: text("registration_status").notNull().default("active"),

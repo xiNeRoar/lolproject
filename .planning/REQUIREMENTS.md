@@ -7,8 +7,8 @@
 
 ### Auth API
 
-- [ ] **AUTH-06**: GET /auth/me returns `hasPuuid: boolean` field indicating whether player has linked Riot account
-- [ ] **AUTH-07**: OpenAPI spec updated for /auth/me response schema with hasPuuid field
+- [x] **AUTH-06**: GET /auth/me returns `hasPuuid: boolean` field indicating whether player has linked Riot account
+- [x] **AUTH-07**: OpenAPI spec updated for /auth/me response schema with hasPuuid field
 
 ### Player Stats API
 
@@ -41,8 +41,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-06 | Phase 5 | Pending |
-| AUTH-07 | Phase 5 | Pending |
+| AUTH-06 | Phase 5 | Complete |
+| AUTH-07 | Phase 5 | Complete |
 | STAT-01 | Phase 5 | Pending |
 | STAT-02 | Phase 5 | Pending |
 | STAT-03 | Phase 6 | Pending |
