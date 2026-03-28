@@ -99,7 +99,11 @@ Plans:
   3. A new issue exists describing frontend handling for restricted VODs (graceful degradation when VOD is privacy-gated)
   4. A new issue exists describing frontend 403 handling for private player profile sub-routes
   5. All Replit-labelled issues updated to Claude ownership
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Fix #198 API paths and relabel all open Replit issues to Claude ownership
+- [ ] 07-02-PLAN.md — Create 3 new frontend issues (paginated responses, VOD privacy, profile 403s)
 
 ## Progress
 
@@ -115,5 +119,5 @@ Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foun
 | 4.1. v3.1 Bug Fixes | v3.2 | 0/1 | Not started | - |
 | 5. Auth & Stats API | v3.2 | 0/2 | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/1 | Not started | - |
-| 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
+| 7. Issue Hygiene | v3.2 | 0/2 | Not started | - |
 | 8. Design System & Ownership Docs | v3.2 | 0/2 | Not started | - |
