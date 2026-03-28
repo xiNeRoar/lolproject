@@ -33,25 +33,25 @@
 
 ## Out of Scope
 
-- Mobile app — web-first, mobile later
-- Real-time chat — Discord handles communication
-- Scrim matchmaking — Discord handles scheduling
-- Player individual ELO — team ELO only
-- Non-NA servers — NA only at launch
+- Mobile app -- web-first, mobile later
+- Real-time chat -- Discord handles communication
+- Scrim matchmaking -- Discord handles scheduling
+- Player individual ELO -- team ELO only
+- Non-NA servers -- NA only at launch
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | TBD | Pending |
-| DEBT-02 | TBD | Pending |
-| DEBT-03 | TBD | Pending |
-| RSO-01 | TBD | Pending |
-| RSO-02 | TBD | Pending |
-| RSO-03 | TBD | Pending |
-| RSO-04 | TBD | Pending |
-| PROF-01 | TBD | Pending |
-| PROF-02 | TBD | Pending |
-| ERR-01 | TBD | Pending |
-| ERR-02 | TBD | Pending |
-| ERR-03 | TBD | Pending |
+| DEBT-01 | Phase 9 | Pending |
+| DEBT-02 | Phase 9 | Pending |
+| DEBT-03 | Phase 9 | Pending |
+| RSO-01 | Phase 10 | Pending |
+| RSO-02 | Phase 12 | Pending |
+| RSO-03 | Phase 10 | Pending |
+| RSO-04 | Phase 12 | Pending |
+| PROF-01 | Phase 11 | Pending |
+| PROF-02 | Phase 11 | Pending |
+| ERR-01 | Phase 9 | Pending |
+| ERR-02 | Phase 9 | Pending |
+| ERR-03 | Phase 9 | Pending |
