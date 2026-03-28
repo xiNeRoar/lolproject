@@ -47,24 +47,27 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - ✓ Codegen regenerated with privacy + pagination types — v3.1
 - ✓ eloHistory schema resolved (team-only, no playerId) — v3.1
 
+- ✓ /auth/me returns hasPuuid + rsoOptIn fields — v3.2
+- ✓ Per-team W/L + KDA stats endpoint (GET /players/:id/team-stats) — v3.2
+- ✓ GitHub issue #198 corrected with proper API paths — v3.2
+- ✓ Frontend issues opened (#225 pagination, #226 VOD privacy, #227 profile 403) — v3.2
+- ✓ Design system documented (docs/DESIGN_GUIDE.md) — v3.2
+- ✓ Full-stack Claude ownership established — v3.2
+- ✓ Codegen synced with all v3.2 spec changes — v3.2
+
 ### Active
 
-- [ ] /auth/me needs hasPuuid field for frontend login flow check — v3.2
-- [ ] Per-team W/L + KDA stats in player profile API (backend gap for #200) — v3.2
-- [ ] Update GitHub issue #198 with correct API endpoint paths (GET /auth/connect/:token, not POST) — v3.2
-- [ ] Open missing frontend issues (paginated response, VOD privacy gate, profile sub-routes) — v3.2
 - [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
-- [ ] Player profile career resume layout (per-team W/L + KDA, remove ELO trajectory) — depends on v3.2 backend
-- [ ] Login flow RSO connect step — depends on v3.2 /auth/me
+- [ ] Player profile career resume layout (per-team W/L + KDA) — depends on v3.2 backend (done)
+- [ ] Login flow RSO connect step — depends on v3.2 /auth/me (done)
+- [ ] Frontend paginated response adaptation (#225)
+- [ ] Frontend VOD privacy graceful degradation (#226)
+- [ ] Frontend private profile 403 handling (#227)
+- [ ] useAuth() wrapper needs hasPuuid/rsoOptIn forwarding (tech debt from v3.2)
 
-## Current Milestone: v3.2 Frontend Readiness
+## Current Milestone: Planning next milestone
 
-**Goal:** Deliver all backend API gaps needed for frontend launch, fix incorrect GitHub issues, and open missing issues for frontend work.
-
-**Target features:**
-- /auth/me hasPuuid field for login flow
-- Per-team player stats endpoint for career resume
-- GitHub issue hygiene (fix #198 paths, open new issues for gaps)
+**Previous:** v3.2 Frontend Readiness — shipped 2026-03-28 (12/12 requirements satisfied)
 
 ### Out of Scope
 
@@ -82,10 +85,10 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - **Single AI agent:** Claude owns full stack (backend, bot, frontend, docs)
 - **Branch:** `variant` (not main)
 - **Deploy:** Portainer on Oracle Cloud ARM64 VPS, no SSH
-- **Current state:** v3.2 in progress — closing backend gaps for frontend launch
-- **Open issues:** 5 frontend (#198, #199, #200, #202, #204) + backend gaps being addressed
-- **Key gap:** /auth/me hasPuuid + per-team stats endpoint needed before frontend can ship
-- **Issue hygiene:** #198 has wrong API paths, missing issues for pagination/VOD/profile sub-routes
+- **Current state:** v3.2 shipped — all backend API gaps closed, design system documented, ready for frontend launch
+- **Open issues:** 8 frontend (#198, #199, #200, #202, #204, #225, #226, #227) — all labelled Claude
+- **Tech debt:** vods.ts 21 TS7006 errors (v3.1), useAuth() missing hasPuuid/rsoOptIn forwarding
+- **Next step:** v3.3 Frontend Launch — build actual frontend pages consuming the v3.2 APIs
 
 ## Constraints
 
@@ -109,7 +112,7 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 | Shared formatMatch pattern | Single source of truth for match response shape | ✓ Good — formatters.ts shipped (v3.1) |
 | Participant check via match_players | More accurate than team_members for visibility | ✓ Good (D-03, v3.1) |
 | visibleAfter null = private | Conservative default, captain controls via /visibility | ✓ Good (D-11, v3.1) |
-| Full-stack Claude ownership | Replit no longer active on project; Claude takes frontend ownership with design guide as canonical reference | -- Transition (v3.2) |
+| Full-stack Claude ownership | Replit no longer active on project; Claude takes frontend ownership with design guide as canonical reference | ✓ Good (v3.2) |
 
 ## Evolution
 
@@ -129,4 +132,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after Phase 08 ownership transition*
+*Last updated: 2026-03-28 after v3.2 milestone completion*
