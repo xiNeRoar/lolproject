@@ -10,7 +10,7 @@ import {
   eventRegistrationsTable,
   eventsTable,
 } from "@workspace/db";
-import { eq, desc, and, count, avg, sum, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, or, count, avg, sum, sql, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAdminAction } from "../lib/auditLog";
 import { isPlayerProfileVisibleTo } from "../lib/privacyGate.js";
@@ -754,6 +754,117 @@ router.get("/:id/champions", async (req, res) => {
     );
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch champion stats" });
+  }
+});
+
+// GET /players/:id/team-stats -- per-team career stats
+// Returns ALL historical team memberships (active, inactive, pending) -- career resume model.
+// Each team includes W/L record and per-game KDA averages from matches where player participated.
+// Teams with zero match data appear with zeroed stats.
+router.get("/:id/team-stats", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    const [player] = await db.select().from(playersTable).where(eq(playersTable.id, id));
+    if (!player) {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+
+    // Privacy gate: returns 403 for private profiles (same pattern as /champions handler at line 700-758)
+    const viewerId = req.session.playerId ? Number(req.session.playerId) : null;
+    const isAdmin = !!req.session.adminId;
+    const { canSeeProfile } = await isPlayerProfileVisibleTo(player, viewerId, isAdmin);
+    if (!canSeeProfile) {
+      res.status(403).json({ error: "Player profile is private" });
+      return;
+    }
+
+    // Phase 1: Get ALL team memberships for this player (active, inactive, pending).
+    // This is the "career resume" model -- every team the player has ever been on appears.
+    // The `status` field in the response lets the frontend distinguish current vs past teams.
+    const memberRows = await db
+      .select({
+        teamId: teamMembersTable.teamId,
+        role: teamMembersTable.role,
+        status: teamMembersTable.status,
+        joinedAt: teamMembersTable.joinedAt,
+        teamName: teamsTable.name,
+        teamTag: teamsTable.tag,
+      })
+      .from(teamMembersTable)
+      .innerJoin(teamsTable, eq(teamMembersTable.teamId, teamsTable.id))
+      .where(eq(teamMembersTable.playerId, id));
+
+    // Phase 2: Aggregate match stats grouped by resolved teamId.
+    // teamSide is always "A" or "B" (set by bot matchRecorder during .rofl parsing).
+    // CASE maps teamSide to the actual team FK: "A" -> matches.teamAId, "B" -> matches.teamBId.
+    // If teamAId/teamBId is null (team deleted, onDelete: "set null"), CASE returns null.
+    // These null teamIds are filtered out in Phase 3 via the statsMap null check.
+    const teamIdExpr = sql<number>`CASE
+      WHEN ${matchPlayersTable.teamSide} = 'A' THEN ${matchesTable.teamAId}
+      WHEN ${matchPlayersTable.teamSide} = 'B' THEN ${matchesTable.teamBId}
+    END`;
+
+    const statsRows = await db
+      .select({
+        teamId: teamIdExpr,
+        gamesPlayed: count(),
+        wins: sum(sql<number>`CASE WHEN ${matchPlayersTable.win} THEN 1 ELSE 0 END`),
+        avgKills: avg(matchPlayersTable.kills),
+        avgDeaths: avg(matchPlayersTable.deaths),
+        avgAssists: avg(matchPlayersTable.assists),
+      })
+      .from(matchPlayersTable)
+      .innerJoin(matchesTable, eq(matchPlayersTable.matchId, matchesTable.id))
+      .where(eq(matchPlayersTable.playerId, id))
+      .groupBy(teamIdExpr);
+
+    // Phase 3: Merge memberships with stats.
+    // Teams with no match data get zeroed stats (Pitfall 4 from research).
+    // Null teamIds from CASE (deleted teams) are filtered here -- they would not match
+    // any team_members row anyway, so this is a safety filter.
+    const statsMap = new Map<number, typeof statsRows[number]>();
+    for (const row of statsRows) {
+      if (row.teamId != null) {
+        statsMap.set(row.teamId, row);
+      }
+    }
+
+    const results = memberRows.map((m) => {
+      const s = statsMap.get(m.teamId);
+      const gamesPlayed = Number(s?.gamesPlayed ?? 0);
+      const wins = Number(s?.wins ?? 0);
+      return {
+        teamId: m.teamId,
+        teamName: m.teamName,
+        teamTag: m.teamTag,
+        role: m.role ?? null,
+        status: m.status,
+        wins,
+        losses: gamesPlayed - wins,
+        // Averages are per-game for that team. SQL avg() divides by the count of rows in the group.
+        // Number(Number(val).toFixed(2)) matches existing pattern in players.ts:123-126, 750-753.
+        // Zero-game teams get 0 (not null/NaN) via the ?? 0 fallback.
+        avgKills: Number(Number(s?.avgKills ?? 0).toFixed(2)),
+        avgDeaths: Number(Number(s?.avgDeaths ?? 0).toFixed(2)),
+        avgAssists: Number(Number(s?.avgAssists ?? 0).toFixed(2)),
+        gamesPlayed,
+        joinedAt: m.joinedAt.toISOString(),
+      };
+    });
+
+    // Sort by gamesPlayed desc (most active team first)
+    results.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
+
+    res.json(results);
+  } catch (err) {
+    console.error("[players]", err);
+    res.status(500).json({ error: "Failed to fetch team stats" });
   }
 });
 
