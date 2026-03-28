@@ -2523,7 +2523,11 @@ components:
         discordUsername:
           type: string
           nullable: true
-      required: [authenticated]
+        hasPuuid:
+          type: boolean
+        rsoOptIn:
+          type: boolean
+      required: [authenticated, hasPuuid, rsoOptIn]
 
     # ── Team ──────────────────────────────────────────────────
 
