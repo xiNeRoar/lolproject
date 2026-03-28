@@ -41,7 +41,10 @@
   5. RSO token schema comments say "reserved for Tournament API, always null" (not "encrypted")
   6. REQUESTS.md has no stale entries for completed work
   7. `pnpm --filter @workspace/api-server exec tsc --noEmit` produces zero new errors in files modified by v3.1
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 04.1-01-PLAN.md — Fix submitRofl bugs, vods.ts TypeScript errors, schema comments, stale docs
 
 ### Phase 5: Auth & Stats API
 **Goal**: Frontend can query login status (hasPuuid) and player career stats (per-team W/L + KDA) through documented, spec-compliant endpoints
@@ -98,7 +101,7 @@ Phase 4.1 executes FIRST (urgent bug fixes). Then Phase 8 (no dependencies, foun
 | 2. Privacy Gates | v3.1 | 2/2 | Complete | 2026-03-27 |
 | 3. API Contract & Performance | v3.1 | 3/3 | Complete | 2026-03-27 |
 | 4. Spec Alignment Cleanup | v3.1 | 1/1 | Complete | 2026-03-27 |
-| 4.1. v3.1 Bug Fixes | v3.2 | 0/? | Not started | - |
+| 4.1. v3.1 Bug Fixes | v3.2 | 0/1 | Not started | - |
 | 5. Auth & Stats API | v3.2 | 0/? | Not started | - |
 | 6. Codegen Sync | v3.2 | 0/? | Not started | - |
 | 7. Issue Hygiene | v3.2 | 0/? | Not started | - |
