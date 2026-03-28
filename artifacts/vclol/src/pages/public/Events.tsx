@@ -11,8 +11,7 @@ const DD = "https://ddragon.leagueoflegends.com";
 
 function getEventBanner(format: string): string {
   const f = format.toLowerCase();
-  if (f === "1v1" || f === "1v1 ladder") return `${DD}/cdn/img/champion/splash/Draven_0.jpg`;
-  if (f.includes("house") || f.includes("5v5") || f.includes("team")) return `${DD}/cdn/img/champion/splash/Orianna_0.jpg`;
+  if (f.includes("house") || f.includes("5v5") || f.includes("team") || f.includes("scrim")) return `${DD}/cdn/img/champion/splash/Orianna_0.jpg`;
   if (f.includes("elimination") || f.includes("swiss") || f.includes("robin") || f.includes("knockout")) return `${DD}/cdn/img/champion/splash/Jinx_0.jpg`;
   return `${DD}/cdn/img/champion/splash/Caitlyn_0.jpg`;
 }
@@ -65,7 +64,7 @@ export default function Events() {
                         variant={isClosed ? "secondary" : "default"}
                         className={`backdrop-blur-sm ${isClosed ? "opacity-70" : ""}`}
                       >
-                        {event.registrationStatus.toUpperCase()}
+                        {event.registrationStatus.charAt(0).toUpperCase() + event.registrationStatus.slice(1)}
                       </Badge>
                     </div>
                     <div className="absolute bottom-3 right-4 text-sm font-medium text-foreground/80 drop-shadow">

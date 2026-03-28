@@ -1,0 +1,2687 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 2.0.0
+  description: VCLoL — 5v5 Team Scrim Recording Platform API
+servers:
+  - url: /api
+    description: Base API path
+
+tags:
+  - name: health
+  - name: admin
+  - name: auth
+  - name: teams
+  - name: players
+  - name: matches
+  - name: events
+  - name: registrations
+  - name: vods
+  - name: vodTimestamps
+  - name: seasons
+  - name: ladder
+  - name: ladderSettings
+  - name: eloHistory
+  - name: seasonChampions
+  - name: playerBadges
+  - name: replays
+
+paths:
+
+  # ── Health ──────────────────────────────────────────────────
+
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── Admin ───────────────────────────────────────────────────
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Admin logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/me:
+    get:
+      operationId: adminMe
+      tags: [admin]
+      summary: Get current admin session
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  # ── Player Auth ─────────────────────────────────────────────
+
+  /auth/me:
+    get:
+      operationId: getAuthMe
+      tags: [auth]
+      summary: Get current player session
+      responses:
+        "200":
+          description: Session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+
+  # ── Teams ───────────────────────────────────────────────────
+
+  /teams:
+    get:
+      operationId: listTeams
+      tags: [teams]
+      summary: List all teams
+      parameters:
+        - name: active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [teams]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "201":
+          description: Team created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate name or tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /teams/{id}:
+    get:
+      operationId: getTeam
+      tags: [teams]
+      summary: Get team profile with members and matches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateTeam
+      tags: [teams]
+      summary: Update a team (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+    delete:
+      operationId: deleteTeam
+      tags: [teams]
+      summary: Delete a team (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /teams/{id}/members:
+    get:
+      operationId: listTeamMembers
+      tags: [teams]
+      summary: Get team roster
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+
+  # ── Players ─────────────────────────────────────────────────
+
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [players]
+      summary: List all players (admin)
+      responses:
+        "200":
+          description: List of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+    post:
+      operationId: createPlayer
+      tags: [players]
+      summary: Create a player (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "201":
+          description: Player created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/register:
+    post:
+      operationId: registerPlayer
+      tags: [players]
+      summary: Register player (via bot or OAuth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPlayerRequest"
+      responses:
+        "201":
+          description: Player registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Duplicate riotId or discordId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/by-id/{id}:
+    get:
+      operationId: getPlayerById
+      tags: [players]
+      summary: Get player by numeric ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{riotId}:
+    get:
+      operationId: getPlayer
+      tags: [players]
+      summary: Get player by Riot ID
+      parameters:
+        - name: riotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Player profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{id}/edit:
+    put:
+      operationId: updatePlayer
+      tags: [players]
+      summary: Update player (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{id}/delete:
+    delete:
+      operationId: deletePlayer
+      tags: [players]
+      summary: Delete player (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /players/{id}/profile:
+    put:
+      operationId: updatePlayerProfile
+      tags: [players]
+      summary: Player self-update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlayerProfileRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "403":
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /players/{id}/events:
+    get:
+      operationId: getPlayerEvents
+      tags: [players]
+      summary: Events a player participated in
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event participations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerEventParticipation"
+
+  /players/{id}/champions:
+    get:
+      operationId: getPlayerChampions
+      tags: [players]
+      summary: Player champion pool from match_players
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Champion stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerChampionStats"
+
+  # ── Matches ─────────────────────────────────────────────────
+
+  /matches:
+    get:
+      operationId: listMatches
+      tags: [matches]
+      summary: List matches
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: integer
+        - name: seasonId
+          in: query
+          schema:
+            type: integer
+        - name: teamId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+    post:
+      operationId: createMatch
+      tags: [matches]
+      summary: Create match manually (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "201":
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+
+  /matches/{id}:
+    get:
+      operationId: getMatch
+      tags: [matches]
+      summary: Get match with per-player stats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "404":
+          description: Not found
+    put:
+      operationId: updateMatch
+      tags: [matches]
+      summary: Update match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+    delete:
+      operationId: deleteMatch
+      tags: [matches]
+      summary: Delete match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /matches/{id}/players:
+    get:
+      operationId: getMatchPlayers
+      tags: [matches]
+      summary: Per-player stats for a match
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 10 player entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchPlayerEntry"
+
+  /matches/{id}/visibility:
+    put:
+      operationId: updateMatchVisibility
+      tags: [matches]
+      summary: Set match visibility (captain or admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVisibilityRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Events ──────────────────────────────────────────────────
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List all events
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create event (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{slug}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /events/{id}/edit:
+    put:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}/delete:
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Registrations ───────────────────────────────────────────
+
+  /registrations:
+    get:
+      operationId: listRegistrations
+      tags: [registrations]
+      summary: List registrations (admin)
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Registrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventRegistration"
+    post:
+      operationId: createRegistration
+      tags: [registrations]
+      summary: Register for event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRegistrationRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventRegistration"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /registrations/{id}:
+    delete:
+      operationId: deleteRegistration
+      tags: [registrations]
+      summary: Delete registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /registrations/{id}/confirm:
+    put:
+      operationId: confirmRegistration
+      tags: [registrations]
+      summary: Confirm registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /registrations/{id}/withdraw:
+    put:
+      operationId: withdrawRegistration
+      tags: [registrations]
+      summary: Withdraw registration (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── VODs ────────────────────────────────────────────────────
+
+  /vods:
+    get:
+      operationId: listVods
+      tags: [vods]
+      summary: List VODs (respects match visibility)
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: integer
+        - name: format
+          in: query
+          schema:
+            type: string
+        - name: roleTag
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: champion
+          in: query
+          schema:
+            type: string
+        - name: position
+          in: query
+          schema:
+            type: string
+        - name: patch
+          in: query
+          schema:
+            type: string
+        - name: teamId
+          in: query
+          schema:
+            type: integer
+        - name: playerId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VODs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VodEntry"
+    post:
+      operationId: createVod
+      tags: [vods]
+      summary: Create VOD (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodEntry"
+
+  /vods/{id}:
+    get:
+      operationId: getVod
+      tags: [vods]
+      summary: Get VOD with timestamps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VOD detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateVod
+      tags: [vods]
+      summary: Update VOD (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodEntry"
+    delete:
+      operationId: deleteVod
+      tags: [vods]
+      summary: Delete VOD (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /vods/{id}/timestamps:
+    get:
+      operationId: listVodTimestamps
+      tags: [vodTimestamps]
+      summary: Get timestamps for a VOD
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Timestamps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VodTimestamp"
+    post:
+      operationId: createVodTimestamp
+      tags: [vodTimestamps]
+      summary: Add timestamp (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVodTimestampRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VodTimestamp"
+
+  /vods/timestamps/{id}:
+    delete:
+      operationId: deleteVodTimestamp
+      tags: [vodTimestamps]
+      summary: Delete timestamp (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Seasons ─────────────────────────────────────────────────
+
+  /seasons:
+    get:
+      operationId: listSeasons
+      tags: [seasons]
+      summary: List all seasons
+      responses:
+        "200":
+          description: Seasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+    post:
+      operationId: createSeason
+      tags: [seasons]
+      summary: Create season (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeasonRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+
+  /seasons/{id}:
+    put:
+      operationId: updateSeason
+      tags: [seasons]
+      summary: Update season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeasonRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+    delete:
+      operationId: deleteSeason
+      tags: [seasons]
+      summary: Delete season (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /seasons/{id}/activate:
+    post:
+      operationId: activateSeason
+      tags: [seasons]
+      summary: Activate season (deactivates others)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+
+  /seasons/{id}/complete:
+    post:
+      operationId: completeSeason
+      tags: [seasons]
+      summary: Complete season (ELO soft reset)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Ladder ──────────────────────────────────────────────────
+
+  /ladder:
+    get:
+      operationId: getLadder
+      tags: [ladder]
+      summary: Team ELO ladder
+      responses:
+        "200":
+          description: Ladder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderResponse"
+
+  /ladder-settings:
+    get:
+      operationId: getLadderSettings
+      tags: [ladderSettings]
+      summary: Get ladder settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderSettings"
+    put:
+      operationId: updateLadderSettings
+      tags: [ladderSettings]
+      summary: Update ladder settings (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LadderSettings"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LadderSettings"
+
+  # ── ELO History ─────────────────────────────────────────────
+
+  /elo-history/team/{teamId}:
+    get:
+      operationId: getTeamEloHistory
+      tags: [eloHistory]
+      summary: ELO history for a team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EloHistoryEntry"
+
+  # ── Season Champions ────────────────────────────────────────
+
+  /season-champions:
+    get:
+      operationId: listSeasonChampions
+      tags: [seasonChampions]
+      summary: All season champions
+      responses:
+        "200":
+          description: Champions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeasonChampion"
+
+  /season-champions/{seasonId}:
+    get:
+      operationId: getSeasonChampion
+      tags: [seasonChampions]
+      summary: Champion for a season
+      parameters:
+        - name: seasonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Champion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonChampion"
+        "404":
+          description: Not found
+
+  # ── Player Badges ───────────────────────────────────────────
+
+  /player-badges/{playerId}:
+    get:
+      operationId: getPlayerBadges
+      tags: [playerBadges]
+      summary: Badges for a player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerBadge"
+
+  # ── Replays ─────────────────────────────────────────────────
+
+  /replays:
+    post:
+      operationId: submitReplay
+      tags: [replays]
+      summary: Submit replay reference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitReplayRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
+
+  /replays/queue:
+    get:
+      operationId: listReplayQueue
+      tags: [replays]
+      summary: Replay queue (admin)
+      responses:
+        "200":
+          description: Queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReplaySubmission"
+
+  /replays/queue/next:
+    get:
+      operationId: getNextReplayJob
+      tags: [replays]
+      summary: Next pending job (render machine)
+      responses:
+        "200":
+          description: Job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
+        "204":
+          description: No jobs
+
+  /replays/{id}:
+    patch:
+      operationId: updateReplayStatus
+      tags: [replays]
+      summary: Update replay status (render machine)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateReplayStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaySubmission"
+
+  # ── Notifications ───────────────────────────────────────────
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [players]
+      summary: Notifications for current player
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    put:
+      operationId: markNotificationRead
+      tags: [players]
+      summary: Mark as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+# ─────────────────────────────────────────────────────────────
+# SCHEMAS
+# ─────────────────────────────────────────────────────────────
+
+components:
+  schemas:
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    # ── Admin ─────────────────────────────────────────────────
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    AdminLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+
+    AdminMeResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        email:
+          type: string
+      required: [authenticated]
+
+    AdminStats:
+      type: object
+      properties:
+        teams:
+          type: integer
+        players:
+          type: integer
+        events:
+          type: integer
+        registrations:
+          type: integer
+        matches:
+          type: integer
+        vods:
+          type: integer
+        seasons:
+          type: integer
+      required: [teams, players, events, registrations, matches, vods, seasons]
+
+    AuthMeResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        playerId:
+          type: integer
+          nullable: true
+        riotId:
+          type: string
+          nullable: true
+        discordUsername:
+          type: string
+          nullable: true
+      required: [authenticated]
+
+    # ── Team ──────────────────────────────────────────────────
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        captainPlayerId:
+          type: integer
+        discordServerId:
+          type: string
+          nullable: true
+        teamElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, name, tag, captainPlayerId, teamElo, peakElo, wins, losses, isActive, createdAt, updatedAt]
+
+    CreateTeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        tag:
+          type: string
+        captainPlayerId:
+          type: integer
+        discordServerId:
+          type: string
+          nullable: true
+        teamElo:
+          type: integer
+          nullable: true
+        isActive:
+          type: boolean
+          nullable: true
+      required: [name, tag, captainPlayerId]
+
+    TeamProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        captainPlayerId:
+          type: integer
+        teamElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        isActive:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMember"
+        recentMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, name, tag, captainPlayerId, teamElo, peakElo, wins, losses, isActive, members, recentMatches, createdAt, updatedAt]
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        teamId:
+          type: integer
+        playerId:
+          type: integer
+        playerRiotId:
+          type: string
+          nullable: true
+        playerDiscordUsername:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        status:
+          type: string
+        joinedAt:
+          type: string
+      required: [id, teamId, playerId, status, joinedAt]
+
+    # ── Player ────────────────────────────────────────────────
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        discordId:
+          type: string
+          nullable: true
+        puuid:
+          type: string
+          nullable: true
+        primaryRole:
+          type: string
+          nullable: true
+        secondaryRole:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+        registrationStatus:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, riotId, discordUsername, isActive, createdAt, updatedAt]
+
+    CreatePlayerRequest:
+      type: object
+      properties:
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        discordId:
+          type: string
+          nullable: true
+        puuid:
+          type: string
+          nullable: true
+        primaryRole:
+          type: string
+          nullable: true
+        secondaryRole:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+        registrationStatus:
+          type: string
+          nullable: true
+      required: [riotId, discordUsername]
+
+    RegisterPlayerRequest:
+      type: object
+      properties:
+        riotId:
+          type: string
+        discordId:
+          type: string
+        discordUsername:
+          type: string
+        puuid:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+      required: [riotId, discordId, discordUsername]
+
+    UpdatePlayerProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          nullable: true
+        notificationPreference:
+          type: string
+          nullable: true
+        primaryRole:
+          type: string
+          nullable: true
+        secondaryRole:
+          type: string
+          nullable: true
+
+    PlayerProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        puuid:
+          type: string
+          nullable: true
+        primaryRole:
+          type: string
+          nullable: true
+        secondaryRole:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerTeamEntry"
+        aggregateStats:
+          $ref: "#/components/schemas/PlayerAggregateStats"
+        recentMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        vods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, riotId, discordUsername, isActive, teams, aggregateStats, recentMatches, vods, createdAt, updatedAt]
+
+    PlayerTeamEntry:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamTag:
+          type: string
+        role:
+          type: string
+          nullable: true
+        status:
+          type: string
+      required: [teamId, teamName, teamTag, status]
+
+    PlayerAggregateStats:
+      type: object
+      properties:
+        totalGames:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        avgKills:
+          type: number
+        avgDeaths:
+          type: number
+        avgAssists:
+          type: number
+        avgCs:
+          type: number
+        topChampions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerChampionStats"
+      required: [totalGames, wins, losses, avgKills, avgDeaths, avgAssists, avgCs, topChampions]
+
+    PlayerEventParticipation:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        eventTitle:
+          type: string
+          nullable: true
+        eventSlug:
+          type: string
+          nullable: true
+        eventDate:
+          type: string
+          nullable: true
+        eventFormat:
+          type: string
+          nullable: true
+        matchesPlayed:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+      required: [eventId, matchesPlayed, wins, losses]
+
+    PlayerChampionStats:
+      type: object
+      properties:
+        champion:
+          type: string
+        games:
+          type: integer
+        wins:
+          type: integer
+        avgKda:
+          type: number
+      required: [champion, games]
+
+    # ── Match ─────────────────────────────────────────────────
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: integer
+        teamAId:
+          type: integer
+          nullable: true
+        teamBId:
+          type: integer
+          nullable: true
+        teamAName:
+          type: string
+          nullable: true
+        teamBName:
+          type: string
+          nullable: true
+        teamATag:
+          type: string
+          nullable: true
+        teamBTag:
+          type: string
+          nullable: true
+        sideAName:
+          type: string
+        sideBName:
+          type: string
+        matchTitle:
+          type: string
+        winnerName:
+          type: string
+        score:
+          type: string
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        teamAEloBefore:
+          type: integer
+          nullable: true
+        teamAEloAfter:
+          type: integer
+          nullable: true
+        teamBEloBefore:
+          type: integer
+          nullable: true
+        teamBEloAfter:
+          type: integer
+          nullable: true
+        gameId:
+          type: string
+          nullable: true
+        gameDuration:
+          type: integer
+          nullable: true
+        gameVersion:
+          type: string
+          nullable: true
+        resultSource:
+          type: string
+        visibleAfter:
+          type: string
+          nullable: true
+        seasonId:
+          type: integer
+          nullable: true
+        eventId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        isPlayoff:
+          type: boolean
+        round:
+          type: integer
+          nullable: true
+        bracketSlot:
+          type: integer
+          nullable: true
+        nextMatchId:
+          type: integer
+          nullable: true
+        isLosersBracket:
+          type: boolean
+          nullable: true
+        groupId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, sideAName, sideBName, matchTitle, winnerName, resultSource, isPlayoff, createdAt, updatedAt]
+
+    MatchDetail:
+      allOf:
+        - $ref: "#/components/schemas/Match"
+        - type: object
+          properties:
+            eventSlug:
+              type: string
+              nullable: true
+            matchPlayers:
+              type: array
+              items:
+                $ref: "#/components/schemas/MatchPlayerEntry"
+            vods:
+              type: array
+              items:
+                $ref: "#/components/schemas/VodEntry"
+
+    CreateMatchRequest:
+      type: object
+      properties:
+        teamAId:
+          type: integer
+          nullable: true
+        teamBId:
+          type: integer
+          nullable: true
+        matchTitle:
+          type: string
+        sideAName:
+          type: string
+        sideBName:
+          type: string
+        winnerName:
+          type: string
+        score:
+          type: string
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        resultSource:
+          type: string
+          nullable: true
+        eventId:
+          type: integer
+          nullable: true
+        seasonId:
+          type: integer
+          nullable: true
+        isPlayoff:
+          type: boolean
+          nullable: true
+        round:
+          type: integer
+          nullable: true
+        bracketSlot:
+          type: integer
+          nullable: true
+        isLosersBracket:
+          type: boolean
+          nullable: true
+      required: [matchTitle, sideAName, sideBName, winnerName]
+
+    MatchPlayerEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+        playerId:
+          type: integer
+          nullable: true
+        playerRiotId:
+          type: string
+          nullable: true
+        teamSide:
+          type: string
+        champion:
+          type: string
+          nullable: true
+        teamPosition:
+          type: string
+          nullable: true
+        kills:
+          type: integer
+        deaths:
+          type: integer
+        assists:
+          type: integer
+        cs:
+          type: integer
+        neutralCs:
+          type: integer
+        gold:
+          type: integer
+        damageToChampions:
+          type: integer
+        visionScore:
+          type: integer
+        level:
+          type: integer
+          nullable: true
+        win:
+          type: boolean
+        item0:
+          type: integer
+          nullable: true
+        item1:
+          type: integer
+          nullable: true
+        item2:
+          type: integer
+          nullable: true
+        item3:
+          type: integer
+          nullable: true
+        item4:
+          type: integer
+          nullable: true
+        item5:
+          type: integer
+          nullable: true
+        item6:
+          type: integer
+          nullable: true
+        summonerSpell1:
+          type: integer
+          nullable: true
+        summonerSpell2:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, matchId, teamSide, kills, deaths, assists, cs, neutralCs, gold, damageToChampions, visionScore, win, createdAt]
+
+    UpdateVisibilityRequest:
+      type: object
+      properties:
+        visibility:
+          type: string
+          enum: [public, private, default]
+      required: [visibility]
+
+    # ── Event ─────────────────────────────────────────────────
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, slug, format, eventDate, registrationStatus, shortDescription, createdAt, updatedAt]
+
+    EventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        vods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, slug, format, eventDate, registrationStatus, shortDescription, matches, vods, createdAt, updatedAt]
+
+    CreateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        format:
+          type: string
+        eventDate:
+          type: string
+        registrationStatus:
+          type: string
+        shortDescription:
+          type: string
+        fullDescription:
+          type: string
+          nullable: true
+        rulesSummary:
+          type: string
+          nullable: true
+      required: [title, slug, format, eventDate, registrationStatus, shortDescription]
+
+    EventRegistration:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        teamId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        availabilityConfirmation:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, eventId, riotId, discordUsername, currentRank, city, availabilityConfirmation, status, createdAt]
+
+    CreateRegistrationRequest:
+      type: object
+      properties:
+        eventId:
+          type: integer
+        teamId:
+          type: integer
+          nullable: true
+        riotId:
+          type: string
+        discordUsername:
+          type: string
+        currentRank:
+          type: string
+        city:
+          type: string
+        availabilityConfirmation:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        playerId:
+          type: integer
+          nullable: true
+      required: [eventId, riotId, discordUsername, currentRank, city, availabilityConfirmation]
+
+    # ── VOD ───────────────────────────────────────────────────
+
+    VodEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+          nullable: true
+        matchId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        playerRiotId:
+          type: string
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, videoUrl, createdAt, updatedAt]
+
+    CreateVodRequest:
+      type: object
+      properties:
+        eventId:
+          type: integer
+          nullable: true
+        matchId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
+      required: [title, videoUrl]
+
+    VodDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+          nullable: true
+        matchId:
+          type: integer
+          nullable: true
+        eventTitle:
+          type: string
+          nullable: true
+        title:
+          type: string
+        format:
+          type: string
+          nullable: true
+        playerNames:
+          type: string
+          nullable: true
+        roleTag:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+        playerId:
+          type: integer
+          nullable: true
+        playerRiotId:
+          type: string
+          nullable: true
+        champion:
+          type: string
+          nullable: true
+        opponentChampion:
+          type: string
+          nullable: true
+        position:
+          type: string
+          nullable: true
+        patch:
+          type: string
+          nullable: true
+        playerEloAtTime:
+          type: integer
+          nullable: true
+        timestamps:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodTimestamp"
+        relatedVods:
+          type: array
+          items:
+            $ref: "#/components/schemas/VodEntry"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, videoUrl, timestamps, relatedVods, createdAt, updatedAt]
+
+    VodTimestamp:
+      type: object
+      properties:
+        id:
+          type: integer
+        vodId:
+          type: integer
+        label:
+          type: string
+        seconds:
+          type: integer
+        type:
+          type: string
+        createdAt:
+          type: string
+      required: [id, vodId, label, seconds, type, createdAt]
+
+    CreateVodTimestampRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        seconds:
+          type: integer
+        type:
+          type: string
+          nullable: true
+      required: [label, seconds]
+
+    Season:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        eloResetFactor:
+          type: string
+        defaultMatchFormat:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, name, status, startDate, endDate, eloResetFactor, createdAt, updatedAt]
+
+    CreateSeasonRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+        eloResetFactor:
+          type: string
+          nullable: true
+        defaultMatchFormat:
+          type: string
+          nullable: true
+      required: [name, startDate, endDate]
+
+    LadderEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        teamElo:
+          type: integer
+        peakElo:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        winRate:
+          type: number
+      required: [rank, id, name, tag, teamElo, peakElo, wins, losses]
+
+    LadderResponse:
+      type: object
+      properties:
+        season:
+          $ref: "#/components/schemas/Season"
+          nullable: true
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LadderEntry"
+      required: [entries]
+
+    LadderSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        kFactor:
+          type: integer
+        minMatchesForDisplay:
+          type: integer
+        playoffSize:
+          type: integer
+        playoffFormat:
+          type: string
+        defaultMatchFormat:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, kFactor, minMatchesForDisplay, playoffSize, playoffFormat, defaultMatchFormat, updatedAt]
+
+    EloHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        teamId:
+          type: integer
+        elo:
+          type: integer
+        delta:
+          type: integer
+        matchId:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+        createdAt:
+          type: string
+      required: [id, teamId, elo, delta, reason, createdAt]
+
+    SeasonChampion:
+      type: object
+      properties:
+        id:
+          type: integer
+        seasonId:
+          type: integer
+        teamId:
+          type: integer
+        teamName:
+          type: string
+          nullable: true
+        finalElo:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, seasonId, teamId, finalElo, createdAt]
+
+    PlayerBadge:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        badgeType:
+          type: string
+        earnedAt:
+          type: string
+        seasonId:
+          type: integer
+          nullable: true
+      required: [id, playerId, badgeType, earnedAt]
+
+    ReplaySubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+          nullable: true
+        playerId:
+          type: integer
+          nullable: true
+        roflFilePath:
+          type: string
+          nullable: true
+        fileSizeBytes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        renderMode:
+          type: string
+        youtubeUrlA:
+          type: string
+          nullable: true
+        youtubeUrlB:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+        processedAt:
+          type: string
+          nullable: true
+      required: [id, status, renderMode, submittedAt]
+
+    SubmitReplayRequest:
+      type: object
+      properties:
+        matchId:
+          type: integer
+        playerId:
+          type: integer
+          nullable: true
+        roflFilePath:
+          type: string
+          nullable: true
+        fileSizeBytes:
+          type: integer
+          nullable: true
+        renderMode:
+          type: string
+      required: [matchId, renderMode]
+
+    UpdateReplayStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        youtubeUrlA:
+          type: string
+          nullable: true
+        youtubeUrlB:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+      required: [status]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, type, title, message, createdAt]

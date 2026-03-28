@@ -3,7 +3,7 @@ const ELO_BASE = 1000;
 
 /**
  * Standard Elo rating calculation.
- * Returns the new Elo rating for a player after a match.
+ * Returns the new Elo rating for a team after a match.
  */
 export function calculateElo(
   playerElo: number,
@@ -19,7 +19,7 @@ export function calculateElo(
 /**
  * Soft ELO reset between seasons.
  * Compresses ELO toward baseline — preserves relative rank while
- * narrowing the spread to give all players a fresh start.
+ * narrowing the spread to give all teams a fresh start.
  */
 export function softResetElo(currentElo: number, factor: number = 0.5): number {
   return Math.round(ELO_BASE + (currentElo - ELO_BASE) * factor);
@@ -31,9 +31,9 @@ export function softResetElo(currentElo: number, factor: number = 0.5): number {
 export const LADDER_MIN_MATCHES = 4;
 
 /**
- * Playoff qualification: top N players by ELO at season end.
- * Uses 8 when playerCount >= 16, otherwise 4.
+ * Playoff qualification: top N teams by ELO at season end.
+ * Uses 8 when teamCount >= 16, otherwise 4.
  */
-export function getPlayoffSize(playerCount: number): number {
-  return playerCount >= 16 ? 8 : 4;
+export function getPlayoffSize(teamCount: number): number {
+  return teamCount >= 16 ? 8 : 4;
 }

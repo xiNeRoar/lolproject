@@ -23,6 +23,7 @@ router.get("/", async (req, res) => {
     type: n.type,
     title: n.title,
     message: n.message,
+    entityId: n.entityId ?? null,
     isRead: n.isRead,
     createdAt: n.createdAt.toISOString(),
   })));

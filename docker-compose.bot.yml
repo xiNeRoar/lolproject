@@ -1,0 +1,72 @@
+# VCLoL Bot — All-in-one (no Docker build required)
+#
+# Portainer: Stacks → Add → Web editor → paste this
+# Environment variables: DISCORD_BOT_TOKEN only
+#
+# Uses stock node:22 image. Clones repo + installs + migrates + runs.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vclol-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vclol
+      POSTGRES_PASSWORD: vclol_dev_2026
+      POSTGRES_DB: vclol
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vclol"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  bot:
+    image: node:22-slim
+    container_name: vclol-bot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_CLIENT_ID: "1486274314482356225"
+      DATABASE_URL: postgresql://vclol:vclol_dev_2026@db:5432/vclol
+      PLATFORM_URL: ${PLATFORM_URL:-https://vclol.gg}
+      API_BASE_URL: http://localhost:3000
+      ROFL_UPLOAD_DIR: /data/rofl
+    volumes:
+      - rofl-uploads:/data/rofl
+      - bot-app:/app
+    command: >
+      sh -c '
+        set -e
+        apt-get update && apt-get install -y git build-essential python3 > /dev/null 2>&1
+        npm install -g pnpm@10 > /dev/null 2>&1
+
+        if [ ! -d /app/.git ]; then
+          echo "[setup] Cloning repo..."
+          git clone -b variant https://github.com/xiNeRoar/lolproject.git /app
+        else
+          echo "[setup] Updating repo..."
+          cd /app && git fetch origin variant && git reset --hard origin/variant
+        fi
+
+        cd /app
+        echo "[setup] Installing dependencies..."
+        pnpm install --no-frozen-lockfile > /dev/null 2>&1
+
+        echo "[setup] Running DB migration..."
+        cd /app/lib/db
+        yes | npx drizzle-kit push 2>&1 || echo "[setup] Migration done or already applied."
+
+        echo "[setup] Starting bot..."
+        cd /app/artifacts/discord-bot
+        exec npx tsx src/index.ts
+      '
+
+volumes:
+  pgdata:
+  rofl-uploads:
+  bot-app:

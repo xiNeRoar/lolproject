@@ -17,7 +17,7 @@ export function MatchList({ matches }: Props) {
           <Link key={m.id} href={`/matches/${m.id}`}>
             <div className="flex items-center justify-between p-3 rounded-lg bg-card/40 border border-border/30 hover:border-primary/40 hover:bg-card/70 transition-all cursor-pointer">
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${sideAWon ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${sideAWon ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
                   {sideAWon ? "W" : "L"}
                 </span>
                 <span className="font-medium truncate">

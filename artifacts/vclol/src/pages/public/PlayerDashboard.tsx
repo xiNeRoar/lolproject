@@ -1,36 +1,15 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayerById, useGetEloHistory, useGetPlayerBadges, useGetChallengesForPlayer, useListSeasons, useAcceptChallenge, useDeclineChallenge, useUpdatePlayerProfile, useGetLadderSettings, useSetChallengeGameReady } from "@workspace/api-client-react";
+import { useGetPlayerById, useGetPlayerBadges, useListSeasons, useUpdatePlayerProfile, useListNotifications, useMarkNotificationRead } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useState, useEffect, useRef } from "react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-function eloBadgeColor(elo: number) {
-  if (elo >= 1400) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-  if (elo >= 1200) return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-  if (elo >= 1100) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-  return "bg-muted text-muted-foreground";
-}
-
-function rankLabel(elo: number) {
-  if (elo >= 1400) return "Gold";
-  if (elo >= 1200) return "Silver";
-  if (elo >= 1100) return "Bronze";
-  return "Unranked";
-}
-
-const BADGE_META: Record<string, { emoji: string; label: string }> = {
-  season_champion: { emoji: "🏆", label: "Season Champion" },
-  first_blood: { emoji: "⚡", label: "First Blood" },
-  win_streak: { emoji: "🔥", label: "Win Streak" },
-  veteran: { emoji: "💪", label: "Veteran" },
-  climber: { emoji: "📈", label: "Climber" },
-};
+import { useAuth } from "@/hooks/use-auth";
+import { BADGE_META } from "@/lib/lol-utils";
+import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle, Eye, EyeOff } from "lucide-react";
 
 function LoggedOutState() {
   return (
@@ -47,152 +26,31 @@ function LoggedOutState() {
   );
 }
 
-function RoflUploadButton({ matchId, matchDate }: { matchId: number; matchDate: string }) {
-  const [uploading, setUploading] = useState(false);
-  const [done, setDone] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Estimate patch expiry: ~14 days from match date
-  const expiryDate = new Date(new Date(matchDate).getTime() + 14 * 24 * 60 * 60 * 1000);
-  const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
-  const expired = daysLeft <= 0;
-
-  if (expired) {
-    return <span className="text-xs text-muted-foreground/50 italic">Replay expired</span>;
-  }
-
-  if (done) {
-    return <span className="text-xs text-green-400">✓ Uploaded</span>;
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".rofl"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          setUploading(true);
-          try {
-            const formData = new FormData();
-            formData.append("rofl", file);
-            formData.append("matchId", String(matchId));
-            const res = await fetch("/api/replays", { method: "POST", body: formData });
-            if (res.ok) setDone(true);
-          } finally {
-            setUploading(false);
-          }
-        }}
-      />
-      <button
-        onClick={() => fileRef.current?.click()}
-        disabled={uploading}
-        className="text-xs text-primary hover:underline disabled:opacity-50"
-      >
-        {uploading ? "Uploading..." : "Upload .rofl"}
-      </button>
-      {daysLeft <= 3 && (
-        <span className="text-xs text-yellow-400">({daysLeft}d left)</span>
-      )}
-    </div>
-  );
-}
-
-function GameIdSubmit({ challengeId }: { challengeId: number }) {
-  const [gameId, setGameId] = useState("");
-  const setGameReady = useSetChallengeGameReady();
-  const queryClient = useQueryClient();
-
-  return (
-    <div className="flex gap-2 mt-2">
-      <input
-        type="text"
-        placeholder="Enter Game ID"
-        value={gameId}
-        onChange={(e) => setGameId(e.target.value)}
-        className="flex h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-      />
-      <Button
-        size="sm"
-        className="h-8 text-xs shrink-0"
-        disabled={!gameId.trim() || setGameReady.isPending}
-        onClick={() =>
-          setGameReady.mutate(
-            { id: challengeId, data: { gameId: gameId.trim() } },
-            {
-              onSuccess: () => {
-                setGameId("");
-                queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-              },
-            }
-          )
-        }
-      >
-        {setGameReady.isPending ? "..." : "Submit"}
-      </Button>
-    </div>
-  );
-}
-
 function DashboardContent({ pid }: { pid: number }) {
   const { data: player } = useGetPlayerById(pid);
-  const { data: eloHistory } = useGetEloHistory(pid);
   const { data: badges } = useGetPlayerBadges(pid);
-  const { data: challenges } = useGetChallengesForPlayer(pid);
   const { data: seasons } = useListSeasons();
-  const { data: ladderSettings } = useGetLadderSettings();
-  const acceptChallenge = useAcceptChallenge();
-  const declineChallenge = useDeclineChallenge();
+  const { data: notifications, isError: notifError } = useListNotifications({ query: { retry: false } });
+  const markRead = useMarkNotificationRead();
   const updatePlayer = useUpdatePlayerProfile();
+  const queryClient = useQueryClient();
 
   const [notifPref, setNotifPref] = useState<string | null>(null);
+  const [privacyPref, setPrivacyPref] = useState<string | null>(null);
 
   const activeSeason = seasons?.find((s) => s.status === "active");
-  const totalMatches = (player?.wins ?? 0) + (player?.losses ?? 0);
-  const winRate = totalMatches > 0 ? Math.round(((player?.wins ?? 0) / totalMatches) * 100) : 0;
 
-  const pendingChallenges = (challenges ?? []).filter((c) => c.status === "pending" && c.challengedId === pid);
-  const upcomingMatches = (challenges ?? []).filter((c) => c.status === "accepted");
+  const devMockNotifications = import.meta.env.DEV && notifError ? [
+    { id: -1, type: "match_result", title: "Match Result: Team Alpha vs Team Beta", message: "Your team won 2-1 in the Semi Final!", isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), entityId: 38 },
+    { id: -2, type: "event_registration_confirmed", title: "Event Registration Confirmed", message: "You have been registered for VCLoL 5v5 Spring Open.", isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), entityId: null },
+    { id: -3, type: "badge_earned", title: "New Badge Earned!", message: "You earned the \"First Blood\" badge for your first match.", isRead: true, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), entityId: null },
+  ] : null;
 
-  const eloChartData = (eloHistory ?? []).map((e) => ({
-    date: new Date(e.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-    elo: e.elo,
-  }));
-
-  const { data: notifications, refetch: refetchNotifs } = useQuery<Array<{
-    id: number;
-    type: string;
-    title: string;
-    message: string;
-    isRead: boolean | null;
-    createdAt: string;
-  }>>({
-    queryKey: ["/api/notifications", pid],
-    queryFn: async () => {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) return [];
-      return res.json();
-    },
-    staleTime: 30_000,
-  });
-
-  const markRead = useMutation({
-    mutationFn: (notifId: number) => fetch(`/api/notifications/${notifId}/read`, { method: "PUT" }),
-    onSuccess: () => refetchNotifs(),
-  });
-
-  const unreadCount = (notifications ?? []).filter((n) => !n.isRead).length;
+  const displayNotifications = notifications ?? devMockNotifications ?? [];
+  const unreadCount = displayNotifications.filter((n) => !n.isRead).length;
 
   function notifIcon(type: string) {
-    if (type === "challenge_received") return { icon: "⚔", color: "text-blue-400" };
-    if (type === "challenge_accepted") return { icon: "✓", color: "text-green-400" };
-    if (type === "challenge_declined") return { icon: "✕", color: "text-red-400" };
-    if (type === "challenge_auto_accepted") return { icon: "⚡", color: "text-blue-400" };
-    if (type === "match_result") return { icon: "🏆", color: "text-yellow-400" };
-    if (type === "no_show_flagged") return { icon: "⚠", color: "text-yellow-400" };
+    if (type === "match_result") return { icon: "⚔️", color: "text-primary" };
     if (type === "season_completed") return { icon: "🏆", color: "text-yellow-400" };
     if (type === "badge_earned") return { icon: "🎖", color: "text-yellow-400" };
     if (type === "event_registration_confirmed") return { icon: "✓", color: "text-green-400" };
@@ -200,199 +58,254 @@ function DashboardContent({ pid }: { pid: number }) {
     return { icon: "🔔", color: "text-muted-foreground" };
   }
 
+  function notifHref(n: { type: string; entityId?: number | null }): string | null {
+    if (n.type === "match_result") {
+      if (n.entityId) return `/matches/${n.entityId}`;
+      const team = player.teams?.[0];
+      return team ? `/teams/${team.teamId}` : `/players/${encodeURIComponent(player.riotId)}`;
+    }
+    if (n.type === "season_completed") return "/teams";
+    if (n.type === "badge_earned") return `/players/${encodeURIComponent(player.riotId)}`;
+    return null;
+  }
+
   const handleSaveNotif = () => {
     if (!notifPref) return;
     updatePlayer.mutate(
       { id: pid, data: { notificationPreference: notifPref } },
-      { onSuccess: () => toast.success("Notification preference saved") }
+      {
+        onSuccess: () => toast.success("Notification preference saved"),
+        onError: () => toast.error("Failed to save notification preference"),
+      }
+    );
+  };
+
+  const handleSavePrivacy = () => {
+    if (!privacyPref) return;
+    updatePlayer.mutate(
+      { id: pid, data: { profileVisibility: privacyPref } },
+      {
+        onSuccess: () => {
+          toast.success(`Profile set to ${privacyPref}`);
+          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+        },
+        onError: () => {
+          toast.error("Failed to update privacy setting");
+        },
+      }
     );
   };
 
   if (!player) return <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 animate-pulse"><div className="h-48 bg-card rounded-xl" /></div>;
 
   const currentNotifPref = notifPref ?? player.notificationPreference ?? "web";
+  const currentPrivacy = privacyPref ?? player.profileVisibility ?? "public";
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
 
-      {/* ELO Card */}
+      {(player.riotId.startsWith("pending") || !player.puuid) && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-400">Riot Account not verified</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/connect</code> in Discord to verify your Riot identity through RSO. This unlocks champion stats, match history, and your public profile.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Card className="border-border/40 bg-card/60">
         <CardContent className="pt-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-5xl font-display font-bold">{player.currentElo}</span>
-                <span className={`text-sm px-2.5 py-1 rounded-full border font-semibold ${eloBadgeColor(player.currentElo)}`}>
-                  {rankLabel(player.currentElo)}
-                </span>
+                <span className="text-3xl font-display font-bold">{player.riotId}</span>
               </div>
-              <p className="text-sm text-muted-foreground">Peak ELO: <span className="text-foreground font-medium">{player.peakElo}</span></p>
+              <p className="text-sm text-muted-foreground">{player.discordUsername}</p>
+              {player.primaryRole && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Role: <span className="text-foreground">{player.primaryRole}</span>
+                  {player.secondaryRole && <span> / {player.secondaryRole}</span>}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-3">
+                <Link href={`/players/${encodeURIComponent(player.riotId)}`}>
+                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                    View Public Profile
+                  </Button>
+                </Link>
+              </div>
             </div>
             <div className="text-right text-sm space-y-1">
-              <div><span className="text-green-400 font-bold">{player.wins}W</span> · <span className="text-red-400 font-bold">{player.losses}L</span> · <span className="text-muted-foreground">{winRate}% WR</span></div>
               {activeSeason && <div className="text-muted-foreground">{activeSeason.name}</div>}
             </div>
           </div>
-
-          {/* Season Progress */}
-          <div className="mt-4">
-            {(() => {
-              const minRequired = ladderSettings?.minMatchesForDisplay ?? 4;
-              const pct = Math.min((totalMatches / minRequired) * 100, 100);
-              return (
-                <>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span>Matches played</span>
-                    <span>{totalMatches} / {minRequired} required for ladder</span>
+          {player.aggregateStats && (() => {
+            const s = player.aggregateStats;
+            const totalGames = (s.wins ?? 0) + (s.losses ?? 0);
+            const winRate = totalGames > 0 ? Math.round(((s.wins ?? 0) / totalGames) * 100) : 0;
+            const avgKda = s.averageKda != null ? Number(s.averageKda).toFixed(1) : null;
+            return (
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/30">
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Record</div>
+                  <div className="text-sm font-medium">
+                    <span className="text-green-400">{s.wins ?? 0}W</span>
+                    {" / "}
+                    <span className="text-red-400">{s.losses ?? 0}L</span>
                   </div>
-                  <Progress value={pct} className="h-2" />
-                  {totalMatches >= minRequired && (
-                    <p className="text-xs text-primary mt-1">You appear on the public ladder!</p>
-                  )}
-                </>
-              );
-            })()}
-          </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Win Rate</div>
+                  <div className="text-sm font-display font-bold">{winRate}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground mb-0.5">Avg KDA</div>
+                  <div className="text-sm font-display font-bold">{avgKda ?? "—"}</div>
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
-      {/* Pending + Upcoming */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="border-border/40 bg-card/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Pending Challenges</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingChallenges.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending challenges</p>
-            ) : (
-              pendingChallenges.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg bg-background/50 border border-border/30">
-                  <p className="text-sm font-medium">{c.challengerRiotId ?? `Player #${c.challengerId}`}</p>
-                  {c.scheduledTime && <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>}
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm" onClick={() => acceptChallenge.mutate({ id: c.id })}>Accept</Button>
-                    {/* TODO: when backend returns 403 on decline (quota reached), hide this button */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        declineChallenge.mutate(
-                          { id: c.id },
-                          {
-                            onError: (err: any) => {
-                              if (err?.status === 403) {
-                                toast.error("Decline limit reached — this challenge has been auto-accepted.");
-                              }
-                            },
-                          }
-                        )
-                      }
-                    >
-                      Decline
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+      {player.teams?.some((t) => t.isCaptain) && (
+        <div className="flex flex-col gap-2">
+          {player.teams.filter((t) => t.isCaptain).map((t) => (
+            <Link key={t.teamId} href={`/teams/${t.teamId}/manage`} className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group">
+              <div className="flex items-center gap-2 text-sm">
+                <Crown className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">You captain:</span>
+                <span className="font-medium">{t.teamName}</span>
+                <span className="text-xs text-muted-foreground">[{t.teamTag}]</span>
+              </div>
+              <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:translate-x-0.5 transition-transform">
+                Manage Team <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
 
-        <Card className="border-border/40 bg-card/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Upcoming Matches</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingMatches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming matches</p>
-            ) : (
-              upcomingMatches.map((c) => {
-                const isHost = c.challengerId === pid;
-                return (
-                  <div key={c.id} className="p-3 rounded-lg bg-background/50 border border-border/30 space-y-1">
-                    <p className="text-sm font-medium">
-                      vs {c.challengerId === pid ? c.challengedRiotId : c.challengerRiotId ?? "Opponent"}
-                    </p>
-                    {c.scheduledTime && (
-                      <p className="text-xs text-muted-foreground">{new Date(c.scheduledTime).toLocaleString()}</p>
-                    )}
-                    {c.gameId ? (
-                      <p className="text-xs text-green-400">✓ Room ready — Game ID: {c.gameId}</p>
-                    ) : isHost ? (
-                      <div>
-                        <p className="text-xs text-yellow-400">
-                          You are the room host. Open a custom game, invite your opponent by their Riot ID, then submit the Game ID below.
-                        </p>
-                        <GameIdSubmit challengeId={c.id} />
-                      </div>
+      {(() => {
+        const captainTeams = player.teams?.filter((t) => t.isCaptain) ?? [];
+        if (captainTeams.length === 0) return null;
+
+        const team = captainTeams[0];
+        const hasRoster = (team.memberCount ?? 0) >= 5;
+        const hasMatches = (player.recentMatches?.length ?? 0) > 0;
+        const hasLinkedRiot = !player.riotId.startsWith("pending") && !!player.puuid;
+
+        const steps = [
+          { done: hasLinkedRiot, label: "Verify your Riot identity", cmd: "/connect" },
+          { done: hasMatches, label: "Submit your first scrim", cmd: "/submit" },
+          { done: hasRoster, label: "Build your roster through match replays", cmd: null },
+        ];
+
+        const allDone = steps.every((s) => s.done);
+        if (allDone) return null;
+
+        return (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Getting Started</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2.5">
+                {steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    {step.done ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
                     ) : (
-                      <p className="text-xs text-muted-foreground">Waiting for room host to open the game and submit Game ID...</p>
+                      <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={`text-sm ${step.done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                      {step.label}
+                    </span>
+                    {!step.done && (
+                      <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs ml-auto shrink-0">{step.cmd}</code>
                     )}
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
-      {/* ELO History Graph */}
-      {eloChartData.length >= 2 && (
-        <Card className="border-border/40 bg-card/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">ELO History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={eloChartData}>
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#64748b" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#64748b" domain={["auto", "auto"]} />
-                <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: 8 }} />
-                <Line type="monotone" dataKey="elo" stroke="#3b82f6" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Results */}
-      {(player.recentMatches ?? []).length > 0 && (
-        <Card className="border-border/40 bg-card/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Recent Results</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {(player.recentMatches ?? []).slice(0, 5).map((m) => {
-              const isA = m.playerAId === pid;
-              const won = m.winnerName === (isA ? m.sideAName : m.sideBName);
-              const delta = (m.playerAId === pid ? (m.playerAEloAfter ?? 0) - (m.playerAEloBefore ?? 0) : (m.playerBEloAfter ?? 0) - (m.playerBEloBefore ?? 0));
-              return (
-                <Link key={m.id} href={`/matches/${m.id}`}>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/30 hover:border-primary/40 cursor-pointer transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${won ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{won ? "W" : "L"}</span>
-                      <span className="text-sm">vs {m.sideAName === player.riotId ? m.sideBName : m.sideAName}</span>
-                      {m.score && <span className="text-xs text-muted-foreground">{m.score}</span>}
-                    </div>
-                    {delta !== 0 && (
-                      <span className={`text-xs font-semibold ${delta > 0 ? "text-green-400" : "text-red-400"}`}>
-                        {delta > 0 ? `+${delta}` : delta}
-                      </span>
-                    )}
-                    <RoflUploadButton matchId={m.id} matchDate={m.createdAt} />
-                  </div>
-                </Link>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Badges */}
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Badges</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Swords className="w-4 h-4 text-primary" /> Recent Matches</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!player.recentMatches?.length ? (
+            <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No matches yet. Submit your first scrim via <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/submit</code> in Discord.
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {player.recentMatches.slice(0, 5).map((match) => {
+                const playerTeamOnA = player.teams?.some((t) => t.teamId === match.teamAId);
+                const playerTeamOnB = player.teams?.some((t) => t.teamId === match.teamBId);
+                const playerSide = playerTeamOnA ? match.sideAName : playerTeamOnB ? match.sideBName : null;
+                const won = playerSide ? match.winnerName === playerSide : false;
+                const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+                return (
+                  <Link key={match.id} href={`/matches/${match.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors">
+                    <span className={`w-8 h-8 rounded flex-shrink-0 flex items-center justify-center text-xs font-bold ${won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
+                      {won ? "W" : "L"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{match.sideAName} vs {match.sideBName}</div>
+                      <div className="text-xs text-muted-foreground">{match.matchTitle}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-sm font-display font-bold">{match.score || "-"}</div>
+                      <div className="text-xs text-muted-foreground">{date}</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> My Teams</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {player.teams && player.teams.length > 0 ? (
+            <div className="space-y-2">
+              {player.teams.map((t) => (
+                <Link key={t.teamId} href={`/teams/${t.teamId}`} className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:border-primary/40 transition-colors">
+                  <div>
+                    <span className="text-sm font-medium">{t.teamName}</span>
+                    <span className="text-xs text-muted-foreground ml-2">[{t.teamTag}]</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {t.role && <Badge variant="outline" className="text-xs">{t.role}</Badge>}
+                    <Badge variant={t.status === "active" ? "default" : "secondary"} className="text-xs capitalize">{t.status}</Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Teams are managed through Discord. Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/register-team</code> to
+              create a team. Players are automatically added from submitted match replays.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Award className="w-4 h-4 text-primary" /> Badges</CardTitle>
         </CardHeader>
         <CardContent>
           {!badges?.length ? (
@@ -413,23 +326,23 @@ function DashboardContent({ pid }: { pid: number }) {
         </CardContent>
       </Card>
 
-      {/* Notifications Feed */}
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Notifications</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Bell className="w-4 h-4 text-primary" /> Notifications</CardTitle>
             {unreadCount > 0 && (
               <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{unreadCount}</span>
             )}
           </div>
         </CardHeader>
         <CardContent>
-          {!notifications || notifications.length === 0 ? (
+          {displayNotifications.length === 0 ? (
             <p className="text-sm text-muted-foreground">No notifications yet.</p>
           ) : (
             <div className="space-y-1">
-              {notifications.slice(0, 10).map((n) => {
+              {displayNotifications.slice(0, 10).map((n) => {
                 const { icon, color } = notifIcon(n.type);
+                const href = notifHref(n);
                 const timeAgo = (() => {
                   const diff = Date.now() - new Date(n.createdAt).getTime();
                   const mins = Math.floor(diff / 60000);
@@ -438,18 +351,31 @@ function DashboardContent({ pid }: { pid: number }) {
                   if (hrs < 24) return `${hrs}h ago`;
                   return `${Math.floor(hrs / 24)}d ago`;
                 })();
-                return (
-                  <div
-                    key={n.id}
-                    className={`flex items-start gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${n.isRead ? "opacity-60" : "bg-muted/40 cursor-pointer hover:bg-muted/60"}`}
-                    onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
-                  >
+                const inner = (
+                  <>
                     <span className={`text-base leading-5 flex-shrink-0 ${color}`}>{icon}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium">{n.title}</div>
                       <div className="text-muted-foreground text-xs">{n.message}</div>
                     </div>
                     <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">{timeAgo}</span>
+                  </>
+                );
+                const cls = `flex items-start gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${n.isRead ? "opacity-60" : "bg-muted/40 cursor-pointer hover:bg-muted/60"}`;
+                const handleClick = () => {
+                  if (!n.isRead) {
+                    markRead.mutate({ id: n.id }, {
+                      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }),
+                    });
+                  }
+                };
+                return href ? (
+                  <Link key={n.id} href={href} className={cls} onClick={handleClick}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={n.id} className={cls} onClick={handleClick}>
+                    {inner}
                   </div>
                 );
               })}
@@ -458,10 +384,9 @@ function DashboardContent({ pid }: { pid: number }) {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
       <Card className="border-border/40 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Notification Settings</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /> Notification Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -489,25 +414,55 @@ function DashboardContent({ pid }: { pid: number }) {
           </Button>
         </CardContent>
       </Card>
+
+      <Card className="border-border/40 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-display flex items-center gap-2">
+            {currentPrivacy === "private" ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
+            Profile Privacy
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            {currentPrivacy === "private"
+              ? "Your profile is private. Only your Riot ID and team affiliations are visible to others."
+              : currentPrivacy === "participants-only"
+              ? "Your profile is visible only to players who have been in a match with you."
+              : "Your profile is public. Anyone can see your stats, champion pool, and match history."}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: "public", label: "Public", desc: "Full profile visible" },
+              { value: "participants-only", label: "Participants", desc: "Match participants only" },
+              { value: "private", label: "Private", desc: "Stats hidden" },
+            ].map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded border border-border/40 hover:border-primary/40">
+                <input
+                  type="radio"
+                  name="privacyPref"
+                  value={opt.value}
+                  checked={currentPrivacy === opt.value}
+                  onChange={() => setPrivacyPref(opt.value)}
+                  className="accent-primary"
+                />
+                <div>
+                  <div className="font-medium">{opt.label}</div>
+                  <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <Button size="sm" onClick={handleSavePrivacy} disabled={updatePlayer.isPending}>
+            {updatePlayer.isPending ? "Saving..." : "Save"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 export default function PlayerDashboard() {
-  const [playerId, setPlayerId] = useState<string | null>(() =>
-    localStorage.getItem("vclol_player_id")
-  );
-
-  useEffect(() => {
-    const onStorage = () => setPlayerId(localStorage.getItem("vclol_player_id"));
-    window.addEventListener("storage", onStorage);
-    // Also re-check on focus in case localStorage was set in same tab
-    window.addEventListener("focus", onStorage);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", onStorage);
-    };
-  }, []);
+  const { playerId } = useAuth();
 
   if (!playerId) {
     return (

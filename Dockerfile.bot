@@ -1,0 +1,22 @@
+FROM node:22-slim
+
+RUN npm install -g pnpm@10
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY tsconfig.base.json ./
+COPY lib/db/ lib/db/
+COPY lib/rofl-parse/ lib/rofl-parse/
+COPY artifacts/discord-bot/ artifacts/discord-bot/
+
+RUN pnpm install --no-frozen-lockfile
+
+COPY entrypoint.bot.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

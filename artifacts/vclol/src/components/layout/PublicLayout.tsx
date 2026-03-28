@@ -1,51 +1,180 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Shield } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Menu, X, Shield, ChevronDown, User, LayoutDashboard, Users, LogOut, Settings, Bell } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { useGetPlayerById, useListNotifications } from "@workspace/api-client-react";
+import GlobalSearch from "./GlobalSearch";
+
+interface PlayerData {
+  riotId: string;
+  teams?: Array<{ teamId: number; teamName: string; teamTag: string; role?: string | null; status?: string; isCaptain?: boolean }>;
+}
+
+function UserDropdown({ player, playerId, onLogout, unreadCount = 0 }: { player?: PlayerData | null; playerId: string; onLogout: () => void; unreadCount?: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && open) close();
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, close]);
+
+  const displayName = player?.riotId ?? `Player #${playerId}`;
+  const firstTeam = player?.teams?.[0];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        ref={triggerRef}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="User menu"
+        className="flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+      >
+        <div className="relative w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-xs font-bold uppercase" aria-hidden="true">
+          {displayName[0]}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-400 ring-2 ring-background" />
+          )}
+        </div>
+        <span className="max-w-[120px] truncate">{displayName}</span>
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border/60 bg-card shadow-xl shadow-black/40 py-1 z-50" role="menu">
+          <div className="px-3 py-2 border-b border-border/40">
+            <p className="text-sm font-medium truncate">{displayName}</p>
+            {firstTeam && (
+              <p className="text-xs text-muted-foreground">{firstTeam.teamName} [{firstTeam.teamTag}]</p>
+            )}
+          </div>
+
+          <Link
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            role="menuitem"
+          >
+            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          </Link>
+
+          <Link
+            href="/dashboard#notifications"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            role="menuitem"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{unreadCount}</span>
+            )}
+          </Link>
+
+          {player?.riotId && (
+            <Link
+              href={`/players/${encodeURIComponent(player.riotId)}`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              role="menuitem"
+            >
+              <User className="w-4 h-4" /> My Profile
+            </Link>
+          )}
+
+          {firstTeam && (
+            <Link
+              href={`/teams/${firstTeam.teamId}`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              role="menuitem"
+            >
+              <Users className="w-4 h-4" /> My Team
+            </Link>
+          )}
+
+          {firstTeam?.isCaptain && (
+            <Link
+              href={`/teams/${firstTeam.teamId}/manage`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              role="menuitem"
+            >
+              <Settings className="w-4 h-4" /> Manage Team
+            </Link>
+          )}
+
+          <div className="border-t border-border/40 mt-1 pt-1">
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              role="menuitem"
+            >
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const { playerId, logout, playerIdNum } = useAuth();
+  const { data: player } = useGetPlayerById(playerIdNum, { query: { enabled: !!playerId && playerIdNum > 0 } });
+  const { data: notifications, isError: notifError } = useListNotifications({ query: { enabled: !!playerId, refetchInterval: 30000, retry: false } });
+  const devFallbackCount = import.meta.env.DEV && notifError && !!playerId ? 2 : 0;
+  const unreadCount = notifications ? (notifications as Array<{ isRead?: boolean }>).filter((n) => !n.isRead).length : devFallbackCount;
 
-  useEffect(() => {
-    const sync = () => setPlayerId(localStorage.getItem("vclol_player_id"));
-    sync();
-    window.addEventListener("storage", sync);
-    window.addEventListener("focus", sync);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("focus", sync);
-    };
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("vclol_player_id");
-    window.dispatchEvent(new Event("storage"));
+  const handleLogout = () => {
+    logout();
     setMobileMenuOpen(false);
-  }, []);
+  };
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/ladder", label: "Ladder" },
-    { href: "/vods", label: "VODs" },
+    { href: "/teams", label: "Ranking" },
+    { href: "/matches", label: "Matches" },
+    { href: "/players", label: "Players" },
     { href: "/events", label: "Events" },
-    { href: "/about", label: "About" },
+    { href: "/watch", label: "Watch" },
   ];
+
+  const firstTeam = player?.teams?.[0];
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="font-display font-bold text-xl tracking-wider text-primary hover:text-primary/80 transition-colors">
                 VCLoL
               </Link>
             </div>
 
-            {/* Desktop Nav */}
             <nav className="hidden md:flex space-x-8">
               {navLinks.map((link) => (
                 <Link
@@ -53,7 +182,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   href={link.href}
                   className={cn(
                     "text-sm font-medium transition-colors hover:text-primary",
-                    location === link.href ? "text-primary" : "text-muted-foreground"
+                    (link.href === "/" ? location === "/" : location.startsWith(link.href)) ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   {link.label}
@@ -61,23 +190,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
             </nav>
 
-            {/* CTA & Auth — desktop */}
             <div className="hidden md:flex items-center space-x-3">
+              <GlobalSearch />
               {playerId ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                  >
-                    My Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Logout
-                  </button>
-                </>
+                <UserDropdown player={player} playerId={playerId} onLogout={handleLogout} unreadCount={unreadCount} />
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -87,16 +203,18 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     href="/register"
                     className="text-sm font-medium px-4 py-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
                   >
-                    Register
+                    Join VCLoL
                   </Link>
                 </>
               )}
             </div>
 
-            {/* Mobile menu button */}
-            <div className="flex items-center md:hidden">
+            <div className="flex items-center gap-1 md:hidden">
+              <GlobalSearch />
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-expanded={mobileMenuOpen}
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 className="text-muted-foreground hover:text-foreground"
               >
                 {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -105,7 +223,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
 
-        {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-card absolute w-full">
             <div className="px-2 pt-2 pb-3 space-y-1">
@@ -116,7 +233,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     "block px-3 py-2 rounded-md text-base font-medium",
-                    location === link.href
+                    (link.href === "/" ? location === "/" : location.startsWith(link.href))
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
@@ -130,10 +247,37 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      My Dashboard
+                      Dashboard
                     </Link>
+                    {player?.riotId && (
+                      <Link
+                        href={`/players/${encodeURIComponent(player.riotId)}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        My Profile
+                      </Link>
+                    )}
+                    {firstTeam && (
+                      <Link
+                        href={`/teams/${firstTeam.teamId}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        My Team
+                      </Link>
+                    )}
+                    {firstTeam?.isCaptain && (
+                      <Link
+                        href={`/teams/${firstTeam.teamId}/manage`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        Manage Team
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-3 py-2 mt-1 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -155,7 +299,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                       onClick={() => setMobileMenuOpen(false)}
                       className="block px-3 py-2 mt-1 rounded-md text-base font-medium bg-primary text-primary-foreground"
                     >
-                      Register
+                      Join VCLoL
                     </Link>
                   </>
                 )}
@@ -173,13 +317,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-center md:text-left">
             <p className="text-sm text-muted-foreground font-display tracking-wide">
-              VANCOUVER COMPETITIVE LOL PROJECT
+              VCLoL
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              A grassroots initiative for local players. Not affiliated with Riot Games.
+              A grassroots competitive platform. Not affiliated with Riot Games.
             </p>
           </div>
           <div className="flex items-center space-x-4">
+            <Link href="/about" className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+              What is VCLoL?
+            </Link>
             <Link href="/contact" className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors">
               Contact
             </Link>

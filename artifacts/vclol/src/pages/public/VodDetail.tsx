@@ -2,7 +2,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetVod } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ExternalLink, Video, ChevronLeft } from "lucide-react";
+import { Clock, PlayCircle, Video, ChevronLeft } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useEffect, useRef } from "react";
 
@@ -129,9 +129,9 @@ export default function VodDetail() {
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
           <p className="text-muted-foreground">VOD not found.</p>
-          <button onClick={() => window.history.back()} className="text-primary hover:underline text-sm mt-2 inline-block">
-            ← Back
-          </button>
+          <Link href="/watch" className="text-primary hover:underline text-sm mt-2 inline-block">
+            ← Back to Watch
+          </Link>
         </div>
       </PublicLayout>
     );
@@ -141,9 +141,9 @@ export default function VodDetail() {
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-16 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> Back
-        </button>
+        <Link href="/watch" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Watch
+        </Link>
 
         {/* Title */}
         <div className="mb-6">
@@ -168,20 +168,17 @@ export default function VodDetail() {
               >
                 {vod.playerRiotId}
               </Link>
-              {vod.playerEloAtTime != null && (
-                <span className="text-xs ml-2">({vod.playerEloAtTime} ELO at time)</span>
-              )}
             </p>
           )}
           {vod.notes && (
             <p className="text-sm text-muted-foreground mt-2 italic">{vod.notes}</p>
           )}
           {/* Link back to match */}
-          {(vod as any).matchId && (
+          {vod.matchId && (
             <p className="text-sm text-muted-foreground mt-2">
               Match:{" "}
-              <Link href={`/matches/${(vod as any).matchId}`} className="text-primary hover:underline">
-                View Match #{(vod as any).matchId} →
+              <Link href={`/matches/${vod.matchId}`} className="text-primary hover:underline">
+                View Match #{vod.matchId} →
               </Link>
             </p>
           )}
@@ -203,20 +200,15 @@ export default function VodDetail() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Timestamps */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Timestamps
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!vod.timestamps?.length ? (
-                <div className="px-6 py-6 text-center text-muted-foreground text-sm">
-                  No timestamps added yet.
-                </div>
-              ) : (
+        <div className={`grid grid-cols-1 ${vod.timestamps?.length && vod.relatedVods?.length ? "lg:grid-cols-2" : ""} gap-6`}>
+          {vod.timestamps && vod.timestamps.length > 0 && (
+            <Card className="bg-card/40 border-border/40">
+              <CardHeader>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Timestamps
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="divide-y divide-border/30">
                   {vod.timestamps.map((ts) => (
                     <button
@@ -236,26 +228,22 @@ export default function VodDetail() {
                     </button>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Related VODs */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader>
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <Video className="w-4 h-4" /> Related VODs
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {!vod.relatedVods?.length ? (
-                <div className="px-6 py-6 text-center text-muted-foreground text-sm">
-                  No related VODs found.
-                </div>
-              ) : (
+          {vod.relatedVods && vod.relatedVods.length > 0 && (
+            <Card className="bg-card/40 border-border/40">
+              <CardHeader>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <Video className="w-4 h-4" /> Related VODs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="divide-y divide-border/30">
                   {vod.relatedVods.map((related) => (
-                    <Link key={related.id} href={`/vods/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
+                    <Link key={related.id} href={`/watch/${related.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors cursor-pointer">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{related.title}</div>
                         <div className="flex gap-2 mt-1 flex-wrap">
@@ -264,18 +252,15 @@ export default function VodDetail() {
                               {related.champion}{related.opponentChampion ? ` vs ${related.opponentChampion}` : ""}
                             </span>
                           )}
-                          {related.playerEloAtTime != null && (
-                            <span className="text-xs text-muted-foreground">ELO {related.playerEloAtTime}</span>
-                          )}
                         </div>
                       </div>
-                      <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <PlayCircle className="w-3 h-3 text-muted-foreground shrink-0" />
                     </Link>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </PublicLayout>

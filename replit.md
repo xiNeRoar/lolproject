@@ -1,158 +1,91 @@
-# Vancouver Competitive LoL Project (VCLoL)
+# VCLoL — Replit Session Reference
 
 ## Overview
+VCLoL is a project focused on building a web platform for a League of Legends competitive scene. The platform aims to provide features for players to manage teams, track matches, view statistics, and consume VODs. Key capabilities include team management, match tracking, player profiles, ladders/rankings, and administrative tools. The overall vision is to create a robust and engaging platform for the community.
 
-Full-stack competitive gaming hub for Vancouver / Lower Mainland League of Legends players. Supports interest collection, events, match results, VOD archive, ELO ladder, player profiles, seasons, and VOD timestamps with a single-admin backend.
+## User Preferences
+Frontend + Design ONLY. You own `artifacts/vclol/src/` and `replit.md`.
+Never edit: schema, OpenAPI, backend routes, `CLAUDE.md`, `docs/` (except `docs/REQUESTS.md`).
+Never fix silently without a record.
+Do NOT edit backend files.
+Update `docs/USER_JOURNEYS.md` if the journey step count improved.
+`replit.md` is a living document. Update it in the same commit when you learn something about the design system or discover a pattern that should be standardized.
 
-## Stack
+## ABSOLUTE BOUNDARY — NEVER VIOLATE — ALL ACTIONS MUST 100% FOLLOW DOCUMENTED WORKFLOW AND FILE BOUNDARIES
+1. **Files you MUST NOT touch:** `lib/db/src/schema/`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/`, `artifacts/discord-bot/`, `CLAUDE.md`, `docs/` (except `docs/REQUESTS.md` and `docs/USER_JOURNEYS.md`)
+2. **NO SQL execution** — never run db:push, db:migrate, psql, or any database-modifying command
+3. **NO backend infrastructure** — never run migration scripts, schema sync, seed commands, or any backend tooling
+4. **Diagnose only, never fix** — when backend/DB issues cause frontend symptoms (skeletons, 500s, missing data), DIAGNOSE and REPORT only: (a) check existing issues for overlap, (b) open GitHub issue if new, (c) document in REQUESTS.md
+5. **User questions are not instructions** — when the user asks "why is X broken?", answer the question. Do not treat it as a request to fix X if fixing requires crossing boundaries.
+6. **Scope is absolute** — no matter how simple the fix appears, if it touches anything outside `artifacts/vclol/src/`, `replit.md`, `docs/REQUESTS.md`, or `docs/USER_JOURNEYS.md`, it is out of scope.
+7. **Every action must follow documented workflow** — mandatory flow: (1) check existing issues, (2) read full issue, (3) cross-check docs, (4) implement within scope, (5) comment on GitHub issue, (6) close issue, (7) update USER_JOURNEYS.md if affected, (8) update replit.md if architectural change. No shortcuts. No exceptions.
 
-- **Monorepo tool**: pnpm workspaces
-- **Frontend**: React 18 + Vite + Wouter (routing) — `artifacts/vclol`
-- **UI**: Shadcn UI (Card, Badge, Button), Tailwind CSS, Framer Motion
-- **Fonts**: Outfit (headings, `font-display`) + Inter (body) — loaded via Google Fonts in `src/index.css`
-- **API Client**: `@workspace/api-client-react` — React Query hooks wrapping Express API (Orval codegen)
-- **Backend**: Express 5 — `artifacts/api-server`
-- **Database**: PostgreSQL + Drizzle ORM (`lib/db`)
-- **Auth**: iron-session v8 + crypto (scrypt password hashing)
-- **Package Manager**: pnpm
+## System Architecture
+The project utilizes a modern web stack: React 19, Vite, Wouter for routing, Tailwind CSS 4 for styling, shadcn/ui for UI components, Recharts for data visualization, and Framer Motion for animations. Fonts used are Outfit (`font-display`) and Inter (body).
 
-## Admin Credentials
+### UI/UX Decisions
+- **Page Titles (h1):**
+    - Listing: `text-4xl font-display font-bold mb-2` (no icons)
+    - Marketing: `text-4xl md:text-5xl font-display font-bold` (no icons)
+    - Detail: `text-2xl` to `text-3xl font-display font-bold` (no icons)
+- **CardTitle:** `text-base font-display flex items-center gap-2` with a required `Icon: w-4 h-4 text-primary`.
+- **Cards:** Defined styles for `Standard`, `Elevated`, `Subtle`, and `Admin` cards.
+- **Empty States:** Specific styling for full-page and inline empty states, including icon and text guidelines.
+- **Loading States:** Uses `animate-pulse` skeletons (`bg-card rounded-xl animate-pulse`) for lists and details. Never use "Loading..." text.
+- **Text Colors:** Specific Tailwind classes for `primary`, `yellow-400` (gold/peak ELO), `green-400` (wins), `red-400` (losses), and `muted-foreground` (secondary). No `-500` variants.
+- **Icon Sizing:** Defined sizes for `CardTitle` (w-4 h-4), `h2 prose` (w-5 h-5), and no icons for `h1` titles.
+- **Mutations:** Use `toast` from `sonner` for success/error messages. Never silent.
+- **Admin Tables:** Specific styling for containers, `thead`, and `rows`.
+- **Mobile Responsiveness:** All designs must be mobile-responsive at 375px.
 
-- Email: `admin@vclol.gg`
-- Password: `admin123`
+### Technical Implementations
+- **Authentication:** Managed via `useAuth()` from `src/hooks/use-auth.ts`, providing `playerId`, `isLoggedIn`, and `riotId`. Captain checks are done by verifying `player.teams.some(t => t.teamId === id && t.isCaptain)`.
+- **Utilities:** `src/lib/lol-utils.ts` contains helper functions like `eloBadgeColor`, `rankLabel`, `rankIcon`, `champPortraitUrl`, `CHAMP_IDS`, and `BADGE_META`.
+- **Constants:** `API_BASE` is derived from `VITE_API_URL`. `gameDuration` is in milliseconds (MM:SS format). `visibleAfter null` defaults to 7 days.
+- **Notification System:** Web notifications are working. Dashboard displays notifications, and a nav indicator shows unread counts. Player preferences for notification channels (web/email/discord) are available.
+- **Badge System:** `first_blood`, `veteran`, `win_streak`, and `season_champion` badges are auto-awarded with defined logic. `climber` badge logic is pending.
 
-## Project Structure
+### Feature Specifications
+- **Global Search UI:** Nav search bar (desktop visible, mobile icon expand), debounced 300ms, grouped dropdown with keyboard navigation.
+- **Player & Team Pages:** Enriched data (team name, total games, win rate), sorting and filtering options for players, VOD sections, ELO charts.
+- **Match Details:** Displays scores prominently, team names, champion icons, and includes CTAs for captains to claim unregistered sides.
+- **Dashboard:** Features recent matches, captain quick-links, and actionable notifications.
+- **Admin Features:** Manage players and teams (ban/lift ban, member management), bot status, render queue, and admin action logs.
+- **Registration:** Bot invite link (if configured), and a clear "Log in here" link for existing users.
+- **Navigation:** Updated labels for "Ladder" to "Ranking" and "VODs" to "Watch".
 
-```text
-artifacts/vclol/                   # React/Vite frontend
-  src/
-    pages/
-      public/                      # Public pages
-        Home.tsx                   # / — Homepage
-        Events.tsx                 # /events
-        EventDetail.tsx            # /events/:slug
-        Results.tsx                # /results
-        Vods.tsx                   # /vods
-        VodDetail.tsx              # /vods/:id — VOD with timestamps + related
-        Ladder.tsx                 # /ladder — ELO ladder
-        PlayerProfile.tsx          # /players/:id — Player profile
-        About.tsx                  # /about
-        Contact.tsx                # /contact
-        Interest.tsx               # /interest
-      admin/                       # Admin pages (auth-protected)
-        Login.tsx                  # /admin/login
-        Dashboard.tsx              # /admin
-        ManagePlayers.tsx          # /admin/players
-        ManageSeasons.tsx          # /admin/seasons
-        ManageInterests.tsx        # /admin/interests
-        ManageEvents.tsx           # /admin/events
-        ManageRegistrations.tsx    # /admin/registrations
-        ManageMatches.tsx          # /admin/matches
-        ManageVods.tsx             # /admin/vods
-        ManageChallenges.tsx       # /admin/challenges
-        ManageLadderSettings.tsx   # /admin/ladder-settings
-      public/
-        Register.tsx               # /register — player signup
-        PlayerLogin.tsx            # /login — Discord login stub
-        PlayerDashboard.tsx        # /dashboard — player stats + notification prefs
-    components/
-      layout/
-        PublicLayout.tsx            # Nav (Home, Ladder, VODs, Events, About) + Footer
-        AdminLayout.tsx            # Admin sidebar (Players, Seasons, Interests, Events, Registrations, Matches, Challenges, VODs, Ladder Settings)
-      brackets/
-        SingleEliminationBracket.tsx  # Pure HTML/CSS bracket rendering
-        DoubleEliminationBracket.tsx
-        SwissBracket.tsx
-        MatchList.tsx
-        GroupStageGrid.tsx
-      ChallengeModal.tsx             # Shared modal for issuing ladder challenges
-      ui/                          # Shadcn UI primitives
+## External Dependencies
+- **API Client:** `@workspace/api-client-react` for generated hooks based on OpenAPI. Direct `fetch` can be used for endpoints not in OpenAPI.
+- **GitHub API:** Used for managing issues (opening, commenting, closing) and retrieving issue details.
+- **Sonner:** For `toast` notifications in mutations.
+- **Vite:** Build tool.
+- **Wouter:** Routing library.
+- **Tailwind CSS 4:** CSS framework.
+- **shadcn/ui:** UI component library.
+- **Recharts:** Charting library.
+- **Framer Motion:** Animation library.
+- **Riot Games API:** Implicitly used for game data (e.g., champion portraits).
+- **YouTube:** For embedding VODs.
+- **Discord:** For bot functionality and potential direct messages (though `notifyPlayer()` is currently not called for DMs).
+- **Resend:** Intended for email notifications (though `notifyPlayer()` is currently not called).
 
-artifacts/api-server/              # Express 5 API
-  src/
-    routes/
-      health.ts                    # GET /health
-      admin.ts                     # /admin/login, /logout, /me, /stats
-      players.ts                   # GET/POST /players, GET/PUT/DELETE /players/:id
-      seasons.ts                   # GET/POST /seasons, GET/PUT/DELETE /seasons/:id, PUT /seasons/:id/activate
-      ladder.ts                    # GET /ladder
-      matches.ts                   # GET/POST /matches, PUT/DELETE /matches/:id (ELO auto-calc)
-      vods.ts                      # GET/POST /vods, GET/PUT/DELETE /vods/:id, POST/DELETE timestamps
-      events.ts                    # GET/POST /events, etc.
-      interests.ts
-      registrations.ts
-    lib/
-      elo.ts                       # calculateElo(), softResetElo(), LADDER_MIN_MATCHES, getPlayoffSize()
-      vodRecommendations.ts        # getRelatedVods() — rule-based VOD recommendations
-      auth.ts                      # hashPassword, verifyPassword
-      session.ts                   # iron-session config
+## Issues Closed by Replit
 
-lib/
-  db/                              # Drizzle schema + DB client
-    src/schema/
-      players.ts                   # playersTable (riotId, currentElo, peakElo, wins, losses)
-      seasons.ts                   # seasonsTable (status, eloResetFactor)
-      vodTimestamps.ts             # vodTimestampsTable (vodId, label, seconds, type)
-      matches.ts                   # extended with playerAId/B, ELO before/after, seasonId, isPlayoff
-      vodEntries.ts                # extended with playerId, champion, opponentChampion, position, patch
-  api-spec/openapi.yaml            # OpenAPI 3.0 spec (source of truth for codegen)
-  api-client-react/                # Orval-generated React Query hooks
-  api-zod/                         # Orval-generated Zod validators (backend validation)
-```
+- **#148** Player profile privacy: Dashboard toggle + PlayerProfile gate (frontend follow-up to #132)
+- **#201** Leaderboard — W/L record sort instead of ELO, removed ELO column, updated ranking explanation
+- **#203** Captain Hub — removed Add Member input, auto-roster info, verified/unverified labels, removed "default" visibility
+- **#205** Team profile — W/L primary stat, ELO conditional on tournament data, unlinked member labels
+- **#218** Home page — removed all ELO references per PRD v3.1
+- **#219** Register page — removed /add and /link-riot, replaced with /connect RSO flow (4 steps)
+- **#220** Dashboard — RSO CTA (/connect), updated getting started steps, added participants-only privacy option
 
-## Public Routes (nav order)
+## Profile Privacy Implementation
 
-Home → Ladder → VODs → Events → About  (+  Login | Register CTA)
-Player-facing: `/register`, `/login`, `/dashboard`
+- **Dashboard toggle:** `PlayerDashboard.tsx` — "Profile Privacy" card with Public/Private radio, calls `PUT /api/players/:id/profile` with `{ profileVisibility }`
+- **PlayerProfile gate:** `PlayerProfile.tsx` — Checks `(player as any)?.isPrivate`, shows redacted view (riotId + teams only) with EyeOff icon message
+- **Query gating:** All supplementary queries (`badges`, `champions`, `events`, `seasonChamps`) disabled via `enabled: !isPrivate` when profile is private
+- **Backend contract:** Private profiles return `{id, riotId, isPrivate: true, teams}` — no stats, champion pool, or match history
 
-## ELO System
+## Pending Riot ID Check Fix
 
-- Base ELO: 1000
-- K-Factor: configurable via DB ladder_settings (default 32)
-- Ladder requires ≥ `minMatchesForDisplay` matches to appear (from DB, not hardcoded)
-- ELO auto-calculated on `POST /matches` when both `playerAId` and `playerBId` are linked
-- Season activation applies soft ELO reset: `new_elo = 1000 + (old_elo - 1000) * factor`
-- Playoff matches tracked with `isPlayoff` flag
-
-## Admin Features
-
-- **Players**: create/edit/delete players, track ELO + W/L; form includes email + notificationPreference
-- **Seasons**: create/edit/delete, activate season (triggers ELO soft reset + ends previous active season)
-- **Dashboard**: counts for players, seasons, interests, events, registrations, matches, VODs
-- **Matches**: linked match records with automatic ELO computation; auto-opens with pre-filled players from Challenges page
-- **VODs**: champion/position/patch/player metadata, timestamp management per VOD; GET joins players to populate playerRiotId
-- **Events**: registration count shown per event on list page
-- **Registrations**: Status column; Confirm / Withdraw / Delete actions (admin-only mutate endpoints)
-- **Interests**: full CRUD
-
-## Registration Flow
-
-- GET /api/registrations is **public** (no auth required) — allows EventDetail Participants section to show registrations
-- POST /api/registrations is public (open registration)
-- PUT /api/registrations/:id/confirm and /withdraw require admin auth
-- DELETE /api/registrations/:id requires admin auth
-- EventDetail sidebar shows "Register as Player →" link instead of free-text form
-- EventDetail Participants section: lists all registered players (riot IDs + status badges)
-
-## Database Tables
-
-Core: `admin_users`, `interest_submissions`, `events`, `event_registrations`, `matches`, `vod_entries`, `players`, `seasons`, `vod_timestamps`
-
-Batch 2: `ladder_settings`, `admin_schedule_settings`, `challenges`, `elo_history`, `season_champions`, `player_badges`, `matchmaking_queue`
-
-## Key Commands
-
-```bash
-pnpm --filter @workspace/db run push          # Push Drizzle schema to DB
-pnpm --filter @workspace/api-spec run codegen # Regenerate API client + Zod hooks
-pnpm --filter @workspace/api-server run dev   # Start Express API
-pnpm --filter @workspace/vclol run dev        # Start Vite frontend
-pnpm run typecheck:libs                       # Typecheck all lib packages
-```
-
-## Notes
-
-- `lib/api-zod/src/index.ts` exports only from `./generated/api` (Zod schemas) — TypeScript interfaces from `./generated/types` are excluded to avoid duplicate-export conflicts
-- Images use `${import.meta.env.BASE_URL}images/...` prefix for Replit proxy compatibility
-- Admin is single-account only — seeded admin@vclol.gg / admin123
-- VOD recommendations use rule-based matching: same matchup → same champion → same position
+- `PlayerDashboard.tsx` uses `riotId.startsWith("pending")` (not `=== "pending"`) for compatibility with Claude's `pending_${discordId}` format (#134)

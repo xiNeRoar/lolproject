@@ -3,15 +3,19 @@ import { useLocation } from "wouter";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export default function PlayerLogin() {
   const [, navigate] = useLocation();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
-    if (localStorage.getItem("vclol_player_id")) {
+    if (isLoggedIn) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [isLoggedIn, navigate]);
 
   return (
     <PublicLayout>
@@ -23,8 +27,8 @@ export default function PlayerLogin() {
         <Card className="border-border/40 bg-card/60">
           <CardContent className="pt-8 pb-8 flex flex-col items-center gap-6">
             <a
-              href="#"
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg text-white font-semibold text-base transition-opacity hover:opacity-90"
+              href={`${API_BASE}/api/auth/discord`}
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg text-white font-semibold text-base hover:opacity-90 transition-opacity"
               style={{ backgroundColor: "#5865F2" }}
             >
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
@@ -33,18 +37,20 @@ export default function PlayerLogin() {
               Login with Discord
             </a>
             <p className="text-xs text-muted-foreground text-center">
-              Your Riot ID is your competitive identity on this platform.
+              Login with Discord to access your player dashboard.
             </p>
             <p className="text-sm text-muted-foreground">
               New player?{" "}
               <Link href="/register" className="text-primary hover:underline">Register here →</Link>
             </p>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Developer?{" "}
-              <a href="/dev-login" className="text-yellow-400 hover:underline opacity-70">
-                Dev Login →
-              </a>
-            </p>
+            {import.meta.env.DEV && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Developer?{" "}
+                <a href="/dev-login" className="text-yellow-400 hover:underline opacity-70">
+                  Dev Login →
+                </a>
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -7,17 +7,16 @@ import {
   Trophy, Video, Users, ArrowRight, Calendar as CalendarIcon,
   MessageCircle, Swords, BarChart3,
 } from "lucide-react";
-import { useListEvents, useListVods, useListMatches } from "@workspace/api-client-react";
+import { useListEvents, useListVods, useListMatches, useGetLadder } from "@workspace/api-client-react";
 import { formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 const DD = "https://ddragon.leagueoflegends.com";
 
 function getEventBanner(format: string): string {
   const f = format.toLowerCase();
-  if (f === "1v1" || f === "1v1 ladder") return `${DD}/cdn/img/champion/splash/Draven_0.jpg`;
-  if (f.includes("house") || f.includes("5v5") || f.includes("team")) return `${DD}/cdn/img/champion/splash/Orianna_0.jpg`;
+  if (f.includes("house") || f.includes("5v5") || f.includes("team") || f.includes("scrim")) return `${DD}/cdn/img/champion/splash/Orianna_0.jpg`;
   if (f.includes("elimination") || f.includes("swiss") || f.includes("robin") || f.includes("knockout")) return `${DD}/cdn/img/champion/splash/Jinx_0.jpg`;
   return `${DD}/cdn/img/champion/splash/Caitlyn_0.jpg`;
 }
@@ -27,14 +26,9 @@ export default function Home() {
   const { data: events } = useListEvents();
   const { data: vods } = useListVods();
   const { data: matches } = useListMatches();
+  const { data: ladder } = useGetLadder();
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  useEffect(() => {
-    const sync = () => setLoggedIn(!!localStorage.getItem("vclol_player_id"));
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
+  const { isLoggedIn: loggedIn } = useAuth();
 
   const upcomingEvent = events?.find(e => e.registrationStatus !== 'closed') || events?.[0];
   const recentVods = vods?.slice(0, 3);
@@ -63,16 +57,16 @@ export default function Home() {
             className="max-w-xl"
           >
             <Badge variant="outline" className="mb-6 border-primary/30 text-primary bg-primary/5">
-              Lower Mainland • BC
+              NA Competitive
             </Badge>
             <h1 className="text-5xl md:text-6xl font-bold font-display tracking-tight mb-6 text-foreground leading-tight">
-              Vancouver Competitive <br />
+              VCLoL <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
-                LoL Project
+                Competitive Platform
               </span>
             </h1>
             <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              A serious environment for local players to improve, compete, and be seen. Structured grassroots competition for the Lower Mainland.
+              A serious environment for competitive players to improve, compete, and be seen. Structured grassroots 5v5 scrims with verified results.
             </p>
             <div className="flex flex-wrap gap-4">
               {loggedIn ? (
@@ -82,9 +76,9 @@ export default function Home() {
                       My Dashboard <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href="/ladder">
+                  <Link href="/teams">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                      View Ladder
+                      View Teams
                     </Button>
                   </Link>
                 </>
@@ -95,9 +89,9 @@ export default function Home() {
                       Register Now <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href="/events">
+                  <Link href="/teams">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                      View Events
+                      Browse Teams
                     </Button>
                   </Link>
                 </>
@@ -107,33 +101,69 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats Bar ────────────────────────────────────── */}
+      {/* ── Stats Bar ── */}
       <section className="border-y border-border/50 bg-card/40 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {[
-              { icon: CalendarIcon, value: events?.length ?? "—", label: "Events Hosted" },
-              { icon: Swords,       value: matches?.length ?? "—", label: "Matches Played" },
-              { icon: Video,        value: vods?.length    ?? "—", label: "VODs Archived"  },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label}>
-                <Icon className="w-4 h-4 text-primary mx-auto mb-1 opacity-70" />
-                <p className="text-2xl md:text-3xl font-bold font-display text-foreground">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-              </div>
-            ))}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              {[
+                { icon: Users,  value: ladder?.entries?.length ?? "—", label: "Teams Competing" },
+                { icon: Swords, value: matches?.length ?? "—",        label: "Matches Played"  },
+                { icon: Video,  value: vods?.length    ?? "—",        label: "VODs Archived"   },
+              ].map(({ icon: Icon, value, label }) => (
+                <div key={label}>
+                  <Icon className="w-4 h-4 text-primary mx-auto mb-1 opacity-70" />
+                  <p className="text-2xl md:text-3xl font-bold font-display text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+      {/* ── Recent Matches ── */}
+      {matches && matches.length > 0 && (
+        <section className="py-10 border-b border-border/40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                <Swords className="text-primary w-5 h-5" /> Recent Matches
+              </h2>
+              <Link href="/matches" className="text-sm text-primary hover:underline">All Matches →</Link>
+            </div>
+            <div className="space-y-2">
+              {matches.slice(0, 5).map((match) => {
+                const date = new Date(match.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+                const aWon = match.winnerName === match.sideAName;
+                const bWon = match.winnerName === match.sideBName;
+                return (
+                  <Link key={match.id} href={`/matches/${match.id}`}>
+                    <div className="flex items-center gap-4 px-4 py-3 rounded-lg bg-card/30 border border-border/40 hover:border-primary/40 transition-colors cursor-pointer">
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className={`font-medium text-sm truncate ${aWon ? "text-primary" : ""}`}>{match.sideAName}</span>
+                        <span className="text-muted-foreground text-xs">vs</span>
+                        <span className={`font-medium text-sm truncate ${bWon ? "text-primary" : ""}`}>{match.sideBName}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {match.score && <span className="text-sm font-display font-bold">{match.score}</span>}
+                        <span className="text-xs text-muted-foreground">{date}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Current Phase Banner ─────────────────────────── */}
       <section className="border-b border-primary/20 bg-primary/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="mb-3">Active Competition</Badge>
-          <h2 className="text-xl font-bold font-display mb-3">Vancouver's competitive ladder is live</h2>
+          <h2 className="text-xl font-bold font-display mb-3">The competitive ladder is live</h2>
           <p className="max-w-2xl mx-auto text-muted-foreground text-sm leading-relaxed">
-            Building Vancouver's first structured competitive LoL ladder. Register to compete, 
-            build your match record, and track your ELO over time.
+            Structured competitive LoL ladder with W/L record tracking. Register your team to compete,
+            build your match record, and track your progress over time.
           </p>
         </div>
       </section>
@@ -145,20 +175,20 @@ export default function Home() {
             {[
               {
                 icon: Trophy,
-                title: "Competitive Local Play",
-                desc: "Structured events beyond solo queue. 1v1s, 5v5s, and organized in-houses designed for serious improvement.",
+                title: "Verified Scrim Records",
+                desc: "Every match result is parsed from Riot's .rofl replay files — champion picks, KDA, duration, winner. No self-reporting. Your record is real.",
                 delay: 0,
               },
               {
                 icon: BarChart3,
-                title: "Match Records & VODs",
-                desc: "Every official match is recorded. Build a public history of your competitive performance and access high-level local VODs.",
+                title: "Persistent Competitive Resume",
+                desc: "Build a public profile showing your organized team play history: champion pool, aggregate KDA, win rate, and career history across all your teams. The team play resume OP.GG can't provide.",
                 delay: 0.1,
               },
               {
-                icon: Users,
-                title: "A Place to Be Seen",
-                desc: "Network with dedicated players in the Lower Mainland. Find teams, scrim partners, and local rivals.",
+                icon: Video,
+                title: "Spectator VOD Archive",
+                desc: "Every scrim generates a permanent spectator-view video. Download .rofl files for free-camera review within the patch window, or request your personal POV render.",
                 delay: 0.2,
               },
             ].map(({ icon: Icon, title, desc, delay }) => (
@@ -184,7 +214,7 @@ export default function Home() {
 
       {/* ── Previews (Events + VODs) ─────────────────────── */}
       <section className="py-20 border-t border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-16">
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 gap-16 ${recentVods && recentVods.length > 0 ? "lg:grid-cols-2" : "max-w-3xl"}`}>
 
           {/* Upcoming Event */}
           <div>
@@ -229,19 +259,19 @@ export default function Home() {
             )}
           </div>
 
-          {/* Recent VODs */}
-          <div>
-            <div className="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
-              <h2 className="text-xl font-display font-bold flex items-center gap-2">
-                <Video className="text-primary w-5 h-5" /> Recent VODs
-              </h2>
-              <Link href="/vods" className="text-sm text-primary hover:underline">VOD Archive →</Link>
-            </div>
+          {/* Recent VODs — only show when there are VODs */}
+          {recentVods && recentVods.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
+                <h2 className="text-xl font-display font-bold flex items-center gap-2">
+                  <Video className="text-primary w-5 h-5" /> Recent VODs
+                </h2>
+                <Link href="/watch" className="text-sm text-primary hover:underline">VOD Archive →</Link>
+              </div>
 
-            {recentVods && recentVods.length > 0 ? (
               <div className="space-y-3">
                 {recentVods.map((vod, i) => (
-                  <Link key={vod.id} href={`/vods/${vod.id}`} className="block group">
+                  <Link key={vod.id} href={`/watch/${vod.id}`} className="block group">
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
@@ -269,12 +299,8 @@ export default function Home() {
                   </Link>
                 ))}
               </div>
-            ) : (
-              <div className="p-8 text-center border border-border/40 border-dashed rounded-lg bg-card/20">
-                <p className="text-muted-foreground text-sm">Archive is currently building.</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -282,15 +308,15 @@ export default function Home() {
       <section className="py-16 border-t border-border/40 bg-card/30">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <MessageCircle className="w-10 h-10 text-primary mx-auto mb-5 opacity-80" />
-          <h2 className="text-2xl font-bold font-display mb-3">Join the Community</h2>
+          <h2 className="text-2xl font-bold font-display mb-3">Discord Bot</h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-8">
-            Get notified about upcoming events, find teammates, discuss strategies, and connect with local Vancouver / Lower Mainland players on Discord.
+            Use slash commands in any Discord server to register your team, verify your identity, and submit match replays. The bot works in your existing server — no need to join ours.
           </p>
-          <a href={import.meta.env.VITE_DISCORD_URL ?? "#"} target="_blank" rel="noopener noreferrer">
+          <Link href="/register">
             <Button size="lg" className="font-semibold">
-              <MessageCircle className="mr-2 w-4 h-4" /> Join Discord Server
+              Get Started <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
-          </a>
+          </Link>
         </div>
       </section>
     </PublicLayout>

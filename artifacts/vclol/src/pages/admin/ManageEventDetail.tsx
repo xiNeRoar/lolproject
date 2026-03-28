@@ -11,7 +11,7 @@ import {
   useCreateMatch,
   useUpdateMatch,
   useDeleteMatch,
-  useListPlayers,
+  useListTeams,
   useListSeasons,
   type Match,
   type CreateMatchRequest,
@@ -68,7 +68,7 @@ export default function ManageEventDetail() {
 
   const { data: regs, isLoading: regsLoading } = useListRegistrations(eventId ? { eventId } : undefined);
   const { data: allMatches } = useListMatches();
-  const { data: players } = useListPlayers();
+  const { data: teams } = useListTeams();
   const { data: seasons } = useListSeasons();
 
   const eventMatches = (allMatches ?? []).filter((m) => m.eventId === eventId);
@@ -93,20 +93,18 @@ export default function ManageEventDetail() {
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
   const { register: regMatch, handleSubmit: handleMatchSubmit, reset: resetMatch, control, setValue: setMatchValue } = useForm();
-  const watchedPlayerAId = useWatch({ control, name: "playerAId" });
-  const watchedPlayerBId = useWatch({ control, name: "playerBId" });
+  const watchedTeamAId = useWatch({ control, name: "teamAId" });
+  const watchedTeamBId = useWatch({ control, name: "teamBId" });
   const watchedWinner = useWatch({ control, name: "winner" });
   const watchedMatchFormat = useWatch({ control, name: "format" });
   const scoreOptions = getScoreOptions(watchedMatchFormat || "BO1");
-  const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
-  const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
-  const playerAElo = playerA?.currentElo;
-  const playerBElo = playerB?.currentElo;
+  const teamA = teams?.find((t) => t.id === Number(watchedTeamAId));
+  const teamB = teams?.find((t) => t.id === Number(watchedTeamBId));
   const isDoubleElim = event?.format?.toLowerCase().includes("double");
 
   const roundOptions = useMemo(() => {
     const fmt = event?.format ?? "";
-    if (fmt === "In-house" || fmt === "1v1 Ladder") return null;
+    if (fmt === "In-house") return null;
     if (fmt === "Round Robin") return [{ label: "Group Stage", value: "0" }];
     if (fmt === "Swiss") return Array.from({ length: 8 }, (_, i) => ({ label: `Round ${i + 1}`, value: String(i + 1) }));
     if (fmt === "Group Stage + Knockout") return [
@@ -139,16 +137,16 @@ export default function ManageEventDetail() {
   }, [eventMatches, editingMatchId]);
 
   useEffect(() => {
-    setMatchValue("sideAName", playerA ? playerA.riotId : "");
-  }, [watchedPlayerAId]);
+    setMatchValue("sideAName", teamA ? teamA.name : "");
+  }, [watchedTeamAId]);
 
   useEffect(() => {
-    setMatchValue("sideBName", playerB ? playerB.riotId : "");
-  }, [watchedPlayerBId]);
+    setMatchValue("sideBName", teamB ? teamB.name : "");
+  }, [watchedTeamBId]);
 
   const openNewMatch = () => {
     resetMatch({
-      eventId, playerAId: "", playerBId: "", sideAName: "", sideBName: "",
+      eventId, teamAId: "", teamBId: "", sideAName: "", sideBName: "",
       winner: "A", score: "", format: "", round: "", bracketSlot: "",
       isLosersBracket: false, seasonId: "", isPlayoff: false,
     });
@@ -163,8 +161,8 @@ export default function ManageEventDetail() {
       winner: derivedWinner,
       round: match.round != null ? String(match.round) : "",
       eventId: match.eventId || eventId,
-      playerAId: match.playerAId || "",
-      playerBId: match.playerBId || "",
+      teamAId: match.teamAId || "",
+      teamBId: match.teamBId || "",
       seasonId: match.seasonId || "",
     });
     setEditingMatchId(match.id);
@@ -182,10 +180,9 @@ export default function ManageEventDetail() {
       winnerName,
       score: data.score ? String(data.score) : null,
       format: data.format ? String(data.format) : null,
-      vodUrl: null,
       eventId,
-      playerAId: data.playerAId ? Number(data.playerAId) : null,
-      playerBId: data.playerBId ? Number(data.playerBId) : null,
+      teamAId: data.teamAId ? Number(data.teamAId) : null,
+      teamBId: data.teamBId ? Number(data.teamBId) : null,
       seasonId: data.seasonId ? Number(data.seasonId) : null,
       isPlayoff: Boolean(data.isPlayoff),
       round: data.round !== "" && data.round != null ? Number(data.round) : null,
@@ -222,7 +219,6 @@ export default function ManageEventDetail() {
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/admin/events")}
@@ -239,7 +235,6 @@ export default function ManageEventDetail() {
         )}
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-1 border-b border-border mb-6">
         {tabs.map((t) => (
           <button
@@ -257,7 +252,6 @@ export default function ManageEventDetail() {
         ))}
       </div>
 
-      {/* ── DETAILS TAB ───────────────────────────────────────── */}
       {tab === "details" && event && (
         <div className="max-w-2xl">
           <form onSubmit={handleEventSubmit(onEventSubmit)} className="space-y-4">
@@ -299,90 +293,87 @@ export default function ManageEventDetail() {
         </div>
       )}
 
-      {/* ── REGISTRATIONS TAB ─────────────────────────────────── */}
       {tab === "registrations" && (
         <div className="space-y-4">
-        {/* F10: Participant count hint for elimination formats */}
-        {event && (event.format === "Single Elimination" || event.format === "Double Elimination") && (() => {
-          const confirmedCount = (regs ?? []).filter(r => r.status === "confirmed").length;
-          const totalCount = regs?.length ?? 0;
-          const isPowerOf2 = confirmedCount >= 4 && (confirmedCount & (confirmedCount - 1)) === 0;
-          const nextPower = confirmedCount < 4 ? 4 : confirmedCount < 8 ? 8 : confirmedCount < 16 ? 16 : 32;
-          return (
-            <div className={`p-3 rounded-md border text-sm flex items-start gap-2 ${isPowerOf2 ? "bg-green-500/10 border-green-500/30" : "bg-muted/30 border-border/40"}`}>
-              <span className="text-base leading-5">{isPowerOf2 ? "✓" : "ℹ"}</span>
-              <div>
-                <span className="font-medium">{confirmedCount} confirmed</span>
-                <span className="text-muted-foreground"> of {totalCount} registered. </span>
-                {confirmedCount === 0 ? (
-                  <span className="text-muted-foreground">Confirm players to begin bracket planning.</span>
-                ) : isPowerOf2 ? (
-                  <span className="text-green-400">Perfect bracket size for {event.format}.</span>
-                ) : (
-                  <span className="text-yellow-400">{event.format} works best with 4, 8, or 16 confirmed players — next ideal count is {nextPower}.</span>
-                )}
+          {event && (event.format === "Single Elimination" || event.format === "Double Elimination") && (() => {
+            const confirmedCount = (regs ?? []).filter(r => r.status === "confirmed").length;
+            const totalCount = regs?.length ?? 0;
+            const isPowerOf2 = confirmedCount >= 4 && (confirmedCount & (confirmedCount - 1)) === 0;
+            const nextPower = confirmedCount < 4 ? 4 : confirmedCount < 8 ? 8 : confirmedCount < 16 ? 16 : 32;
+            return (
+              <div className={`p-3 rounded-md border text-sm flex items-start gap-2 ${isPowerOf2 ? "bg-green-500/10 border-green-500/30" : "bg-muted/30 border-border/40"}`}>
+                <span className="text-base leading-5">{isPowerOf2 ? "✓" : "ℹ"}</span>
+                <div>
+                  <span className="font-medium">{confirmedCount} confirmed</span>
+                  <span className="text-muted-foreground"> of {totalCount} registered. </span>
+                  {confirmedCount === 0 ? (
+                    <span className="text-muted-foreground">Confirm teams to begin bracket planning.</span>
+                  ) : isPowerOf2 ? (
+                    <span className="text-green-400">Perfect bracket size for {event.format}.</span>
+                  ) : (
+                    <span className="text-yellow-400">{event.format} works best with 4, 8, or 16 confirmed teams — next ideal count is {nextPower}.</span>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })()}
-        <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
-              <tr>
-                <th className="px-6 py-3">Player</th>
-                <th className="px-6 py-3">Rank / City</th>
-                <th className="px-6 py-3">Availability</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regsLoading ? (
-                <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">Loading…</td></tr>
-              ) : !regs?.length ? (
-                <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">No registrations yet.</td></tr>
-              ) : regs.map((r) => (
-                <tr key={r.id} className="border-b border-border/20 hover:bg-muted/20">
-                  <td className="px-6 py-4">
-                    <div className="font-bold">{r.riotId}</div>
-                    <div className="text-xs text-muted-foreground">{r.discordUsername}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>{r.currentRank}</div>
-                    <div className="text-xs text-muted-foreground">{r.city}</div>
-                  </td>
-                  <td className="px-6 py-4 max-w-xs truncate" title={r.availabilityConfirmation ?? ""}>
-                    {r.availabilityConfirmation}
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant={regStatusVariant(r.status)} className="capitalize">{r.status ?? "registered"}</Badge>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {r.status !== "confirmed" && (
-                        <Button variant="ghost" size="icon" title="Confirm" onClick={() => confirmReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        </Button>
-                      )}
-                      {r.status !== "withdrawn" && (
-                        <Button variant="ghost" size="icon" title="Withdraw" onClick={() => withdrawReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
-                          <XCircle className="w-4 h-4 text-yellow-500" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm("Delete?")) deleteReg.mutate({ id: r.id }, { onSuccess: invalidateRegs }); }}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </td>
+            );
+          })()}
+          <div className="bg-card border border-border/50 rounded-lg overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                <tr>
+                  <th className="px-6 py-3">Player</th>
+                  <th className="px-6 py-3">Rank / City</th>
+                  <th className="px-6 py-3">Availability</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {regsLoading ? (
+                  <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">Loading…</td></tr>
+                ) : !regs?.length ? (
+                  <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">No registrations yet.</td></tr>
+                ) : regs.map((r) => (
+                  <tr key={r.id} className="border-b border-border/20 hover:bg-muted/20">
+                    <td className="px-6 py-4">
+                      <div className="font-bold">{r.riotId}</div>
+                      <div className="text-xs text-muted-foreground">{r.discordUsername}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>{r.currentRank}</div>
+                      <div className="text-xs text-muted-foreground">{r.city}</div>
+                    </td>
+                    <td className="px-6 py-4 max-w-xs truncate" title={r.availabilityConfirmation ?? ""}>
+                      {r.availabilityConfirmation}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={regStatusVariant(r.status)} className="capitalize">{r.status ?? "registered"}</Badge>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {r.status !== "confirmed" && (
+                          <Button variant="ghost" size="icon" title="Confirm" onClick={() => confirmReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          </Button>
+                        )}
+                        {r.status !== "withdrawn" && (
+                          <Button variant="ghost" size="icon" title="Withdraw" onClick={() => withdrawReg.mutate({ id: r.id }, { onSuccess: invalidateRegs })}>
+                            <XCircle className="w-4 h-4 text-yellow-400" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm("Delete?")) deleteReg.mutate({ id: r.id }, { onSuccess: invalidateRegs }); }}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* ── BRACKET TAB ───────────────────────────────────────── */}
       {tab === "bracket" && (
         <div>
           <div className="mb-4 p-3 bg-muted/30 border border-border/40 rounded-md text-sm text-muted-foreground">
@@ -397,7 +388,6 @@ export default function ManageEventDetail() {
         </div>
       )}
 
-      {/* ── MATCHES TAB ───────────────────────────────────────── */}
       {tab === "matches" && (
         <div>
           <div className="flex justify-end mb-4">
@@ -408,7 +398,7 @@ export default function ManageEventDetail() {
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
                   <th className="px-6 py-3">Round</th>
-                  <th className="px-6 py-3">Players</th>
+                  <th className="px-6 py-3">Teams</th>
                   <th className="px-6 py-3">Result</th>
                   <th className="px-6 py-3">Score</th>
                   <th className="px-6 py-3 hidden lg:table-cell">Date</th>
@@ -465,47 +455,42 @@ export default function ManageEventDetail() {
             </table>
           </div>
 
-          {/* Match Dialog */}
           <Dialog open={matchDialogOpen} onOpenChange={setMatchDialogOpen}>
             <DialogHeader><DialogTitle>{editingMatchId ? "Edit Match" : "Add Match"}</DialogTitle></DialogHeader>
             <form onSubmit={handleMatchSubmit(onMatchSubmit)} className="space-y-4 mt-4">
 
-              {/* Players — links to VCLoL accounts → auto-fills names + enables ELO update */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Players <span className="normal-case font-normal text-muted-foreground/60 ml-1">— link VCLoL accounts to enable ELO update</span>
+                  Teams <span className="normal-case font-normal text-muted-foreground/60 ml-1">— link teams to enable ELO update</span>
                 </p>
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Player A */}
                   <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground block">Player A</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerAId")}>
+                    <label className="text-xs text-muted-foreground block">Team A</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("teamAId")}>
                       <option value="">None — enter name manually</option>
-                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                      {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>)}
                     </select>
-                    {watchedPlayerAId ? (
-                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{playerAElo}</span></p>
+                    {watchedTeamAId ? (
+                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{teamA?.teamElo}</span></p>
                     ) : (
-                      <Input placeholder="Side A name (e.g. Zed#NA1)" {...regMatch("sideAName", { required: true })} />
+                      <Input placeholder="Side A name (e.g. Team Alpha)" {...regMatch("sideAName", { required: true })} />
                     )}
                   </div>
-                  {/* Player B */}
                   <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground block">Player B</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("playerBId")}>
+                    <label className="text-xs text-muted-foreground block">Team B</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...regMatch("teamBId")}>
                       <option value="">None — enter name manually</option>
-                      {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                      {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>)}
                     </select>
-                    {watchedPlayerBId ? (
-                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{playerBElo}</span></p>
+                    {watchedTeamBId ? (
+                      <p className="text-xs text-muted-foreground">ELO: <span className="font-semibold text-primary">{teamB?.teamElo}</span></p>
                     ) : (
-                      <Input placeholder="Side B name (e.g. Jinx#KR1)" {...regMatch("sideBName", { required: true })} />
+                      <Input placeholder="Side B name (e.g. Team Beta)" {...regMatch("sideBName", { required: true })} />
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Result */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Result</p>
                 <div>
@@ -513,12 +498,12 @@ export default function ManageEventDetail() {
                   <div className="flex gap-6">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" value="A" {...regMatch("winner")} className="accent-primary" />
-                      <span className="text-sm font-medium">{playerA?.riotId || "Side A"}</span>
+                      <span className="text-sm font-medium">{teamA?.name || "Side A"}</span>
                       {watchedWinner === "A" && <span className="text-xs text-green-400 font-semibold">wins</span>}
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" value="B" {...regMatch("winner")} className="accent-primary" />
-                      <span className="text-sm font-medium">{playerB?.riotId || "Side B"}</span>
+                      <span className="text-sm font-medium">{teamB?.name || "Side B"}</span>
                       {watchedWinner === "B" && <span className="text-xs text-green-400 font-semibold">wins</span>}
                     </label>
                   </div>
@@ -545,7 +530,6 @@ export default function ManageEventDetail() {
                 </div>
               </div>
 
-              {/* Bracket Position — hidden for In-house / 1v1 Ladder */}
               {showBracketSection && (
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bracket Position</p>
@@ -588,10 +572,9 @@ export default function ManageEventDetail() {
               </div>
               )}
 
-              {/* Playoff Link — only for season playoff events */}
               <div className="border border-border/50 rounded-md bg-muted/20 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Playoff Link <span className="normal-case font-normal text-muted-foreground/60 ml-1">— only for season playoff events that affect ELO. Leave blank for standalone tournaments.</span>
+                  Playoff Link <span className="normal-case font-normal text-muted-foreground/60 ml-1">— only for season playoff events</span>
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

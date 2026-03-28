@@ -5,7 +5,7 @@ import {
   useCreateMatch,
   useUpdateMatch,
   useDeleteMatch,
-  useListPlayers,
+  useListTeams,
   useListSeasons,
   type Match,
   type CreateMatchRequest,
@@ -22,7 +22,7 @@ import { useSearch } from "wouter";
 export default function ManageMatches() {
   const { data: matches, isLoading } = useListMatches();
   const { data: events } = useListEvents();
-  const { data: players } = useListPlayers();
+  const { data: teams } = useListTeams();
   const { data: seasons } = useListSeasons();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -35,35 +35,33 @@ export default function ManageMatches() {
 
   const { register, handleSubmit, reset, control, setValue } = useForm();
 
-  const watchedPlayerAId = useWatch({ control, name: "playerAId" });
-  const watchedPlayerBId = useWatch({ control, name: "playerBId" });
+  const watchedTeamAId = useWatch({ control, name: "teamAId" });
+  const watchedTeamBId = useWatch({ control, name: "teamBId" });
 
-  const playerA = players?.find((p) => p.id === Number(watchedPlayerAId));
-  const playerB = players?.find((p) => p.id === Number(watchedPlayerBId));
-  const playerAElo = playerA?.currentElo;
-  const playerBElo = playerB?.currentElo;
+  const teamA = teams?.find((t) => t.id === Number(watchedTeamAId));
+  const teamB = teams?.find((t) => t.id === Number(watchedTeamBId));
 
   useEffect(() => {
-    if (playerA) setValue("sideAName", playerA.riotId);
-  }, [watchedPlayerAId]);
+    if (teamA) setValue("sideAName", teamA.name);
+  }, [watchedTeamAId]);
 
   useEffect(() => {
-    if (playerB) setValue("sideBName", playerB.riotId);
-  }, [watchedPlayerBId]);
+    if (teamB) setValue("sideBName", teamB.name);
+  }, [watchedTeamBId]);
 
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const playerAId = params.get("playerAId");
-    const playerBId = params.get("playerBId");
-    if (playerAId && playerBId) {
-      reset({ eventId: "", playerAId, playerBId, seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
+    const teamAId = params.get("teamAId");
+    const teamBId = params.get("teamBId");
+    if (teamAId && teamBId) {
+      reset({ eventId: "", teamAId, teamBId, seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
       setEditingId(null);
       setIsOpen(true);
     }
   }, [search]);
 
   const openNew = () => {
-    reset({ eventId: "", playerAId: "", playerBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
+    reset({ eventId: "", teamAId: "", teamBId: "", seasonId: "", isPlayoff: false, round: "", bracketSlot: "", isLosersBracket: false });
     setEditingId(null);
     setIsOpen(true);
   };
@@ -72,8 +70,8 @@ export default function ManageMatches() {
     reset({
       ...match,
       eventId: match.eventId || "",
-      playerAId: match.playerAId || "",
-      playerBId: match.playerBId || "",
+      teamAId: match.teamAId || "",
+      teamBId: match.teamBId || "",
       seasonId: match.seasonId || "",
     });
     setEditingId(match.id);
@@ -88,10 +86,9 @@ export default function ManageMatches() {
       winnerName: String(data.winnerName ?? ""),
       score: data.score ? String(data.score) : null,
       format: data.format ? String(data.format) : null,
-      vodUrl: data.vodUrl ? String(data.vodUrl) : null,
       eventId: data.eventId ? Number(data.eventId) : null,
-      playerAId: data.playerAId ? Number(data.playerAId) : null,
-      playerBId: data.playerBId ? Number(data.playerBId) : null,
+      teamAId: data.teamAId ? Number(data.teamAId) : null,
+      teamBId: data.teamBId ? Number(data.teamBId) : null,
       seasonId: data.seasonId ? Number(data.seasonId) : null,
       isPlayoff: Boolean(data.isPlayoff),
       round: data.round ? Number(data.round) : null,
@@ -152,15 +149,14 @@ export default function ManageMatches() {
               <th className="px-6 py-3">Event / Format</th>
               <th className="px-6 py-3">Matchup</th>
               <th className="px-6 py-3">Score</th>
-              <th className="px-6 py-3">VOD</th>
               <th className="px-6 py-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="px-6 py-4 text-center">Loading...</td></tr>
+              <tr><td colSpan={5} className="px-6 py-4 text-center">Loading...</td></tr>
             ) : !filteredMatches?.length ? (
-              <tr><td colSpan={6} className="px-6 py-6 text-center text-muted-foreground">No matches found.</td></tr>
+              <tr><td colSpan={5} className="px-6 py-6 text-center text-muted-foreground">No matches found.</td></tr>
             ) : filteredMatches?.map((item) => (
               <tr key={item.id} className="border-b border-border/20 hover:bg-muted/20">
                 <td className="px-6 py-4">
@@ -180,7 +176,6 @@ export default function ManageMatches() {
                   <span className={item.winnerName === item.sideBName ? "font-bold" : ""}>{item.sideBName}</span>
                 </td>
                 <td className="px-6 py-4 font-display font-bold">{item.score || "-"}</td>
-                <td className="px-6 py-4 text-xs text-muted-foreground truncate max-w-[100px]">{item.vodUrl || "No VOD"}</td>
                 <td className="px-6 py-4 text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(item)}><Edit className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
@@ -208,9 +203,7 @@ export default function ManageMatches() {
             <Input placeholder="Winner Name" className="col-span-2" {...register("winnerName", { required: true })} />
             <Input placeholder="Score (e.g. 2-1)" className="col-span-2" {...register("score")} />
           </div>
-          <Input placeholder="VOD URL (Optional)" {...register("vodUrl")} />
 
-          {/* Bracket Section */}
           <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bracket Position (Optional)</p>
             <div className="grid grid-cols-2 gap-4">
@@ -229,28 +222,27 @@ export default function ManageMatches() {
             </label>
           </div>
 
-          {/* ELO Section */}
           <div className="border p-4 rounded-md border-border/50 bg-muted/20 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">ELO Tracking (Optional)</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Player A</label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("playerAId")}>
+                <label className="text-xs text-muted-foreground mb-1 block">Team A</label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("teamAId")}>
                   <option value="">None</option>
-                  {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                  {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>)}
                 </select>
-                {watchedPlayerAId && playerAElo !== undefined && (
-                  <p className="text-xs text-muted-foreground mt-1">Current ELO: <span className="font-semibold text-foreground">{playerAElo}</span></p>
+                {watchedTeamAId && teamA && (
+                  <p className="text-xs text-muted-foreground mt-1">Current ELO: <span className="font-semibold text-foreground">{teamA.teamElo}</span></p>
                 )}
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Player B</label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("playerBId")}>
+                <label className="text-xs text-muted-foreground mb-1 block">Team B</label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register("teamBId")}>
                   <option value="">None</option>
-                  {players?.map((p) => <option key={p.id} value={p.id}>{p.riotId}</option>)}
+                  {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} [{t.tag}]</option>)}
                 </select>
-                {watchedPlayerBId && playerBElo !== undefined && (
-                  <p className="text-xs text-muted-foreground mt-1">Current ELO: <span className="font-semibold text-foreground">{playerBElo}</span></p>
+                {watchedTeamBId && teamB && (
+                  <p className="text-xs text-muted-foreground mt-1">Current ELO: <span className="font-semibold text-foreground">{teamB.teamElo}</span></p>
                 )}
               </div>
             </div>

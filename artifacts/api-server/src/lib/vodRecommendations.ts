@@ -7,7 +7,6 @@ export interface VodRecommendationInput {
   champion: string | null;
   opponentChampion: string | null;
   position: string | null;
-  playerEloAtTime: number | null;
 }
 
 /**

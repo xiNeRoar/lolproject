@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, Video, LogOut, Trophy, UserCheck, Settings } from "lucide-react";
+import { LayoutDashboard, Calendar, Video, LogOut, Trophy, UserCheck, Settings, Users } from "lucide-react";
 import { useAdminMe, useAdminLogout } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,12 @@ const navSections = [
     label: "Overview",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Teams",
+    items: [
+      { href: "/admin/teams", label: "Teams", icon: Users },
     ],
   },
   {
@@ -64,7 +70,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
       <aside className="w-56 border-r border-border bg-card/50 hidden md:flex flex-col">
         <div className="h-16 flex items-center px-5 border-b border-border">
           <Link href="/" className="font-display font-bold text-lg text-primary">VCLoL Admin</Link>
@@ -115,7 +120,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-border bg-card/30 flex items-center px-8 md:hidden">
           <span className="font-display font-bold text-primary">VCLoL Admin</span>

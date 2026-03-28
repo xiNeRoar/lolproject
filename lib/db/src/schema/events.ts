@@ -12,6 +12,7 @@ export const eventsTable = pgTable("events", {
   shortDescription: text("short_description").notNull(),
   fullDescription: text("full_description"),
   rulesSummary: text("rules_summary"),
+  discordUrl: text("discord_url"),            // optional Discord invite URL for event (#115)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
