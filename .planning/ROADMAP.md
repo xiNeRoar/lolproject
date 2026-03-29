@@ -69,8 +69,11 @@ Plans:
   2. Dashboard shows "Verify with Riot" CTA when the logged-in player has not completed RSO
   3. After successful RSO callback, player is redirected to dashboard with confirmation feedback
   4. Expired or invalid token shows a user-friendly error message on the connect page
-**Plans**: TBD
+**Plans:** 1 plan
 **UI hint**: yes
+
+Plans:
+- [ ] 12-01-PLAN.md -- Connect page (3-state RSO verification) + Dashboard CTA banner with success toast
 
 ## Progress
 
@@ -81,4 +84,4 @@ Plans:
 | 9. Tech Debt + Error Handling | v3.3 | 2/2 | Complete | - |
 | 10. RSO Backend + Session Store | v3.3 | 1/1 | Complete    | 2026-03-29 |
 | 11. Player Career Resume | v3.3 | 1/1 | Complete    | 2026-03-29 |
-| 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/TBD | Not started | - |
+| 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/1 | Planning complete | - |
