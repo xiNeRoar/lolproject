@@ -12,7 +12,7 @@
 
 - [ ] **Phase 9: Tech Debt + Error Handling** - Fix useAuth() forwarding, paginated response unwrap, vods.ts TS errors, and frontend error states
 - [x] **Phase 10: RSO Backend + Session Store** - Implement RSO OAuth handlers in auth.ts and switch to PostgreSQL-backed sessions (completed 2026-03-29)
-- [ ] **Phase 11: Player Career Resume** - Render per-team career stat cards on PlayerProfile using existing backend + hooks
+- [x] **Phase 11: Player Career Resume** - Render per-team career stat cards on PlayerProfile using existing backend + hooks (completed 2026-03-29)
 - [ ] **Phase 12: RSO Connect Page + Dashboard CTA** - Wire /connect page to RSO backend and surface connect prompt on dashboard
 
 ## Phase Details
@@ -54,11 +54,11 @@ Plans:
   1. PlayerProfile page shows a career card for each team the player has been on
   2. Each career card displays team name, role, win/loss record, and KDA averages
   3. Duplicate team memberships (leave + rejoin) are deduplicated into a single card per team
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **UI hint**: yes
 
 Plans:
-- [ ] 11-01-PLAN.md -- Career History section in PlayerProfile (hook integration, dedup, rendering)
+- [x] 11-01-PLAN.md -- Career History section in PlayerProfile (hook integration, dedup, rendering)
 
 ### Phase 12: RSO Connect Page + Dashboard CTA
 **Goal**: Players can complete RSO identity verification through the website -- the launch blocker that has been sending users to a 404 since v3.1
@@ -80,5 +80,5 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 9. Tech Debt + Error Handling | v3.3 | 2/2 | Complete | - |
 | 10. RSO Backend + Session Store | v3.3 | 1/1 | Complete    | 2026-03-29 |
-| 11. Player Career Resume | v3.3 | 0/1 | Planning complete | - |
+| 11. Player Career Resume | v3.3 | 1/1 | Complete   | 2026-03-29 |
 | 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/TBD | Not started | - |

@@ -15,8 +15,8 @@
 
 ## Player Profile
 
-- [ ] **PROF-01**: PlayerProfile page renders per-team career cards using useGetPlayerTeamStats hook
-- [ ] **PROF-02**: Career cards show team name, role, W/L record, and KDA averages per team
+- [x] **PROF-01**: PlayerProfile page renders per-team career cards using useGetPlayerTeamStats hook
+- [x] **PROF-02**: Career cards show team name, role, W/L record, and KDA averages per team
 
 ## Error Handling
 
@@ -50,8 +50,8 @@
 | RSO-02 | Phase 12 | Pending |
 | RSO-03 | Phase 10 | Complete |
 | RSO-04 | Phase 12 | Pending |
-| PROF-01 | Phase 11 | Pending |
-| PROF-02 | Phase 11 | Pending |
+| PROF-01 | Phase 11 | Complete |
+| PROF-02 | Phase 11 | Complete |
 | ERR-01 | Phase 9 | Complete |
 | ERR-02 | Phase 9 | Complete |
 | ERR-03 | Phase 9 | Complete |
