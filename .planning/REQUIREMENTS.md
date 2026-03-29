@@ -2,9 +2,9 @@
 
 ## Tech Debt
 
-- [ ] **DEBT-01**: useAuth() hook returns hasPuuid and rsoOptIn from AuthMeResponse
-- [ ] **DEBT-02**: Players.tsx and Matches.tsx unwrap paginated response shape ({data, total, page, totalPages}) correctly
-- [ ] **DEBT-03**: vods.ts has zero implicit-any TypeScript errors (21 TS7006 fixes)
+- [x] **DEBT-01**: useAuth() hook returns hasPuuid and rsoOptIn from AuthMeResponse
+- [x] **DEBT-02**: Players.tsx and Matches.tsx unwrap paginated response shape ({data, total, page, totalPages}) correctly
+- [x] **DEBT-03**: vods.ts has zero implicit-any TypeScript errors (21 TS7006 fixes)
 
 ## Auth / RSO
 
@@ -43,9 +43,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | Phase 9 | Pending |
-| DEBT-02 | Phase 9 | Pending |
-| DEBT-03 | Phase 9 | Pending |
+| DEBT-01 | Phase 9 | Complete |
+| DEBT-02 | Phase 9 | Complete |
+| DEBT-03 | Phase 9 | Complete |
 | RSO-01 | Phase 10 | Pending |
 | RSO-02 | Phase 12 | Pending |
 | RSO-03 | Phase 10 | Pending |
