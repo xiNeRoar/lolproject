@@ -21,13 +21,17 @@
 **Goal**: Public pages display data correctly, auth state includes RSO fields, and error states show user-friendly messages instead of blank screens or crashes
 **Depends on**: Phase 8 (v3.2 -- design system and ownership established)
 **Requirements**: DEBT-01, DEBT-02, DEBT-03, ERR-01, ERR-02, ERR-03
+**Plans:** 2 plans
 **Success Criteria** (what must be TRUE):
   1. /matches page renders match list from paginated API response (not empty)
   2. /players page renders player list from paginated API response (not empty)
   3. useAuth() hook exposes hasPuuid and rsoOptIn boolean fields to all consuming components
   4. Visiting a private player profile shows "Profile is private" message instead of error or blank page
   5. VOD page for a privacy-gated video shows graceful "not available" message instead of error
-**Plans**: TBD
+
+Plans:
+- [ ] 09-01-PLAN.md -- Tech debt: useAuth() fix, pagination unwrap, vods.ts TS errors
+- [ ] 09-02-PLAN.md -- Error handling: VOD privacy, profile 403, app error boundary
 
 ### Phase 10: RSO Backend + Session Store
 **Goal**: Server-side RSO OAuth flow works end-to-end (token validation, Riot auth redirect, callback handling, PUUID persistence) with sessions that survive redeployment
@@ -68,7 +72,7 @@
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 9. Tech Debt + Error Handling | v3.3 | 0/TBD | Not started | - |
+| 9. Tech Debt + Error Handling | v3.3 | 0/2 | Planned | - |
 | 10. RSO Backend + Session Store | v3.3 | 0/TBD | Not started | - |
 | 11. Player Career Resume | v3.3 | 0/TBD | Not started | - |
 | 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/TBD | Not started | - |
