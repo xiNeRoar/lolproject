@@ -123,8 +123,8 @@ function EloTrajectoryInner({ teams }: { teams: Array<{ teamId: number; teamName
 export default function PlayerProfile() {
   const { riotId } = useParams<{ riotId: string }>();
   const { isLoggedIn } = useAuth();
-  const { data: player, isLoading, isError } = useGetPlayer(riotId ?? "");
-  const isPrivate = !!(player as any)?.isPrivate;
+  const { data: player, isLoading, isError, error } = useGetPlayer(riotId ?? "");
+  const isPrivate = isError && (error as any)?.status === 403;
   const { data: badges }        = useGetPlayerBadges(player?.id ?? 0,    { query: { enabled: !!player?.id && !isPrivate } });
   const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id && !isPrivate } });
   const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id && !isPrivate } });
@@ -146,7 +146,7 @@ export default function PlayerProfile() {
     );
   }
 
-  if (isError || !player) {
+  if ((isError && !isPrivate) || (!isError && !player)) {
     return (
       <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
@@ -167,11 +167,11 @@ export default function PlayerProfile() {
             <CardContent className="p-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 <div className="w-16 h-16 rounded-full bg-muted/30 border border-border/40 flex items-center justify-center text-2xl font-display font-bold text-muted-foreground flex-shrink-0">
-                  {player.riotId.charAt(0).toUpperCase()}
+                  {(riotId ?? "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-3xl font-display font-bold">{player.riotId}</h1>
-                  {allTeams.length > 0 && (
+                  <h1 className="text-3xl font-display font-bold">{riotId ?? "Unknown"}</h1>
+                  {player?.teams && player.teams.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {allTeams.map((t) => (
                         <Link key={t.teamId} href={`/teams/${t.teamId}`} className="text-sm text-primary hover:underline">
