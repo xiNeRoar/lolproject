@@ -30,8 +30,8 @@
   5. VOD page for a privacy-gated video shows graceful "not available" message instead of error
 
 Plans:
-- [ ] 09-01-PLAN.md -- Tech debt: useAuth() fix, pagination unwrap, vods.ts TS errors
-- [ ] 09-02-PLAN.md -- Error handling: VOD privacy, profile 403, app error boundary
+- [x] 09-01-PLAN.md -- Tech debt: useAuth() fix, pagination unwrap, vods.ts TS errors
+- [x] 09-02-PLAN.md -- Error handling: VOD privacy, profile 403, app error boundary
 
 ### Phase 10: RSO Backend + Session Store
 **Goal**: Server-side RSO OAuth flow works end-to-end (token validation, Riot auth redirect, callback handling, PUUID persistence) with sessions that survive redeployment

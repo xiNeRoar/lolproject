@@ -20,9 +20,9 @@
 
 ## Error Handling
 
-- [ ] **ERR-01**: VOD page shows graceful message when VOD is privacy-gated instead of error
-- [ ] **ERR-02**: Player profile sub-routes show "Profile is private" UI on 403 response
-- [ ] **ERR-03**: App-level error boundary catches unhandled API errors with user-friendly fallback
+- [x] **ERR-01**: VOD page shows graceful message when VOD is privacy-gated instead of error
+- [x] **ERR-02**: Player profile sub-routes show "Profile is private" UI on 403 response
+- [x] **ERR-03**: App-level error boundary catches unhandled API errors with user-friendly fallback
 
 ## Future Requirements (Deferred)
 
@@ -52,6 +52,6 @@
 | RSO-04 | Phase 12 | Pending |
 | PROF-01 | Phase 11 | Pending |
 | PROF-02 | Phase 11 | Pending |
-| ERR-01 | Phase 9 | Pending |
-| ERR-02 | Phase 9 | Pending |
-| ERR-03 | Phase 9 | Pending |
+| ERR-01 | Phase 9 | Complete |
+| ERR-02 | Phase 9 | Complete |
+| ERR-03 | Phase 9 | Complete |
