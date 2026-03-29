@@ -47,6 +47,8 @@ export function useAuth() {
     playerIdNum,
     riotId: data?.riotId ?? null,
     discordUsername: data?.discordUsername ?? null,
+    hasPuuid: data?.hasPuuid ?? false,
+    rsoOptIn: data?.rsoOptIn ?? false,
     isLoading,
     logout,
   };
