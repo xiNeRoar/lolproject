@@ -1,5 +1,19 @@
 # Milestones
 
+## v3.3 Frontend Launch (Shipped: 2026-03-29)
+
+**Phases completed:** 4 phases, 5 plans, 12 tasks
+
+**Key accomplishments:**
+
+- useAuth() hook forwarding hasPuuid/rsoOptIn, paginated response unwrap in Players/Matches/Vods pages, explicit VodRow types in vods.ts
+- 403 privacy-gated error handling for VODs and player profiles plus app-level React error boundary to prevent white-screen crashes
+- RSO OAuth route handlers (connect/:token, /rso, /rso/callback) with PostgreSQL-backed session store via connect-pg-simple
+- Per-team career stat cards on PlayerProfile showing team name, role, W/L record, KDA averages, win rate, and games played with deduplication and active/inactive sorting
+- Connect.tsx page with 3-state RSO verification flow (token prompt, 7 error codes, fallback) and dashboard CTA banner with direct Verify with Riot button linking to website RSO OAuth
+
+---
+
 ## v3.2 Frontend Readiness (Shipped: 2026-03-28)
 
 **Phases completed:** 9 phases, 17 plans, 30 tasks

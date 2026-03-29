@@ -55,26 +55,32 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - ✓ Full-stack Claude ownership established — v3.2
 - ✓ Codegen synced with all v3.2 spec changes — v3.2
 
+- ✓ useAuth() forwards hasPuuid/rsoOptIn — v3.3
+- ✓ Paginated response unwrap in Players/Matches/Vods — v3.3
+- ✓ vods.ts implicit-any TS errors fixed — v3.3
+- ✓ VOD privacy graceful degradation (#226) — v3.3
+- ✓ Profile 403 detection fix (#227) — v3.3
+- ✓ App-level React error boundary — v3.3
+- ✓ RSO OAuth backend handlers (connect/:token, /rso, /rso/callback) — v3.3
+- ✓ PostgreSQL-backed session store (connect-pg-simple) — v3.3
+- ✓ Per-team career stat cards on PlayerProfile — v3.3
+- ✓ RSO Connect page (/connect?token=xxx) — v3.3
+- ✓ Dashboard "Verify with Riot" CTA — v3.3
+
 ### Active
 
-- [ ] Website RSO OAuth handler (/connect page + /auth/rso callback) — launch blocker
-- [ ] Player profile career resume layout (per-team W/L + KDA) — depends on v3.2 backend (done)
-- [ ] Login flow RSO connect step — depends on v3.2 /auth/me (done)
-- [ ] Frontend paginated response adaptation (#225)
-- [ ] Frontend VOD privacy graceful degradation (#226)
-- [ ] Frontend private profile 403 handling (#227)
-- [ ] useAuth() wrapper needs hasPuuid/rsoOptIn forwarding (tech debt from v3.2)
+- [ ] Frontend overhaul based on deep UX research (see docs/DEEP_UX_SYNTHESIS.md)
+- [ ] Match cards redesign (champion composition, win/loss tints, score-first)
+- [ ] Player profile redesign (summary line, activity heatmap, verified badge)
+- [ ] Progressive dashboard (different UX for 0/5/50 matches)
+- [ ] Onboarding checklist for all players
+- [ ] Privacy controls UI (preview-as-visitor, visibility toggles)
+- [ ] Cmd+K global search implementation
+- [ ] Mobile-responsive data display
 
-## Current Milestone: v3.3 Frontend Launch
+## Current Milestone: Planning next milestone
 
-**Goal:** Ship the website frontend so players can use it — RSO identity verification, player profiles with career stats, and proper error handling.
-
-**Target features:**
-- Tech debt cleanup (useAuth() fix, vods.ts TS errors)
-- RSO Connect page (#198) — launch blocker
-- Player profile career resume (#200) — per-team W/L + KDA cards
-- Frontend error handling (#225, #226, #227)
-- Login flow with RSO connect step
+**Previous:** v3.3 Frontend Launch — shipped 2026-03-29 (12/12 requirements, audit passed)
 
 ### Out of Scope
 
@@ -92,10 +98,9 @@ Every match submitted via .rofl produces a verified, permanent competitive recor
 - **Single AI agent:** Claude owns full stack (backend, bot, frontend, docs)
 - **Branch:** `variant` (not main)
 - **Deploy:** Portainer on Oracle Cloud ARM64 VPS, no SSH
-- **Current state:** v3.2 shipped — all backend API gaps closed, design system documented, ready for frontend launch
-- **Open issues:** 8 frontend (#198, #199, #200, #202, #204, #225, #226, #227) — all labelled Claude
-- **Tech debt:** vods.ts 21 TS7006 errors (v3.1), useAuth() missing hasPuuid/rsoOptIn forwarding
-- **Next step:** v3.3 Frontend Launch — build actual frontend pages consuming the v3.2 APIs
+- **Current state:** v3.3 shipped — RSO OAuth live, career cards on profile, error handling, session persistence. Deep UX research completed (5 docs in docs/DEEP_*.md)
+- **Open issues:** Frontend overhaul needed based on cross-industry UX research (35 recommendations in docs/DEEP_UX_SYNTHESIS.md)
+- **Next step:** v4.0 Frontend Overhaul — redesign all pages based on deep UX research findings
 
 ## Constraints
 
@@ -139,4 +144,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after v3.3 milestone start*
+*Last updated: 2026-03-29 after v3.3 milestone completion*
