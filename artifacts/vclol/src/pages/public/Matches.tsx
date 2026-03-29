@@ -14,7 +14,8 @@ export default function Matches() {
 
   const [teamIdFilter, setTeamIdFilter] = useState<number | undefined>(initialTeamId);
   const apiParams = teamIdFilter ? { teamId: teamIdFilter } : undefined;
-  const { data: matches, isLoading } = useListMatches(apiParams);
+  const { data: matchesPage, isLoading } = useListMatches(apiParams);
+  const matches = matchesPage?.data ?? [];
   const { data: ladderData } = useGetLadder();
   const [search, setSearch] = useState("");
   const [sortNewest, setSortNewest] = useState(true);

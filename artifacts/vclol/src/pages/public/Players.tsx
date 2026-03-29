@@ -35,7 +35,8 @@ function winRateColor(rate: number | null | undefined): string {
 type SortKey = "name" | "games" | "winRate";
 
 export default function Players() {
-  const { data: players, isLoading } = useListPlayers();
+  const { data: playersPage, isLoading } = useListPlayers();
+  const players = playersPage?.data ?? [];
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("name");

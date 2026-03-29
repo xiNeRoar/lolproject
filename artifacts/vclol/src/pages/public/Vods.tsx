@@ -47,7 +47,8 @@ export default function Vods() {
 
   const { data: vods, isLoading } = useListVods(params);
   const { data: events } = useListEvents();
-  const { data: players } = useListPlayers();
+  const { data: playersPage } = useListPlayers();
+  const players = playersPage?.data ?? [];
   const { data: ladderData } = useGetLadder();
 
   const clearFilters = () => {
