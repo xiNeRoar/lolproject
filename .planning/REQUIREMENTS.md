@@ -8,9 +8,9 @@
 
 ## Auth / RSO
 
-- [ ] **RSO-01**: Backend implements GET /auth/connect/:token, GET /auth/rso, GET /auth/rso/callback handlers in auth.ts
+- [x] **RSO-01**: Backend implements GET /auth/connect/:token, GET /auth/rso, GET /auth/rso/callback handlers in auth.ts
 - [ ] **RSO-02**: /connect page renders with token from URL, initiates RSO OAuth via full-page navigation
-- [ ] **RSO-03**: Session store uses connect-pg-simple (PostgreSQL-backed) instead of in-memory
+- [x] **RSO-03**: Session store uses connect-pg-simple (PostgreSQL-backed) instead of in-memory
 - [ ] **RSO-04**: Dashboard shows RSO connect CTA when hasPuuid is false
 
 ## Player Profile
@@ -46,9 +46,9 @@
 | DEBT-01 | Phase 9 | Complete |
 | DEBT-02 | Phase 9 | Complete |
 | DEBT-03 | Phase 9 | Complete |
-| RSO-01 | Phase 10 | Pending |
+| RSO-01 | Phase 10 | Complete |
 | RSO-02 | Phase 12 | Pending |
-| RSO-03 | Phase 10 | Pending |
+| RSO-03 | Phase 10 | Complete |
 | RSO-04 | Phase 12 | Pending |
 | PROF-01 | Phase 11 | Pending |
 | PROF-02 | Phase 11 | Pending |

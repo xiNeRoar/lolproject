@@ -11,7 +11,7 @@
 **v3.3 Frontend Launch**
 
 - [ ] **Phase 9: Tech Debt + Error Handling** - Fix useAuth() forwarding, paginated response unwrap, vods.ts TS errors, and frontend error states
-- [ ] **Phase 10: RSO Backend + Session Store** - Implement RSO OAuth handlers in auth.ts and switch to PostgreSQL-backed sessions
+- [x] **Phase 10: RSO Backend + Session Store** - Implement RSO OAuth handlers in auth.ts and switch to PostgreSQL-backed sessions (completed 2026-03-29)
 - [ ] **Phase 11: Player Career Resume** - Render per-team career stat cards on PlayerProfile using existing backend + hooks
 - [ ] **Phase 12: RSO Connect Page + Dashboard CTA** - Wire /connect page to RSO backend and surface connect prompt on dashboard
 
@@ -41,10 +41,10 @@ Plans:
   1. GET /auth/connect/:token validates a bot-generated token and initiates RSO OAuth redirect to auth.riotgames.com
   2. GET /auth/rso/callback exchanges auth code for PUUID and updates the player record
   3. User sessions persist across Portainer redeploy (PostgreSQL-backed session store)
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md -- Session store (connect-pg-simple) + RSO OAuth handlers in auth.ts
+- [x] 10-01-PLAN.md -- Session store (connect-pg-simple) + RSO OAuth handlers in auth.ts
 
 ### Phase 11: Player Career Resume
 **Goal**: Players can see their per-team competitive history (W/L record, KDA averages) on their profile page
@@ -76,6 +76,6 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 9. Tech Debt + Error Handling | v3.3 | 2/2 | Complete | - |
-| 10. RSO Backend + Session Store | v3.3 | 0/1 | Planned | - |
+| 10. RSO Backend + Session Store | v3.3 | 1/1 | Complete   | 2026-03-29 |
 | 11. Player Career Resume | v3.3 | 0/TBD | Not started | - |
 | 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/TBD | Not started | - |
