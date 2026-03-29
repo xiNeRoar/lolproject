@@ -198,11 +198,21 @@ Complete every item before going live. Each checkbox must be ticked.
 
 ### Riot RSO Setup (launch requirement)
 
+**RSO backend routes are implemented** (Phase 10). Three route handlers in `artifacts/api-server/src/routes/auth.ts`:
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/auth/connect/:token` | Bot `/connect` flow -- validates token, redirects to RSO |
+| `GET /api/auth/rso` | Website flow -- requires session, redirects to RSO |
+| `GET /api/auth/rso/callback` | Callback -- exchanges code for PUUID, updates player record |
+
+**Sessions are stored in PostgreSQL** via `connect-pg-simple`. The `session` table is auto-created on first server start. Sessions survive Portainer redeploys.
+
 - [ ] Register product at https://developer.riotgames.com with deployed site + ToS + Privacy Policy
 - [ ] Receive Production API Key approval → set as `RIOT_API_KEY`
 - [ ] Apply for RSO client (Riot contacts you after Production Key approval)
 - [ ] Receive RSO client credentials → set `RSO_CLIENT_ID` and `RSO_CLIENT_SECRET`
-- [ ] Configure RSO redirect URI in Riot Developer Portal → set `RSO_REDIRECT_URI`
+- [ ] Configure RSO redirect URI in Riot Developer Portal → set `RSO_REDIRECT_URI` (must match `https://yourdomain/api/auth/rso/callback`)
 - [ ] Verify RSO flow end-to-end: `/connect` → click link → Riot login → redirect → player record updated with PUUID
 - [ ] Verify `/register-team` blocks unverified users with "Please run `/connect` first"
 
