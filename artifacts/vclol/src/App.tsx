@@ -25,6 +25,7 @@ import MatchDetail from "@/pages/public/MatchDetail";
 import Matches from "@/pages/public/Matches";
 import CaptainHub from "@/pages/public/CaptainHub";
 import CaptainMatchManagement from "@/pages/public/CaptainMatchManagement";
+import Connect from "@/pages/public/Connect";
 
 import Login from "@/pages/admin/Login";
 import Dashboard from "@/pages/admin/Dashboard";
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/login" component={PlayerLogin} />
       <Route path="/dashboard" component={PlayerDashboard} />
+      <Route path="/connect" component={Connect} />
       <Route path="/events" component={Events} />
       <Route path="/events/:slug" component={EventDetail} />
       <Route path="/watch" component={Vods} />
