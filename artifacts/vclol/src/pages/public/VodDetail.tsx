@@ -2,7 +2,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { useGetVod } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, PlayCircle, Video, ChevronLeft } from "lucide-react";
+import { Clock, PlayCircle, Video, ChevronLeft, EyeOff } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useEffect, useRef } from "react";
 
@@ -100,7 +100,7 @@ function YouTubePlayer({
 
 export default function VodDetail() {
   const { id } = useParams<{ id: string }>();
-  const { data: vod, isLoading, isError } = useGetVod(Number(id));
+  const { data: vod, isLoading, isError, error } = useGetVod(Number(id));
   const playerRef = useRef<YTPlayer | null>(null);
 
   const videoId = extractYouTubeId(vod?.videoUrl);
@@ -119,6 +119,25 @@ export default function VodDetail() {
         <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 animate-pulse">
           <div className="h-64 bg-card rounded-xl mb-6" />
           <div className="h-48 bg-card rounded-xl" />
+        </div>
+      </PublicLayout>
+    );
+  }
+
+  const isPrivacyGated = isError && (error as any)?.status === 403;
+
+  if (isPrivacyGated) {
+    return (
+      <PublicLayout>
+        <div className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
+          <EyeOff className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+          <p className="text-lg font-display font-semibold mb-2">This VOD is not available</p>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
+            This replay is restricted by the team captain or requires player consent to view.
+          </p>
+          <Link href="/watch" className="text-primary hover:underline text-sm inline-block">
+            ← Back to Watch
+          </Link>
         </div>
       </PublicLayout>
     );
