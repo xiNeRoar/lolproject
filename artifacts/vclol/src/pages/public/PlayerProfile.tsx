@@ -1,13 +1,13 @@
 import PublicLayout from "@/components/layout/PublicLayout";
 import {
   useGetPlayer, useGetPlayerBadges, useListSeasonChampions,
-  useGetPlayerEvents, useGetPlayerChampions,
+  useGetPlayerEvents, useGetPlayerChampions, useGetPlayerTeamStats,
 } from "@workspace/api-client-react";
 import { getTeamEloHistory, getGetTeamEloHistoryQueryKey } from "@workspace/api-client-react";
 import { useQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video, EyeOff } from "lucide-react";
+import { Crown, PlayCircle, TrendingUp, Award, Crosshair, CalendarDays, Swords, Video, EyeOff, Users } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { champPortraitUrl, BADGE_META } from "@/lib/lol-utils";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -129,8 +129,51 @@ export default function PlayerProfile() {
   const { data: seasonChamps }  = useListSeasonChampions(                { query: { enabled: !!player?.id && !isPrivate } });
   const { data: playerEvents }  = useGetPlayerEvents(player?.id ?? 0,    { query: { enabled: !!player?.id && !isPrivate } });
   const { data: championStats } = useGetPlayerChampions(player?.id ?? 0, { query: { enabled: !!player?.id && !isPrivate } });
+  const { data: teamStats }     = useGetPlayerTeamStats(player?.id ?? 0, { query: { enabled: !!player?.id && !isPrivate } });
 
   const allTeams = player?.teams ?? [];
+
+  const careerCards = (() => {
+    if (!teamStats || teamStats.length === 0) return [];
+    const merged = new Map<number, {
+      teamId: number; teamName: string; teamTag: string;
+      role: string | null; status: string;
+      wins: number; losses: number; gamesPlayed: number;
+      avgKills: number; avgDeaths: number; avgAssists: number;
+      joinedAt: string;
+    }>();
+    for (const s of teamStats) {
+      const existing = merged.get(s.teamId);
+      if (!existing) {
+        merged.set(s.teamId, {
+          teamId: s.teamId, teamName: s.teamName, teamTag: s.teamTag,
+          role: s.role ?? null, status: s.status,
+          wins: s.wins, losses: s.losses, gamesPlayed: s.gamesPlayed,
+          avgKills: s.avgKills, avgDeaths: s.avgDeaths, avgAssists: s.avgAssists,
+          joinedAt: s.joinedAt,
+        });
+      } else {
+        const totalGames = existing.gamesPlayed + s.gamesPlayed;
+        existing.avgKills = totalGames > 0 ? (existing.avgKills * existing.gamesPlayed + s.avgKills * s.gamesPlayed) / totalGames : 0;
+        existing.avgDeaths = totalGames > 0 ? (existing.avgDeaths * existing.gamesPlayed + s.avgDeaths * s.gamesPlayed) / totalGames : 0;
+        existing.avgAssists = totalGames > 0 ? (existing.avgAssists * existing.gamesPlayed + s.avgAssists * s.gamesPlayed) / totalGames : 0;
+        existing.wins += s.wins;
+        existing.losses += s.losses;
+        existing.gamesPlayed = totalGames;
+        if (s.joinedAt > existing.joinedAt) {
+          existing.joinedAt = s.joinedAt;
+          existing.status = s.status;
+          existing.role = s.role ?? null;
+        }
+      }
+    }
+    return [...merged.values()].sort((a, b) => {
+      const aActive = a.status !== "inactive" ? 1 : 0;
+      const bActive = b.status !== "inactive" ? 1 : 0;
+      if (aActive !== bActive) return bActive - aActive;
+      return b.gamesPlayed - a.gamesPlayed;
+    });
+  })();
 
   const playerTeamIds = new Set((player?.teams ?? []).map((t) => t.teamId));
   const myChampionships = seasonChamps?.filter((c) => playerTeamIds.has(c.teamId)) ?? [];
@@ -313,6 +356,62 @@ export default function PlayerProfile() {
                       <span>{meta.emoji}</span>
                       <span className="font-medium">{meta.label}</span>
                     </span>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {careerCards.length > 0 && (
+          <Card className="bg-card/40 border-border/40 mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                Career History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/30">
+                {careerCards.map((tc) => {
+                  const winRate = tc.wins + tc.losses > 0
+                    ? Math.round((tc.wins / (tc.wins + tc.losses)) * 100)
+                    : 0;
+                  const isInactive = tc.status === "inactive";
+                  return (
+                    <div key={tc.teamId} className={`px-6 py-3 flex items-center gap-4${isInactive ? " opacity-60" : ""}`}>
+                      <div className="flex-1 min-w-0">
+                        <div>
+                          <Link href={`/teams/${tc.teamId}`} className="text-sm font-medium hover:text-primary transition-colors truncate block">
+                            {tc.teamName} <span className="text-muted-foreground">[{tc.teamTag}]</span>
+                          </Link>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {tc.role && <Badge variant="outline" className="text-xs">{tc.role}</Badge>}
+                          {isInactive && <span className="text-xs text-muted-foreground">Inactive</span>}
+                          <span className="text-xs text-muted-foreground">
+                            Joined {new Date(tc.joinedAt).toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-medium">
+                          <span className="text-green-400">{tc.wins}W</span>
+                          {" / "}
+                          <span className="text-red-400">{tc.losses}L</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {tc.avgKills.toFixed(1)} / {tc.avgDeaths.toFixed(1)} / {tc.avgAssists.toFixed(1)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <span className={winRate >= 60 ? "text-green-400" : winRate < 50 ? "text-red-400" : "text-foreground"}>
+                            {winRate}% WR
+                          </span>
+                          {" \u2014 "}
+                          {tc.gamesPlayed} {tc.gamesPlayed === 1 ? "game" : "games"}
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
