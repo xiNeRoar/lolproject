@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 11-01-PLAN.md (player career resume)
-last_updated: "2026-03-29T03:18:43.683Z"
+stopped_at: Completed 12-01-PLAN.md (RSO connect page + dashboard CTA)
+last_updated: "2026-03-29T03:35:35.958Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 4
+  total_plans: 5
+  completed_plans: 5
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Every match submitted via .rofl produces a verified, permanent competitive record that cannot be faked.
-**Current focus:** Phase 11 — player-career-resume
+**Current focus:** Phase 12 — rso-connect-page-dashboard-cta
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 12 (rso-connect-page-dashboard-cta) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
 Last activity: 2026-03-29
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 09 P01 | 3m | 3 tasks | 5 files |
 | Phase 10 P01 | 3min | 2 tasks | 5 files |
 | Phase 11-player-career-resume P01 | 2min | 2 tasks | 1 files |
+| Phase 12 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Reuse @workspace/db pool for connect-pg-simple (no second connection pool)
 - [Phase 10]: Bot and website RSO flows share single /rso/callback handler, differentiated by session data
 - [Phase 11-player-career-resume]: Career section placed between Badges and ELO Trajectory per UI-SPEC; deduplication via Map merge with weighted-average KDA
+- [Phase 12]: window.location.href for RSO redirect -- backend handles full OAuth redirect chain server-side
+- [Phase 12]: Dashboard CTA uses /api/auth/rso (website flow with existing session) not /api/auth/connect/:token (bot flow)
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T03:14:22.117Z
-Stopped at: Completed 11-01-PLAN.md (player career resume)
+Last session: 2026-03-29T03:35:35.954Z
+Stopped at: Completed 12-01-PLAN.md (RSO connect page + dashboard CTA)
 Resume file: None
