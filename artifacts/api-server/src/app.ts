@@ -1,10 +1,12 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import session from "express-session";
+import pgSession from "connect-pg-simple";
 import rateLimit from "express-rate-limit";
 import { join, dirname } from "path";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
+import { pool } from "@workspace/db";
 
 // ESM-compatible __dirname (not available natively in ES modules)
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +15,7 @@ import router from "./routes";
 import { createOgMiddleware } from "./lib/ogMiddleware";
 
 const app: Express = express();
+const PgStore = pgSession(session);
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -64,6 +67,11 @@ if (isProduction && sessionSecret === DEFAULT_SECRET) {
 
 app.use(
   session({
+    store: new PgStore({
+      pool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
