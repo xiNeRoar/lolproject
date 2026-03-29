@@ -1,15 +1,17 @@
 import PublicLayout from "@/components/layout/PublicLayout";
-import { useGetPlayerById, useGetPlayerBadges, useListSeasons, useUpdatePlayerProfile, useListNotifications, useMarkNotificationRead } from "@workspace/api-client-react";
+import { useGetPlayerById, useGetPlayerBadges, useListSeasons, useUpdatePlayerProfile, useListNotifications, useMarkNotificationRead, getGetAuthMeQueryKey } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BADGE_META } from "@/lib/lol-utils";
-import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle, Eye, EyeOff } from "lucide-react";
+import { Users, Award, Bell, Settings, AlertTriangle, Swords, Crown, ArrowRight, CheckCircle2, Circle, Eye, EyeOff, ShieldCheck } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 function LoggedOutState() {
   return (
@@ -34,6 +36,17 @@ function DashboardContent({ pid }: { pid: number }) {
   const markRead = useMarkNotificationRead();
   const updatePlayer = useUpdatePlayerProfile();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("rso") === "success") {
+      toast.success("Riot account verified", {
+        description: "Your identity is now confirmed. Welcome to VCLoL.",
+      });
+      window.history.replaceState({}, "", "/dashboard");
+      queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    }
+  }, [queryClient]);
 
   const [notifPref, setNotifPref] = useState<string | null>(null);
   const [privacyPref, setPrivacyPref] = useState<string | null>(null);
@@ -106,14 +119,20 @@ function DashboardContent({ pid }: { pid: number }) {
       <h1 className="text-2xl font-display font-bold">My Dashboard</h1>
 
       {(player.riotId.startsWith("pending") || !player.puuid) && (
-        <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3 flex-wrap">
           <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-medium text-yellow-400">Riot Account not verified</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Use <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/connect</code> in Discord to verify your Riot identity through RSO. This unlocks champion stats, match history, and your public profile.
+              Verify your Riot identity to unlock champion stats, match history, and your public profile.
             </p>
           </div>
+          <a href={`${API_BASE}/api/auth/rso`} className="flex-shrink-0 self-center w-full sm:w-auto">
+            <Button size="sm" className="gap-1.5 w-full sm:w-auto">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Verify with Riot
+            </Button>
+          </a>
         </div>
       )}
 
