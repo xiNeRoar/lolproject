@@ -90,26 +90,26 @@ router.get("/", async (req, res) => {
       .orderBy(desc(vodEntriesTable.createdAt));
 
     // Apply filters
-    if (eventId) rows = rows.filter((r) => r.vod.eventId === eventId);
-    if (format) rows = rows.filter((r) => r.vod.format === format);
-    if (roleTag) rows = rows.filter((r) => r.vod.roleTag === roleTag);
+    if (eventId) rows = rows.filter((r: VodRow) => r.vod.eventId === eventId);
+    if (format) rows = rows.filter((r: VodRow) => r.vod.format === format);
+    if (roleTag) rows = rows.filter((r: VodRow) => r.vod.roleTag === roleTag);
     if (champion)
       rows = rows.filter(
-        (r) => r.vod.champion?.toLowerCase() === champion.toLowerCase()
+        (r: VodRow) => r.vod.champion?.toLowerCase() === champion.toLowerCase()
       );
     if (position)
       rows = rows.filter(
-        (r) => r.vod.position?.toLowerCase() === position.toLowerCase()
+        (r: VodRow) => r.vod.position?.toLowerCase() === position.toLowerCase()
       );
-    if (patch) rows = rows.filter((r) => r.vod.patch === patch);
-    if (playerId) rows = rows.filter((r) => r.vod.playerId === playerId);
+    if (patch) rows = rows.filter((r: VodRow) => r.vod.patch === patch);
+    if (playerId) rows = rows.filter((r: VodRow) => r.vod.playerId === playerId);
     if (vodType === "spectator") {
       // Prefer vodType column; fall back to playerId heuristic for legacy VODs (#120)
-      rows = rows.filter((r) =>
+      rows = rows.filter((r: VodRow) =>
         r.vod.vodType != null ? r.vod.vodType === "spectator" : r.vod.playerId == null
       );
     } else if (vodType === "pov") {
-      rows = rows.filter((r) =>
+      rows = rows.filter((r: VodRow) =>
         r.vod.vodType != null
           ? r.vod.vodType === "team-pov" || r.vod.vodType === "player-pov"
           : r.vod.playerId != null
@@ -118,7 +118,7 @@ router.get("/", async (req, res) => {
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter(
-        (r) =>
+        (r: VodRow) =>
           r.vod.title.toLowerCase().includes(s) ||
           (r.vod.playerNames ?? "").toLowerCase().includes(s)
       );
@@ -127,7 +127,7 @@ router.get("/", async (req, res) => {
     // teamId filter: keep only VODs whose linked match involved this team
     if (teamId) {
       const matchIds = rows
-        .map((r) => r.vod.matchId)
+        .map((r: VodRow) => r.vod.matchId)
         .filter((id): id is number => id !== null);
 
       if (matchIds.length > 0) {
@@ -139,7 +139,7 @@ router.get("/", async (req, res) => {
         const matchMap: Record<number, typeof matchesTable.$inferSelect> = {};
         for (const m of matchRows) matchMap[m.id] = m;
 
-        rows = rows.filter((r) => {
+        rows = rows.filter((r: VodRow) => {
           if (!r.vod.matchId) return false;
           const m = matchMap[r.vod.matchId];
           return m && (m.teamAId === teamId || m.teamBId === teamId);
@@ -154,7 +154,7 @@ router.get("/", async (req, res) => {
     const isAdmin = !!req.session?.adminId;
     if (!isAdmin) {
       const pid = req.session?.playerId ? Number(req.session.playerId) : null;
-      const matchIdSet = new Set(rows.map((r) => r.vod.matchId).filter(Boolean) as number[]);
+      const matchIdSet = new Set(rows.map((r: VodRow) => r.vod.matchId).filter(Boolean) as number[]);
 
       if (matchIdSet.size > 0) {
         const matchRows = await db
@@ -168,25 +168,25 @@ router.get("/", async (req, res) => {
           matchVisibility[m.id] = canSeeStats;
         }
 
-        rows = rows.filter((r) => {
+        rows = rows.filter((r: VodRow) => {
           if (!r.vod.matchId) return true; // unlinked VODs always visible
           return matchVisibility[r.vod.matchId] !== false;
         });
       }
 
       // D-12: POV VODs require individual player rsoOptIn
-      const povVods = rows.filter((r) =>
+      const povVods = rows.filter((r: VodRow) =>
         r.vod.playerId != null && (r.vod.vodType === "player-pov" || r.vod.vodType === "team-pov")
       );
       if (povVods.length > 0) {
-        const povPlayerIds = [...new Set(povVods.map((r) => r.vod.playerId!))];
+        const povPlayerIds = [...new Set(povVods.map((r: VodRow) => r.vod.playerId!))];
         const playerRows = await db
           .select({ id: playersTable.id, rsoOptIn: playersTable.rsoOptIn })
           .from(playersTable)
           .where(inArray(playersTable.id, povPlayerIds));
         const optInMap = new Map(playerRows.map((p: { id: number; rsoOptIn: boolean }) => [p.id, p.rsoOptIn]));
 
-        rows = rows.filter((r) => {
+        rows = rows.filter((r: VodRow) => {
           // Non-POV VODs pass through
           if (r.vod.vodType !== "player-pov" && r.vod.vodType !== "team-pov") return true;
           if (!r.vod.playerId) return true;
@@ -197,7 +197,7 @@ router.get("/", async (req, res) => {
     }
 
     res.json(
-      rows.map((r) =>
+      rows.map((r: VodRow) =>
         formatVodEntry(r.vod, {
           eventTitle: r.eventTitle ?? null,
           playerRiotId: r.playerRiotId ?? null,
