@@ -41,7 +41,10 @@ Plans:
   1. GET /auth/connect/:token validates a bot-generated token and initiates RSO OAuth redirect to auth.riotgames.com
   2. GET /auth/rso/callback exchanges auth code for PUUID and updates the player record
   3. User sessions persist across Portainer redeploy (PostgreSQL-backed session store)
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 10-01-PLAN.md -- Session store (connect-pg-simple) + RSO OAuth handlers in auth.ts
 
 ### Phase 11: Player Career Resume
 **Goal**: Players can see their per-team competitive history (W/L record, KDA averages) on their profile page
@@ -72,7 +75,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 9. Tech Debt + Error Handling | v3.3 | 0/2 | Planned | - |
-| 10. RSO Backend + Session Store | v3.3 | 0/TBD | Not started | - |
+| 9. Tech Debt + Error Handling | v3.3 | 2/2 | Complete | - |
+| 10. RSO Backend + Session Store | v3.3 | 0/1 | Planned | - |
 | 11. Player Career Resume | v3.3 | 0/TBD | Not started | - |
 | 12. RSO Connect Page + Dashboard CTA | v3.3 | 0/TBD | Not started | - |
